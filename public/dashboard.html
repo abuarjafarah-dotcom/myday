@@ -503,7 +503,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     let ch = '';
     if (!live.authed) ch = signInHtml('your calendar');
     else if (live.calErr) ch = `<div class="empty">${esc(live.calErr)}</div>`;
-    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span></div>`).join('');
+    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"${ev.color ? ` style="border-left-color:${esc(ev.color)}"` : ''} title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span></div>`).join('');
     else if (live.cal) ch = '<div class="empty">Nothing on your calendar today.</div>';
     $('calTodayBox').innerHTML = ch ? `<div class="card"><h2><span>📅 Calendar today</span><a class="h2-link" href="https://calendar.google.com" target="_blank" rel="noopener">Open ↗</a></h2>${ch}</div>` : '';
   }
@@ -1072,7 +1072,7 @@ Rules:
       const d = addDays(td, i);
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
-      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:var(--accent)"></span><span>📅 ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:${esc(ev.color || 'var(--accent)')}"></span><span>📅 ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${items.filter(isOpen).length || ''}</span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
