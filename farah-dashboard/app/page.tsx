@@ -45,8 +45,7 @@ export default function Home() {
   }
 
   return (
-    <main>
-      <Dashboard user={session.user} onSignOut={() => signOut()} />
+    <main>   <Dashboard user={session.user || undefined} onSignOut={() => signOut()} />
     </main>
   );
 }
