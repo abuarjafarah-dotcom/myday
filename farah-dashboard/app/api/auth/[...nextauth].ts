@@ -3,7 +3,6 @@ import GoogleProvider from "next-auth/providers/google";
 import { type JWT } from "next-auth/jwt";
 import { type Account } from "next-auth";
 
-// Extend JWT type
 declare module "next-auth/jwt" {
   interface JWT {
     accessToken?: string;
@@ -11,7 +10,6 @@ declare module "next-auth/jwt" {
   }
 }
 
-// Extend Session type
 declare module "next-auth" {
   interface Session {
     accessToken?: string;
