@@ -1,21 +1,34 @@
-import NextAuth from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-export const authOptions = {
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken?: string;
+    refreshToken?: string;
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       authorization: {
         params: {
-          scope: "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly",
+          scope:
+            "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly",
+          access_type: "offline",
+          prompt: "consent",
         },
       },
     }),
   ],
-  pages: {
-    signIn: "/signin",
-  },
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
@@ -25,11 +38,8 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken as string;
+      session.accessToken = token.accessToken;
       return session;
     },
   },
 };
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };

@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import axios from "axios";
-import { authOptions } from "../auth/[...nextauth]";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
