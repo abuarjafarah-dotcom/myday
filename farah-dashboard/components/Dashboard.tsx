@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 interface DashboardProps {
-  user?: { email?: string; name?: string };
+     user?: { email?: string | null; name?: string | null } | null;
   onSignOut: () => void;
 }
 
