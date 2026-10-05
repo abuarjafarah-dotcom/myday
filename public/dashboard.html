@@ -407,28 +407,35 @@ a.sync { text-decoration: none; cursor: pointer; }
   const refFor = key => { const i = key.indexOf('/'); return db.doc(`${base}/${key.slice(0, i)}/${key.slice(i + 1)}`); };
 
   async function flush() {
-    if (!db || !base || flushing) return;
+    if (mode !== 'cloud' || flushing) return;
+    const keys = Object.keys(pending);
+    if (!keys.length) { renderSync(); return; }
     flushing = true; renderSync();
     let retryLater = false;
+    const sent = {}; keys.forEach(k => { sent[k] = pending[k]; });
     try {
-      for (const k of Object.keys(pending)) {
-        if (!(k in pending)) continue;
-        const data = pending[k];
-        try {
-          if (data === null) await refFor(k).delete();
-          else await refFor(k).set(clone(data));
-          if (pending[k] === data) { delete pending[k]; savePending(); }
-          writeError = '';
-        } catch (e) {
-          const c = e && e.code;
-          if (c === 'quota_exceeded') { writeError = 'Storage full: changes kept on this device'; }
-          else if (c === 'invalid_argument' || c === 'transform_error') { writeError = 'Couldn\'t sync: changes kept on this device'; console.warn('write rejected', k, e); }
-          else { writeError = 'Offline: saved on this device, will sync'; retryLater = true; }
-          break;
-        }
+      const writes = keys.map(k => { const i = k.indexOf('/'); return { kind: k.slice(0, i), id: k.slice(i + 1), data: sent[k] === null ? null : clone(sent[k]) }; });
+      for (let i = 0; i < writes.length; i += 200) {
+        const r = await fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: writes.slice(i, i + 200) }) });
+        if (r.status === 401) { writeError = 'Signed out: changes kept on this device'; break; }
+        if (!r.ok) throw new Error('http ' + r.status);
       }
+      if (!writeError) {
+        keys.forEach(k => {
+          if (pending[k] === sent[k]) {
+            const i = k.indexOf('/'); const kind = k.slice(0, i); const id = k.slice(i + 1);
+            if (!srvAll[kind]) srvAll[kind] = {};
+            if (sent[k] === null) delete srvAll[kind][id]; else srvAll[kind][id] = sent[k];
+            delete pending[k];
+          }
+        });
+        savePending();
+      }
+    } catch (e) {
+      writeError = 'Offline: saved on this device, will sync'; retryLater = true;
     } finally {
       flushing = false;
+      if (!retryLater && !Object.keys(pending).length) writeError = writeError.startsWith('Signed out') ? writeError : '';
       renderSync();
       if (retryLater) scheduleFlush(8000);
       else if (!writeError && Object.keys(pending).length) scheduleFlush();
@@ -510,27 +517,49 @@ a.sync { text-decoration: none; cursor: pointer; }
     document.addEventListener('visibilitychange', checkDay);
     $('dumpText').value = lsGet(LS.draft, '') || '';
 
-    if (!window.claude || typeof window.claude.use !== 'function') { goLocal(); return; }
-    window.claude.use('sample').then(s => { sample = s; renderHint(); }).catch(() => {});
-    let d = null, u = null, uid = null;
-    try { [d, u] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) {}
-    if (u) { try { uid = await u.id(); } catch (e) {} }
-    if (!d || !uid) { goLocal(); return; }
+    goLocal();
+    await loadCloud();
+    setInterval(() => { if (!document.hidden) loadCloud(); }, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadCloud(); });
+  }
 
-    db = d; base = `data/users/${uid}/fmd`; mode = 'cloud';
-    const col = n => db.collection(`${base}/${n}`);
-    subscribe('tasksOpen', col('tasks').where('status', 'in', ['todo', 'doing']));
-    subscribe('tasksClosed', col('tasks').where('status', 'in', ['done', 'dropped']).orderBy('updatedAt', 'desc').limit(500));
-    subscribe('projects', col('projects'));
-    subscribe('grocery', col('grocery').where('archived', '==', false));
-    subscribe('notes', col('notes'));
-    subscribe('dumps', col('dumps').where('processed', '==', false));
-    db.doc(`${base}/meta/main`).onSnapshot(s => {
-      srv.meta = s.exists ? { main: Object.assign({}, s.data()) } : {};
-      firstSeen.add('meta'); applyServer(); maybeMigrate();
-    }, e => console.warn('meta', e));
-    renderSync();
-    scheduleFlush(0);
+  // ---------- cloud sync through /api/store (Supabase) ----------
+  let srvAll = emptyState(), loadingCloud = false, cloudNote = '';
+  async function loadCloud() {
+    if (loadingCloud || flushing) return;
+    loadingCloud = true;
+    try {
+      const r = await fetch('/api/store', { credentials: 'same-origin', cache: 'no-store' });
+      if (r.status === 401) { cloudNote = 'Signed out: saved on this device'; return; }
+      if (r.status === 503) { cloudNote = 'Sync not set up: saved on this device'; return; }
+      if (!r.ok) { cloudNote = 'Offline: saved on this device'; return; }
+      const data = await r.json();
+      const next = emptyState();
+      KINDS.forEach(k => { next[k] = (data.docs && data.docs[k]) || {}; });
+      const serverEmpty = KINDS.every(k => !Object.keys(next[k]).length);
+      if (serverEmpty && mode !== 'cloud') {
+        // First device to sync uploads what it already has.
+        KINDS.forEach(k => Object.values(S[k]).forEach(o => { if (o && o.id) pending[k + '/' + o.id] = o; }));
+        savePending();
+      }
+      srvAll = next; cloudNote = ''; mode = 'cloud';
+      applyCloud();
+      scheduleFlush(0);
+    } catch (e) {
+      cloudNote = 'Offline: saved on this device';
+    } finally {
+      loadingCloud = false; renderSync();
+    }
+  }
+  function applyCloud() {
+    const next = emptyState();
+    KINDS.forEach(k => { next[k] = Object.assign({}, srvAll[k]); });
+    for (const [k, v] of Object.entries(pending)) {
+      const i = k.indexOf('/'); const kind = k.slice(0, i); const id = k.slice(i + 1);
+      if (!next[kind]) continue;
+      if (v === null) delete next[kind][id]; else next[kind][id] = v;
+    }
+    S = next; saveCache(); render();
   }
   function goLocal() { mode = 'local'; render(); maybeMigrate(true); }
 
@@ -691,7 +720,8 @@ a.sync { text-decoration: none; cursor: pointer; }
     el.classList.remove('warn');
     if (writeError) { el.textContent = writeError; el.classList.add('warn'); }
     else if (mode === 'starting') el.textContent = 'Loading…';
-    else if (mode === 'local') el.textContent = '✓ Saved on this device';
+    else if (mode === 'local' && cloudNote) { el.textContent = cloudNote; el.classList.add('warn'); }
+    else if (mode === 'local') el.textContent = 'Connecting…';
     else if (n || flushing) el.textContent = 'Saving…';
     else el.textContent = '✓ Synced';
   }
