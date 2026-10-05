@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Farah Master Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #2c3e50; --accent: #667eea; --pink: #f295b0; --pink-dark: #f06b9d;
+  --kids: #EC7A74; --home: #6C7FE0; --work: #F0A93B; --errands: #6E4FA3; --self: #8B7DC8; --activity: #5CAE5A; --omar: #FF6B6B;
+  --border: #e0e0e0; --bg: #fafafa; --card: #ffffff; --text: #2c3e50; --body: #333; --muted: #666; --faint: #999;
+  --soft: #f3f4fb; --carry: #fff9e6; --carry-line: #f0d48a; --chip: #eef0fb;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #e6e9f2; --border: #343849; --bg: #15171f; --card: #1d2029; --text: #e6e9f2; --body: #d9dce6;
+    --muted: #a3a8b8; --faint: #7d8396; --soft: #232738; --carry: #2c2817; --carry-line: #6b5a25; --chip: #2a2e45;
+  }
+}
+:root[data-theme="dark"] {
+  --primary: #e6e9f2; --border: #343849; --bg: #15171f; --card: #1d2029; --text: #e6e9f2; --body: #d9dce6;
+  --muted: #a3a8b8; --faint: #7d8396; --soft: #232738; --carry: #2c2817; --carry-line: #6b5a25; --chip: #2a2e45;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg); }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  padding: 16px 16px 96px; max-width: 760px; margin: 0 auto; line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+button { font-family: inherit; }
+input, select, textarea { font-family: inherit; font-size: 16px; color: var(--body); background: var(--card); }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.muted { color: var(--muted); font-size: 12px; }
+.hidden { display: none !important; }
+
+/* HEADER */
+.header { margin-bottom: 16px; }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.header-top h1 { font-size: 18px; font-weight: 700; color: var(--primary); }
+.sync { font-size: 11px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+.sync.warn { color: #9a6a00; border-color: var(--carry-line); background: var(--carry); }
+.weather-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 16px; border-radius: 8px; margin-bottom: 12px; text-align: center; }
+.weather-header .day { font-size: 12px; opacity: .9; margin-bottom: 2px; }
+.weather-header .date { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+.weather-header .condition { font-size: 11px; opacity: .85; }
+.dress-code { background: linear-gradient(135deg, var(--pink) 0%, var(--pink-dark) 100%); color: #fff; padding: 14px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.dress-code .dc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.dress-code strong { font-size: 13px; }
+.dc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dc-box { text-align: center; padding: 10px; background: rgba(255,255,255,.2); border-radius: 6px; }
+.dc-box .who { font-size: 12px; font-weight: 700; }
+.dc-box .what { font-size: 11px; margin-top: 4px; }
+.dc-box input { width: 100%; margin-top: 6px; padding: 6px; border-radius: 4px; border: none; font-size: 14px; color: #2c3e50; background: #fff; }
+.link-btn { background: rgba(255,255,255,.25); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+
+/* TABS */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
+.tab-btn { padding: 12px 12px 10px; background: none; border: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+.tab-btn .count { display: inline-block; min-width: 16px; font-size: 10px; background: var(--chip); color: var(--accent); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.sub-tab-btn { flex: 1; padding: 10px; background: none; border: none; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.sub-tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+
+/* CARD */
+.card { background: var(--card); border-radius: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
+.card h2 { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card h3 { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+.card.carry { background: var(--carry); border-color: var(--carry-line); }
+
+/* BRAIN DUMP */
+.dump textarea { width: 100%; min-height: 96px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; resize: vertical; line-height: 1.5; }
+.dump .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.dump .row .muted { flex: 1; font-size: 11px; }
+
+/* TASK ROWS */
+.task-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; min-height: 44px; }
+.task-item .text { flex: 1; color: var(--body); min-width: 0; overflow-wrap: anywhere; }
+.task-item .meta { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+.task-item.done { opacity: .5; }
+.task-item.done .t { text-decoration: line-through; }
+.carry .task-item { background: var(--card); }
+.badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--carry); color: #9a6a00; border: 1px solid var(--carry-line); margin-right: 4px; }
+.badge.proj { background: var(--chip); color: var(--accent); border-color: transparent; }
+.mini { flex: 0 0 auto; padding: 6px 8px; font-size: 11px; font-weight: 600; background: var(--card); color: var(--primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; min-height: 30px; }
+.mini.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mini.ghost { border-color: transparent; background: none; color: var(--faint); }
+.toggle-line { font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 0; font-weight: 600; }
+.empty { font-size: 12px; color: var(--faint); padding: 6px 2px; }
+
+/* KEY TIMES / SUGGESTIONS */
+.key-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--body); padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.key-row:last-of-type { border-bottom: none; }
+.suggestions { background: linear-gradient(135deg, #f0f4ff 0%, #fff5f7 100%); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 13px; color: #2c3e50; line-height: 1.6; margin-bottom: 12px; }
+.suggestions strong { display: block; margin-bottom: 4px; }
+.suggestions div + div { margin-top: 6px; }
+
+/* INPUT ROWS */
+.add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.add-row input[type="text"], .add-row select, .add-row input[type="time"] { flex: 1 1 140px; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
+.btn-add { padding: 10px 14px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.btn-add.full { width: 100%; margin-top: 12px; }
+.btn-add:disabled { opacity: .6; cursor: default; }
+.btn-secondary { padding: 10px 14px; background: var(--bg); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+
+/* REVIEW */
+.review { border-color: var(--accent); }
+.rv-sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
+.rv-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border-radius: 6px; background: var(--bg); margin-bottom: 6px; border-left: 3px solid var(--accent); }
+.rv-row.off { opacity: .45; }
+.rv-row input[type="text"] { flex: 1 1 160px; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; }
+.rv-row select { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
+.rv-note { flex-basis: 100%; font-size: 11px; color: var(--faint); padding-left: 26px; }
+.rv-actions { display: flex; gap: 8px; margin-top: 10px; }
+.rv-actions .btn-add { flex: 1; }
+
+/* DONUT + STATUS */
+.donut-container { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
+.donut-svg { flex: 0 0 120px; width: 120px; height: 120px; }
+.donut-legend { flex: 1; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.legend-item { display: flex; align-items: center; gap: 6px; color: var(--body); }
+.legend-color { width: 12px; height: 12px; border-radius: 2px; }
+.legend-count { font-weight: 700; color: var(--primary); }
+.status-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.status-box { text-align: center; padding: 12px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); }
+.status-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.status-count { font-size: 28px; font-weight: 700; color: var(--primary); margin: 6px 0 0; }
+
+/* KANBAN */
+.kanban { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 680px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
+.kcol { background: var(--soft); border-radius: 8px; padding: 10px; }
+.kcol h3 { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.kcard { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; color: var(--body); }
+.kcard .meta { font-size: 11px; color: var(--faint); margin-top: 2px; }
+.kcard .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.kcard.done { opacity: .55; }
+.kcard.done .t { text-decoration: line-through; }
+
+/* WEEK */
+.week-day { padding: 12px; margin-bottom: 10px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); border-left: 3px solid var(--accent); }
+.week-day.is-today { border-left-color: var(--pink-dark); }
+.week-day-title { font-weight: 700; color: var(--primary); font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+.week-line { font-size: 13px; color: var(--body); padding: 2px 0; display: flex; gap: 8px; align-items: baseline; }
+.week-line .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; transform: translateY(-1px); }
+.week-line.done { opacity: .5; text-decoration: line-through; }
+
+/* ACCORDION */
+.accordion-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 12px; cursor: pointer; background: var(--bg); border-radius: 6px; margin-bottom: 8px; font-weight: 600; color: var(--primary); font-size: 13px; border: 1px solid var(--border); min-height: 44px; }
+.accordion-header .right { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.accordion-header.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.accordion-header.active .right { color: #fff; }
+.progress { width: 44px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--activity); }
+.accordion-content { padding: 10px; background: var(--bg); border-radius: 6px; margin: -4px 0 10px; border: 1px solid var(--border); }
+.accordion-content .task-item { background: var(--card); }
+.note-item { font-size: 13px; color: var(--body); padding: 8px 10px; background: var(--card); border-radius: 6px; border-left: 3px dashed var(--self); margin-bottom: 6px; display: flex; gap: 8px; align-items: center; }
+.note-item span { flex: 1; overflow-wrap: anywhere; }
+
+/* GMAIL placeholder */
+.not-connected { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.not-connected a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.weather-header .temp { font-size: 13px; font-weight: 600; margin-top: 6px; }
+.head-right { display: flex; gap: 6px; align-items: center; }
+a.sync { text-decoration: none; cursor: pointer; }
+.mail-item { display: block; text-decoration: none; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); min-height: 44px; }
+.mail-item .subj { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
+.mail-item .from { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; overflow-wrap: anywhere; }
+.cal-item { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; color: var(--body); }
+.cal-item .when { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--accent); min-width: 64px; }
+.cal-item .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.h2-link { font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tab-btn, .sub-tab-btn, .accordion-header { transition: background-color .15s, color .15s, border-color .15s; }
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-top">
+    <h1>Farah</h1>
+    <span class="head-right"><span id="sync" class="sync">Loading…</span><a class="sync" href="/api/auth/signout?callbackUrl=/">Sign out</a></span>
+  </div>
+  <div class="weather-header">
+    <div class="day" id="dayName"></div>
+    <div class="date" id="dateStr"></div>
+    <div class="temp" id="weatherTemp"></div>
+    <div class="condition" id="weatherLine">Loading Rochester weather…</div>
+  </div>
+  <div class="dress-code" id="dress"></div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab-btn" data-act="tab" data-tab="home">HOME</button>
+  <button class="tab-btn" data-act="tab" data-tab="schedule">SCHEDULE</button>
+  <button class="tab-btn" data-act="tab" data-tab="projects">PROJECTS</button>
+  <button class="tab-btn" data-act="tab" data-tab="grocery">GROCERY<span class="count hidden" id="groceryCount"></span></button>
+</nav>
+
+<!-- ======== HOME ======== -->
+<section id="home" class="tab-content">
+  <div class="card dump">
+    <h2>🧠 Brain dump</h2>
+    <textarea id="dumpText" placeholder="Everything on your mind: tasks, groceries, kid things, ideas. Messy is fine."></textarea>
+    <div class="row">
+      <span class="muted" id="dumpHint"></span>
+      <button class="btn-add" data-act="organize">Organize it</button>
+    </div>
+  </div>
+  <div id="reviewBox"></div>
+  <div id="waitingBox"></div>
+  <div id="carryBox"></div>
+  <div id="calTodayBox"></div>
+  <div class="card">
+    <h2>📋 Today</h2>
+    <div id="todayList"></div>
+  </div>
+  <div id="anytimeBox"></div>
+  <div id="suggestBox"></div>
+  <div class="card">
+    <h2>⏱️ Key times</h2>
+    <div id="keyTimes"></div>
+    <div class="add-row">
+      <input type="text" id="ktAdd" data-enter="kt-add" placeholder="Add a key time, e.g. 3:00 PM pickup">
+    </div>
+  </div>
+  <div class="card">
+    <h2><span>✉️ Action items</span><a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail ↗</a></h2>
+    <div id="gmailList"><div class="empty">Loading unread email…</div></div>
+  </div>
+</section>
+
+<!-- ======== SCHEDULE ======== -->
+<section id="schedule" class="tab-content">
+  <div class="sub-tabs">
+    <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
+  </div>
+  <div id="sub-today">
+    <div class="donut-container">
+      <svg class="donut-svg" viewBox="0 0 120 120" id="donut" role="img" aria-label="Today's tasks by category"></svg>
+      <div class="donut-legend" id="donutLegend"></div>
+    </div>
+    <div class="status-boxes">
+      <div class="status-box"><div class="status-label">To Do</div><div class="status-count" id="countTodo">0</div></div>
+      <div class="status-box"><div class="status-label">Delayed</div><div class="status-count" id="countDelayed">0</div></div>
+      <div class="status-box"><div class="status-label">Done</div><div class="status-count" id="countDone">0</div></div>
+    </div>
+    <div class="card">
+      <h2>＋ Add task</h2>
+      <div class="add-row">
+        <input type="text" id="ntTitle" data-enter="add-task" placeholder="What needs doing?">
+      </div>
+      <div class="add-row">
+        <select id="ntCat" aria-label="Category"></select>
+        <select id="ntDate" aria-label="Day">
+          <option value="today">Today</option>
+          <option value="tomorrow">Tomorrow</option>
+          <option value="none">No date</option>
+        </select>
+        <input type="time" id="ntTime" aria-label="Time">
+        <button class="btn-add" data-act="add-task">Add</button>
+      </div>
+    </div>
+    <div class="kanban" id="kanban"></div>
+  </div>
+  <div id="sub-week">
+    <p class="muted" style="margin-bottom:10px">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
+    <div id="weekList"></div>
+  </div>
+</section>
+
+<!-- ======== PROJECTS ======== -->
+<section id="projects" class="tab-content">
+  <div class="card">
+    <h2>🎯 Projects</h2>
+    <div id="projectsList"></div>
+    <div class="add-row">
+      <input type="text" id="npName" data-enter="add-project" placeholder="New project name">
+      <button class="btn-add" data-act="add-project">Add</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>💡 Ideas</h2>
+    <div id="ideasList"></div>
+    <div class="add-row">
+      <input type="text" id="niText" data-enter="add-idea" placeholder="Something to remember, not a task">
+    </div>
+  </div>
+</section>
+
+<!-- ======== GROCERY ======== -->
+<section id="grocery" class="tab-content">
+  <div class="card">
+    <h2>🛒 Quick add</h2>
+    <div class="add-row">
+      <input type="text" id="gQuick" data-enter="groc-quick" placeholder="yogurt, berries to Costco">
+      <select id="gStore" aria-label="Store"></select>
+      <button class="btn-add" data-act="groc-quick">Add</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🏬 Stores</h2>
+    <div id="groceryList"></div>
+    <div class="add-row">
+      <input type="text" id="nsName" data-enter="add-store" placeholder="Add a store">
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- constants ----------
+  const CATS = {
+    kids: { label: 'Kids', color: '#EC7A74' }, work: { label: 'Work', color: '#F0A93B' },
+    home: { label: 'Home', color: '#6C7FE0' }, errands: { label: 'Errands', color: '#6E4FA3' },
+    self: { label: 'Self', color: '#8B7DC8' }, activity: { label: 'Activity', color: '#5CAE5A' },
+    omar: { label: 'Omar', color: '#FF6B6B' }
+  };
+  const CAT_KEYS = Object.keys(CATS);
+  const DEFAULT_STORES = ['Costco', "Trader Joe's", 'Target', 'Walmart', 'Amazon', 'Aldi', 'Other'];
+  const STORE_ICON = { 'Costco': '🏬', "Trader Joe's": '🛍️', 'Target': '🎯', 'Walmart': '🛒', 'Amazon': '📦', 'Aldi': '🥕', 'Other': '📝' };
+  const KINDS = ['tasks', 'projects', 'grocery', 'notes', 'dumps', 'meta'];
+  const LS = { cache: 'fmd4-cache', pending: 'fmd4-pending', ui: 'fmd4-ui', draft: 'fmd4-draft', migrated: 'fmd4-migrated-v3' };
+
+  // ---------- small helpers ----------
+  const $ = id => document.getElementById(id);
+  const lsGet = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const today = () => ymd(new Date());
+  const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const addDays = (s, n) => { const x = parseYmd(s); x.setDate(x.getDate() + n); return ymd(x); };
+  const dayLabel = s => {
+    const t = today();
+    if (s === t) return 'Today';
+    if (s === addDays(t, 1)) return 'Tomorrow';
+    if (s === addDays(t, -1)) return 'Yesterday';
+    return parseYmd(s).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  const newId = p => p + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const norm = s => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const timeMin = t => {
+    if (!t) return 9999;
+    const m = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])?\.?\s*m?\.?$/i);
+    if (!m) return 9998;
+    let h = +m[1]; const mi = +(m[2] || 0); const ap = (m[3] || '').toLowerCase();
+    if (ap === 'p' && h < 12) h += 12;
+    if (ap === 'a' && h === 12) h = 0;
+    return h * 60 + mi;
+  };
+  const fmt24 = v => { if (!v) return null; const [h, m] = v.split(':').map(Number); const ap = h >= 12 ? 'PM' : 'AM'; return `${((h + 11) % 12) + 1}:${pad(m)} ${ap}`; };
+  const byTime = (a, b) => timeMin(a.time) - timeMin(b.time) || (a.createdAt || 0) - (b.createdAt || 0);
+  const isOpen = t => t.status === 'todo' || t.status === 'doing';
+  const catColor = c => (CATS[c] || {}).color || '#999';
+
+  // ---------- state ----------
+  // S is the one canonical in-memory copy. Every tab renders from it.
+  const emptyState = () => ({ tasks: {}, projects: {}, grocery: {}, notes: {}, dumps: {}, meta: {} });
+  const SEED = {"tasks":{"t-muvbmqcdmcxza":{"category":"errands","completedAt":null,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcdmcxza","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"Trader Joe's run","updatedAt":1791209067997},"t-muvbmqcd7lv3a":{"category":"home","completedAt":null,"createdAt":1791209067997,"date":"2026-10-06","duration":null,"id":"t-muvbmqcd7lv3a","notes":"","originalDate":"2026-10-05","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"Fold laundry","updatedAt":1791229108605},"t-muvbmqcd4r1m7":{"category":"kids","completedAt":null,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcd4r1m7","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":"12:00 PM","title":"Yousef nap","updatedAt":1791209067997},"p-islamic-s1":{"category":"kids","completedAt":null,"createdAt":1790962703729,"date":null,"duration":null,"id":"p-islamic-s1","notes":"","priority":null,"projectId":"p-islamic","source":"seed","status":"todo","time":null,"title":"Expand Arabic difficulty","updatedAt":1790962703729},"p-dashboard-s4":{"category":"self","completedAt":null,"createdAt":1790962704232,"date":null,"duration":null,"id":"p-dashboard-s4","notes":"","priority":null,"projectId":"p-dashboard","source":"seed","status":"todo","time":null,"title":"Mobile optimization","updatedAt":1790962704232},"p-teta-s3":{"category":"kids","completedAt":null,"createdAt":1790962703931,"date":null,"duration":null,"id":"p-teta-s3","notes":"","priority":null,"projectId":"p-teta","source":"seed","status":"todo","time":null,"title":"Switch voice-over","updatedAt":1790962703931},"t-murdtapa397fe":{"category":"kids","completedAt":1791168060307,"createdAt":1790970868846,"date":"2026-10-02","duration":null,"id":"t-murdtapa397fe","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"done","time":null,"title":"🚌 School pick up","updatedAt":1791168060307},"t-muvbmqcdvki0z":{"category":"kids","completedAt":null,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcdvki0z","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":"2:30 PM","title":"Pick up kids from school","updatedAt":1791209067997},"p-cookbook-s5":{"category":"home","completedAt":null,"createdAt":1790962703633,"date":null,"duration":null,"id":"p-cookbook-s5","notes":"","priority":null,"projectId":"p-cookbook","source":"seed","status":"todo","time":null,"title":"Print & bind","updatedAt":1790962703633},"p-apple-s2":{"category":"activity","completedAt":1791208944652,"createdAt":1790962704030,"date":null,"duration":null,"id":"p-apple-s2","notes":"","priority":null,"projectId":"p-apple","source":"seed","status":"done","time":null,"title":"Book/reserve","updatedAt":1791208944652},"t-muvbmqcdqwq8z":{"category":"home","completedAt":null,"createdAt":1791209067997,"date":"2026-10-06","duration":null,"id":"t-muvbmqcdqwq8z","notes":"","originalDate":"2026-10-05","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"Start laundry load","updatedAt":1791229112145},"p-cookbook-s1":{"category":"home","completedAt":null,"createdAt":1790962703629,"date":null,"duration":null,"id":"p-cookbook-s1","notes":"","priority":null,"projectId":"p-cookbook","source":"seed","status":"todo","time":null,"title":"Collect recipes from Oma","updatedAt":1790962703629},"p-cookbook-s4":{"category":"home","completedAt":null,"createdAt":1790962703632,"date":null,"duration":null,"id":"p-cookbook-s4","notes":"","priority":null,"projectId":"p-cookbook","source":"seed","status":"todo","time":null,"title":"Design layout","updatedAt":1790962703632},"p-islamic-s3":{"category":"kids","completedAt":null,"createdAt":1790962703731,"date":null,"duration":null,"id":"p-islamic-s3","notes":"","priority":null,"projectId":"p-islamic","source":"seed","status":"todo","time":null,"title":"Add new Quranic levels","updatedAt":1790962703731},"m3-2026-10-02-t8":{"category":"kids","completedAt":1790970563167,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t8","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"1:45 PM","title":"🧷 Change Yousef nap","updatedAt":1790970563167},"m3-2026-10-02-t12":{"category":"home","completedAt":1791033140609,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t12","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"3:45 PM","title":"🍲 Maqloube (dinner prep)","updatedAt":1791033140609},"t-muvbmqcd23s87":{"category":"home","completedAt":1791229105389,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcd23s87","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"done","time":null,"title":"Make dinner","updatedAt":1791229105389},"p-dashboard-s3":{"category":"self","completedAt":null,"createdAt":1790962704231,"date":null,"duration":null,"id":"p-dashboard-s3","notes":"","priority":null,"projectId":"p-dashboard","source":"seed","status":"todo","time":null,"title":"Smart suggestions","updatedAt":1790962704231},"p-apple-s3":{"category":"activity","completedAt":1791208942751,"createdAt":1790962704031,"date":null,"duration":null,"id":"p-apple-s3","notes":"","priority":null,"projectId":"p-apple","source":"seed","status":"done","time":null,"title":"Pack snacks & supplies","updatedAt":1791208942751},"p-apple-s1":{"category":"activity","completedAt":1791208941919,"createdAt":1790962704029,"date":null,"duration":null,"id":"p-apple-s1","notes":"","priority":null,"projectId":"p-apple","source":"seed","status":"done","time":null,"title":"Plan date & location","updatedAt":1791208941919},"m3-2026-10-02-t2":{"category":"errands","completedAt":1790970570119,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t2","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"9:00 AM","title":"🍓 Buy strawberries","updatedAt":1790970570119},"m3-2026-10-02-t5":{"category":"work","completedAt":null,"createdAt":1790917200000,"date":"2026-10-06","duration":null,"id":"m3-2026-10-02-t5","notes":"","originalDate":"2026-10-02","priority":null,"projectId":null,"source":"migrated-v3","status":"todo","time":"1:00 PM","title":"💼 WorkWave work forms","updatedAt":1791208929131},"p-world-s1":{"category":"kids","completedAt":null,"createdAt":1790962703829,"date":null,"duration":null,"id":"p-world-s1","notes":"","priority":null,"projectId":"p-world","source":"seed","status":"todo","time":null,"title":"Build storyline","updatedAt":1790962703829},"p-quilt-s2":{"category":"self","completedAt":null,"createdAt":1790962704130,"date":null,"duration":null,"id":"p-quilt-s2","notes":"","priority":null,"projectId":"p-quilt","source":"seed","status":"todo","time":null,"title":"Sort by size/season","updatedAt":1790962704130},"p-teta-s4":{"category":"kids","completedAt":null,"createdAt":1790962703932,"date":null,"duration":null,"id":"p-teta-s4","notes":"","priority":null,"projectId":"p-teta","source":"seed","status":"todo","time":null,"title":"Test with kids","updatedAt":1790962703932},"t-muvnk1rhe7vxx":{"category":"activity","completedAt":null,"createdAt":1791229098221,"date":null,"duration":null,"id":"t-muvnk1rhe7vxx","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"Backyard stroll or outing","updatedAt":1791229098221},"p-teta-s2":{"category":"kids","completedAt":null,"createdAt":1790962703930,"date":null,"duration":null,"id":"p-teta-s2","notes":"","priority":null,"projectId":"p-teta","source":"seed","status":"todo","time":null,"title":"Tie to family recipes","updatedAt":1790962703930},"m3-2026-10-02-t13":{"category":"kids","completedAt":1791033139477,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t13","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"5:30 PM","title":"🍽️ Dinner","updatedAt":1791033139477},"p-cookbook-s3":{"category":"home","completedAt":null,"createdAt":1790962703631,"date":null,"duration":null,"id":"p-cookbook-s3","notes":"","priority":null,"projectId":"p-cookbook","source":"seed","status":"todo","time":null,"title":"Write stories","updatedAt":1790962703631},"t-muvbmqcdwhupo":{"category":"self","completedAt":null,"createdAt":1791209067997,"date":null,"duration":null,"id":"t-muvbmqcdwhupo","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"AI Transformation course","updatedAt":1791209067997},"t-muvbmqcd6l91l":{"category":"activity","completedAt":null,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcd6l91l","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"Pumpkin carving","updatedAt":1791209067997},"m3-2026-10-02-t10":{"category":"kids","completedAt":1790970567367,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t10","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"2:30 PM","title":"🚗 Leave for pickup","updatedAt":1790970567368},"t-muvbmqcd4yu8l":{"category":"home","completedAt":1791229104076,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcd4yu8l","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"done","time":null,"title":"Get snacks","updatedAt":1791229104076},"m3-2026-10-02-t4":{"category":"work","completedAt":1790970558655,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t4","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"10:00 AM","title":"📝 Fill daycare forms","updatedAt":1790970558655},"m3-2026-10-02-t1":{"category":"kids","completedAt":1790970568936,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t1","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"7:30 AM","title":"🥣 Breakfast","updatedAt":1790970568936},"m3-2026-10-02-t3":{"category":"errands","completedAt":1790970556522,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t3","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"9:15 AM","title":"💊 Walgreens pick up","updatedAt":1790970556522},"m3-2026-10-02-t15":{"category":"kids","completedAt":null,"createdAt":1790917200000,"date":"2026-10-05","duration":null,"id":"m3-2026-10-02-t15","notes":"","originalDate":"2026-10-02","priority":null,"projectId":null,"source":"migrated-v3","status":"todo","time":"6:30 PM","title":"📿 Arabic Quran game","updatedAt":1791168066172},"p-quilt-s3":{"category":"self","completedAt":null,"createdAt":1790962704131,"date":null,"duration":null,"id":"p-quilt-s3","notes":"","priority":null,"projectId":"p-quilt","source":"seed","status":"todo","time":null,"title":"Design quilt layout","updatedAt":1790962704131},"p-quilt-s4":{"category":"self","completedAt":null,"createdAt":1790962704132,"date":null,"duration":null,"id":"p-quilt-s4","notes":"","priority":null,"projectId":"p-quilt","source":"seed","status":"todo","time":null,"title":"Sew pieces together","updatedAt":1790962704132},"p-quilt-s1":{"category":"self","completedAt":null,"createdAt":1790962704129,"date":null,"duration":null,"id":"p-quilt-s1","notes":"","priority":null,"projectId":"p-quilt","source":"seed","status":"todo","time":null,"title":"Collect baby clothes from Yousef","updatedAt":1790962704129},"t-muvbmqcd761rr":{"category":"home","completedAt":null,"createdAt":1791209067997,"date":"2026-10-05","duration":null,"id":"t-muvbmqcd761rr","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"todo","time":null,"title":"Make kofta","updatedAt":1791209067997},"p-islamic-s4":{"category":"kids","completedAt":null,"createdAt":1790962703732,"date":null,"duration":null,"id":"p-islamic-s4","notes":"","priority":null,"projectId":"p-islamic","source":"seed","status":"todo","time":null,"title":"Launch on Lovable","updatedAt":1790962703732},"p-teta-s1":{"category":"kids","completedAt":null,"createdAt":1790962703929,"date":null,"duration":null,"id":"p-teta-s1","notes":"","priority":null,"projectId":"p-teta","source":"seed","status":"todo","time":null,"title":"Build recipe prompts 3+","updatedAt":1790962703929},"p-cookbook-s2":{"category":"home","completedAt":null,"createdAt":1790962703630,"date":null,"duration":null,"id":"p-cookbook-s2","notes":"","priority":null,"projectId":"p-cookbook","source":"seed","status":"todo","time":null,"title":"Test & photograph","updatedAt":1790962703630},"p-world-s3":{"category":"kids","completedAt":null,"createdAt":1790962703831,"date":null,"duration":null,"id":"p-world-s3","notes":"","priority":null,"projectId":"p-world","source":"seed","status":"todo","time":null,"title":"Switch voice-over to female","updatedAt":1790962703831},"m3-2026-10-02-t16":{"category":"kids","completedAt":1791168061104,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t16","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"7:00 PM","title":"🛁 Bath & sleep","updatedAt":1791168061104},"p-world-s2":{"category":"kids","completedAt":null,"createdAt":1790962703830,"date":null,"duration":null,"id":"p-world-s2","notes":"","priority":null,"projectId":"p-world","source":"seed","status":"todo","time":null,"title":"Develop characters","updatedAt":1790962703830},"m3-2026-10-02-t11":{"category":"home","completedAt":1791168046289,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t11","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"3:15 PM","title":"🏠 Reset house","updatedAt":1791168046289},"m3-2026-10-02-t14":{"category":"kids","completedAt":1791168050123,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t14","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"6:15 PM","title":"🔢 Numberblocks","updatedAt":1791168050123},"p-dashboard-s2":{"category":"self","completedAt":null,"createdAt":1790962704230,"date":null,"duration":null,"id":"p-dashboard-s2","notes":"","priority":null,"projectId":"p-dashboard","source":"seed","status":"todo","time":null,"title":"Gmail integration","updatedAt":1790962704230},"t-murdtapauz29o":{"category":"kids","completedAt":1791168062890,"createdAt":1790970868847,"date":"2026-10-02","duration":null,"id":"t-murdtapauz29o","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"done","time":null,"title":"🎃 Kids buy pumpkins","updatedAt":1791168062890},"m3-2026-10-02-t6":{"category":"work","completedAt":null,"createdAt":1790917200000,"date":"2026-10-05","duration":null,"id":"m3-2026-10-02-t6","notes":"","originalDate":"2026-10-02","priority":null,"projectId":null,"source":"migrated-v3","status":"todo","time":"1:30 PM","title":"📊 Dashboard project","updatedAt":1791168043037},"m3-2026-10-02-t9":{"category":"work","completedAt":1790970565817,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t9","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"2:00 PM","title":"🎮 Kids game project","updatedAt":1790970565817},"m3-2026-10-02-t7":{"category":"kids","completedAt":1790970560216,"createdAt":1790917200000,"date":"2026-10-02","duration":null,"id":"m3-2026-10-02-t7","notes":"","priority":null,"projectId":null,"source":"migrated-v3","status":"done","time":"12:00 PM","title":"🍽️ Yousef milk & lunch","updatedAt":1790970560216},"t-murdtapb2k2g0":{"category":"kids","completedAt":1791033141295,"createdAt":1790970868847,"date":"2026-10-02","duration":null,"id":"t-murdtapb2k2g0","notes":"","priority":null,"projectId":null,"source":"brain-dump","status":"done","time":"5:30 PM","title":"🎪 Harvest fest at school","updatedAt":1791033141295},"p-dashboard-s1":{"category":"self","completedAt":null,"createdAt":1790962704229,"date":null,"duration":null,"id":"p-dashboard-s1","notes":"","priority":null,"projectId":"p-dashboard","source":"seed","status":"todo","time":null,"title":"Auto-populate from calendar","updatedAt":1790962704229},"p-islamic-s2":{"category":"kids","completedAt":null,"createdAt":1790962703730,"date":null,"duration":null,"id":"p-islamic-s2","notes":"","priority":null,"projectId":"p-islamic","source":"seed","status":"todo","time":null,"title":"Standardize female voice-over","updatedAt":1790962703730}},"projects":{"p-quilt":{"category":"self","createdAt":1790962703535,"id":"p-quilt","name":"👶 Baby Clothes Quilt","notes":"","status":"active","updatedAt":1790962703535},"p-islamic":{"category":"kids","createdAt":1790962703531,"id":"p-islamic","name":"🎮 Islamic Explorer (Lovable)","notes":"","status":"active","updatedAt":1790962703531},"p-cookbook":{"category":"home","createdAt":1790962703530,"id":"p-cookbook","name":"🍳 Mother-in-Law Cookbook","notes":"","status":"active","updatedAt":1790962703530},"p-apple":{"category":"activity","createdAt":1790962703534,"id":"p-apple","name":"🍎 Apple Picking Outing","notes":"","status":"active","updatedAt":1790962703534},"p-dashboard":{"category":"self","createdAt":1790962703536,"id":"p-dashboard","name":"📊 Dashboard Brain Dump","notes":"","status":"active","updatedAt":1790962703536},"p-teta":{"category":"kids","createdAt":1790962703533,"id":"p-teta","name":"🍲 Cooking Game with Teta","notes":"","status":"active","updatedAt":1790962703533},"p-world":{"category":"kids","createdAt":1790962703532,"id":"p-world","name":"🌍 World Mastery Game","notes":"","status":"active","updatedAt":1790962703532},"p-summer":{"category":"self","createdAt":1790962703537,"id":"p-summer","name":"☀️ Summer 2026 Picture Book","notes":"","status":"active","updatedAt":1790962703537}},"grocery":{"g-murdtapbs6jqs":{"archived":false,"checked":false,"createdAt":1790970868847,"id":"g-murdtapbs6jqs","item":"Once upon a farm pouches (Yousef)","notes":"","quantity":null,"store":"Costco","updatedAt":1790970868847},"g-murdtapbacho6":{"archived":false,"checked":true,"checkedAt":1791204900890,"createdAt":1790970868847,"id":"g-murdtapbacho6","item":"Strawberries","notes":"","quantity":null,"store":"Costco","updatedAt":1791204900890},"g-muvnk1rhuloqm":{"archived":false,"checked":false,"createdAt":1791229098221,"id":"g-muvnk1rhuloqm","item":"pumpkin","notes":"","quantity":null,"store":"Trader Joe's","updatedAt":1791229098221},"g-murdtapbla8rh":{"archived":false,"checked":true,"checkedAt":1791204902586,"createdAt":1790970868847,"id":"g-murdtapbla8rh","item":"Talal milk","notes":"","quantity":null,"store":"Costco","updatedAt":1791204902586},"g-murdtapbarypd":{"archived":false,"checked":true,"checkedAt":1791204901698,"createdAt":1790970868847,"id":"g-murdtapbarypd","item":"Ground beef","notes":"","quantity":null,"store":"Costco","updatedAt":1791204901698},"g-murdtapb4ovmx":{"archived":false,"checked":true,"checkedAt":1791204904229,"createdAt":1790970868847,"id":"g-murdtapb4ovmx","item":"Stone field yogurt pouches","notes":"","quantity":null,"store":"Costco","updatedAt":1791204904229},"g-murdtapb6wjsm":{"archived":false,"checked":true,"checkedAt":1791204900269,"createdAt":1790970868847,"id":"g-murdtapb6wjsm","item":"Yogurt pouches","notes":"","quantity":null,"store":"Costco","updatedAt":1791204900269}},"notes":{"n-muvbkibaj0er8":{"createdAt":1791208964278,"id":"n-muvbkibaj0er8","projectId":null,"text":"Make dawood Basha","updatedAt":1791208964278},"n-murdtapb7smmy":{"createdAt":1790970868847,"id":"n-murdtapb7smmy","projectId":null,"text":"Maqloube dinner already on list for today","updatedAt":1790970868847}},"dumps":{"d-murdpd2mvnb77":{"createdAt":1790970685295,"id":"d-murdpd2mvnb77","processed":true,"processedAt":1790970868847,"text":"School pick up, kids buy pumpkins, eat Maqloube , harvest fest today at school 5:30-7, reset at home, bath? \n\nCostco we need Talal milk, yogurt pouches, Yousef once upon a farm pouches and stone field yogurt pouches, ground beef, strawberries","updatedAt":1790970868847},"d-muvnjv0fv4meb":{"createdAt":1791229089471,"id":"d-muvnjv0fv4meb","processed":true,"processedAt":1791229098221,"text":"Trader Joe’s, pumpkin, backyard or stroll","updatedAt":1791229098221},"d-muvbm8z8koruj":{"createdAt":1791209045492,"id":"d-muvbm8z8koruj","processed":true,"processedAt":1791209067997,"text":"fold laundry, laundry load, pumkin carving, make kofta, trader joe's run, snacks, dinner, pick up kids from school 2:30, yousef nap 12, AI transformatio course","updatedAt":1791209067997}},"meta":{"main":{"dress":{"baby":"Warm layers + light jacket","big":"Long sleeves + windbreaker"},"id":"main","keyTimes":["Yousef nap: max 90 min","Leave for pickup: 2:30 PM","School pickup: 3:00 PM","Arabic Quran game: 6:30 PM","Bath & bedtime: 7:00 PM"],"stores":["Costco","Trader Joe's","Target","Walmart","Amazon","Aldi","Other"],"updatedAt":1790962703529}}};
+  const firstRun = !lsGet(LS.cache, null);
+  let S = Object.assign(emptyState(), lsGet(LS.cache, null) || clone(SEED));
+  if (firstRun) { try { localStorage.setItem(LS.cache, JSON.stringify(S)); localStorage.setItem(LS.migrated, 'true'); } catch (e) {} }
+  KINDS.forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
+  let pending = lsGet(LS.pending, {});           // "kind/id" -> object | null (delete), survives reloads until synced
+  let ui = Object.assign({ tab: 'home', sub: 'today', open: {}, showDone: false }, lsGet(LS.ui, {}));
+  let db = null, base = null, sample = null;
+  let mode = 'starting';                          // 'cloud' | 'local'
+  const srv = { tasksOpen: {}, tasksClosed: {}, projects: {}, grocery: {}, notes: {}, dumps: {}, meta: {} };
+  const firstSeen = new Set();
+  let migrated = false, flushing = false, flushTimer = null, writeError = '';
+  let review = null, editDress = false, confirmKey = null, confirmTimer = null;
+  let lastDay = today();
+
+  const saveUi = () => lsSet(LS.ui, ui);
+  const saveCache = () => lsSet(LS.cache, S);
+  const savePending = () => lsSet(LS.pending, pending);
+
+  // ---------- writes: one path for every change ----------
+  function stage(kind, obj) {
+    obj.updatedAt = Date.now();
+    S[kind][obj.id] = obj;
+    pending[kind + '/' + obj.id] = obj;
+  }
+  function unstage(kind, id) {
+    delete S[kind][id];
+    pending[kind + '/' + id] = null;
+  }
+  function commit() { savePending(); saveCache(); render(); scheduleFlush(); }
+  function put(kind, obj) { stage(kind, obj); commit(); }
+
+  function scheduleFlush(delay = 300) { clearTimeout(flushTimer); flushTimer = setTimeout(flush, delay); }
+  const refFor = key => { const i = key.indexOf('/'); return db.doc(`${base}/${key.slice(0, i)}/${key.slice(i + 1)}`); };
+
+  async function flush() {
+    if (!db || !base || flushing) return;
+    flushing = true; renderSync();
+    let retryLater = false;
+    try {
+      for (const k of Object.keys(pending)) {
+        if (!(k in pending)) continue;
+        const data = pending[k];
+        try {
+          if (data === null) await refFor(k).delete();
+          else await refFor(k).set(clone(data));
+          if (pending[k] === data) { delete pending[k]; savePending(); }
+          writeError = '';
+        } catch (e) {
+          const c = e && e.code;
+          if (c === 'quota_exceeded') { writeError = 'Storage full: changes kept on this device'; }
+          else if (c === 'invalid_argument' || c === 'transform_error') { writeError = 'Couldn\'t sync: changes kept on this device'; console.warn('write rejected', k, e); }
+          else { writeError = 'Offline: saved on this device, will sync'; retryLater = true; }
+          break;
+        }
+      }
+    } finally {
+      flushing = false;
+      renderSync();
+      if (retryLater) scheduleFlush(8000);
+      else if (!writeError && Object.keys(pending).length) scheduleFlush();
+    }
+  }
+
+  // ---------- reads: server snapshots + unsynced local changes ----------
+  function applyServer() {
+    const next = emptyState();
+    next.tasks = Object.assign({}, srv.tasksClosed, srv.tasksOpen);
+    ['projects', 'grocery', 'notes', 'dumps', 'meta'].forEach(k => { next[k] = Object.assign({}, srv[k]); });
+    for (const [k, v] of Object.entries(pending)) {
+      const i = k.indexOf('/'); const kind = k.slice(0, i); const id = k.slice(i + 1);
+      if (!next[kind]) continue;
+      if (v === null) delete next[kind][id]; else next[kind][id] = v;
+    }
+    S = next; saveCache(); render();
+  }
+  const snapMap = snap => { const m = {}; snap.docs.forEach(d => { if (d.exists) m[d.id] = Object.assign({}, d.data()); }); return m; };
+  function subscribe(name, query) {
+    query.onSnapshot(snap => {
+      srv[name] = snapMap(snap); firstSeen.add(name); applyServer(); maybeMigrate();
+    }, err => {
+      console.warn('subscription', name, err);
+      if (err && err.code === 'unavailable') setTimeout(() => subscribe(name, query), 4000);
+    });
+  }
+
+  // ---------- live Google + weather data ----------
+  const live = { weather: null, mail: null, cal: null, mailErr: '', calErr: '', authed: true };
+  async function getJson(url) {
+    const r = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+    if (r.status === 401) { const e = new Error('auth'); e.auth = true; throw e; }
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  }
+  async function loadLive() {
+    const jobs = [
+      getJson('/api/weather').then(d => { if (!d.error) live.weather = d; }).catch(() => {}),
+      getJson('/api/gmail').then(d => { live.mail = d.emails || []; live.mailErr = ''; })
+        .catch(e => { if (e.auth) live.authed = false; else live.mailErr = 'Couldn\'t load Gmail right now.'; }),
+      getJson('/api/calendar').then(d => { live.cal = d.events || []; live.calErr = ''; })
+        .catch(e => { if (e.auth) live.authed = false; else live.calErr = 'Couldn\'t load your calendar right now.'; })
+    ];
+    await Promise.all(jobs);
+    render();
+  }
+  const evDate = ev => ev.allDay ? String(ev.start).slice(0, 10) : ymd(new Date(ev.start));
+  const evTime = ev => ev.allDay ? 'All day' : new Date(ev.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const evMin = ev => { if (ev.allDay) return -1; const d = new Date(ev.start); return d.getHours() * 60 + d.getMinutes(); };
+  const eventsOn = d => (live.cal || []).filter(ev => evDate(ev) === d).sort((a, b) => evMin(a) - evMin(b));
+  const signInHtml = what => `<div class="not-connected"><span>Sign in again to load ${what}.</span><a href="/">Sign in ↗</a></div>`;
+  function renderLive() {
+    const w = live.weather;
+    $('weatherTemp').textContent = w ? `${w.temperature}°F · feels like ${w.feelsLike}°` : '';
+    $('weatherLine').textContent = w ? `${w.condition} in Rochester, MN` : 'Loading Rochester weather…';
+    let mh;
+    if (!live.authed) mh = signInHtml('Gmail');
+    else if (live.mailErr) mh = `<div class="empty">${esc(live.mailErr)}</div>`;
+    else if (!live.mail) mh = '<div class="empty">Loading unread email…</div>';
+    else if (!live.mail.length) mh = '<div class="empty">Inbox zero. No unread email.</div>';
+    else mh = live.mail.map(m => `<a class="mail-item" href="https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}" target="_blank" rel="noopener"><span class="subj">${esc(m.subject)}</span>${m.from ? `<span class="from">${esc(m.from)}</span>` : ''}</a>`).join('');
+    $('gmailList').innerHTML = mh;
+    const evs = eventsOn(today());
+    let ch = '';
+    if (!live.authed) ch = signInHtml('your calendar');
+    else if (live.calErr) ch = `<div class="empty">${esc(live.calErr)}</div>`;
+    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span></div>`).join('');
+    else if (live.cal) ch = '<div class="empty">Nothing on your calendar today.</div>';
+    $('calTodayBox').innerHTML = ch ? `<div class="card"><h2><span>📅 Calendar today</span><a class="h2-link" href="https://calendar.google.com" target="_blank" rel="noopener">Open ↗</a></h2>${ch}</div>` : '';
+  }
+
+  async function init() {
+    wireEvents();
+    render();
+    loadLive();
+    setInterval(loadLive, 10 * 60000);
+    setInterval(checkDay, 60000);
+    document.addEventListener('visibilitychange', checkDay);
+    $('dumpText').value = lsGet(LS.draft, '') || '';
+
+    if (!window.claude || typeof window.claude.use !== 'function') { goLocal(); return; }
+    window.claude.use('sample').then(s => { sample = s; renderHint(); }).catch(() => {});
+    let d = null, u = null, uid = null;
+    try { [d, u] = await Promise.all([window.claude.use('db'), window.claude.use('user')]); } catch (e) {}
+    if (u) { try { uid = await u.id(); } catch (e) {} }
+    if (!d || !uid) { goLocal(); return; }
+
+    db = d; base = `data/users/${uid}/fmd`; mode = 'cloud';
+    const col = n => db.collection(`${base}/${n}`);
+    subscribe('tasksOpen', col('tasks').where('status', 'in', ['todo', 'doing']));
+    subscribe('tasksClosed', col('tasks').where('status', 'in', ['done', 'dropped']).orderBy('updatedAt', 'desc').limit(500));
+    subscribe('projects', col('projects'));
+    subscribe('grocery', col('grocery').where('archived', '==', false));
+    subscribe('notes', col('notes'));
+    subscribe('dumps', col('dumps').where('processed', '==', false));
+    db.doc(`${base}/meta/main`).onSnapshot(s => {
+      srv.meta = s.exists ? { main: Object.assign({}, s.data()) } : {};
+      firstSeen.add('meta'); applyServer(); maybeMigrate();
+    }, e => console.warn('meta', e));
+    renderSync();
+    scheduleFlush(0);
+  }
+  function goLocal() { mode = 'local'; render(); maybeMigrate(true); }
+
+  function checkDay() {
+    if (today() !== lastDay) { lastDay = today(); render(); }
+  }
+
+  // ---------- one-time import from Dashboard v3 storage on this device ----------
+  function maybeMigrate(force) {
+    if (migrated) return;
+    if (!force && !['tasksOpen', 'tasksClosed', 'projects', 'grocery', 'meta'].every(n => firstSeen.has(n))) return;
+    migrated = true;
+    try { migrateV3(); } catch (e) { console.warn('migration', e); }
+  }
+  function migrateV3() {
+    if (lsGet(LS.migrated, false)) return;
+    let touched = false;
+
+    // Tasks: v3 kept one list per day. Group by title; the latest day decides done/open.
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('fmd-tasks-v3-')).sort();
+    const groups = new Map();
+    keys.forEach(k => {
+      const date = k.slice('fmd-tasks-v3-'.length);
+      let arr = [];
+      try { arr = JSON.parse(localStorage.getItem(k)) || []; } catch (e) {}
+      arr.forEach(t => {
+        const title = String(t.text || '').trim(); if (!title) return;
+        const key = norm(title);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push({ date, t, title });
+      });
+    });
+    const openTitles = new Set(Object.values(S.tasks).filter(isOpen).map(t => norm(t.title)));
+    groups.forEach((entries, key) => {
+      entries.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+      // keep every completed instance as history (one per day)
+      const seenDoneDays = new Set();
+      entries.filter(e => e.t.done).forEach(e => {
+        if (seenDoneDays.has(e.date)) return; seenDoneDays.add(e.date);
+        const id = `m3-${e.date}-${String(e.t.id).replace(/[^\w-]/g, '')}`;
+        if (S.tasks[id]) return;
+        const at = parseYmd(e.date); at.setHours(12);
+        stage('tasks', { id, title: e.title, category: CATS[e.t.category] ? e.t.category : 'home', projectId: null, date: e.date, time: e.t.time || null,
+          duration: null, priority: null, status: 'done', notes: '', createdAt: at.getTime(), completedAt: at.getTime(), source: 'migrated-v3' });
+        touched = true;
+      });
+      const last = entries[entries.length - 1];
+      if (last.t.done || openTitles.has(key)) return;
+      // open: carried from the first undone day after the last completion
+      let lastDoneIdx = -1; entries.forEach((e, i) => { if (e.t.done) lastDoneIdx = i; });
+      const first = entries[lastDoneIdx + 1];
+      const id = `m3-${first.date}-${String(first.t.id).replace(/[^\w-]/g, '')}`;
+      if (S.tasks[id]) return;
+      stage('tasks', { id, title: first.title, category: CATS[first.t.category] ? first.t.category : 'home', projectId: null, date: first.date,
+        time: first.t.time || null, duration: null, priority: null, status: 'todo', notes: '', createdAt: parseYmd(first.date).getTime(), completedAt: null, source: 'migrated-v3' });
+      openTitles.add(key); touched = true;
+    });
+
+    // Projects: merge v3 subtasks into same-named projects.
+    const oldProjects = lsGet('fmd-projects-v3', null);
+    if (Array.isArray(oldProjects)) {
+      const SUMMER_OLD = ['plan summer activities', 'book camps outings', 'prepare budget'];
+      oldProjects.forEach(op => {
+        let name = String(op.name || '').trim(); if (!name) return;
+        const isSummer = /summer\s*2026/i.test(name);
+        if (isSummer) name = '☀️ Summer 2026 Picture Book';
+        const plain = norm(name);
+        let p = Object.values(S.projects).find(x => norm(x.name) === plain || (isSummer && /summer 2026/.test(norm(x.name))));
+        if (!p) { p = { id: newId('p'), name, category: 'self', status: 'active', notes: '', createdAt: Date.now() }; stage('projects', p); touched = true; }
+        (op.tasks || []).forEach(title => {
+          if (isSummer && SUMMER_OLD.includes(norm(title))) return;
+          const exists = Object.values(S.tasks).some(t => t.projectId === p.id && norm(t.title) === norm(title));
+          if (exists) return;
+          stage('tasks', { id: newId('t'), title: String(title), category: p.category || 'self', projectId: p.id, date: null, time: null, duration: null,
+            priority: null, status: 'todo', notes: '', createdAt: Date.now(), completedAt: null, source: 'migrated-v3' });
+          touched = true;
+        });
+      });
+    }
+
+    // Grocery: v3 items were never checkable, so all come in unchecked.
+    const oldGrocery = lsGet('fmd-grocery-v3', null);
+    if (Array.isArray(oldGrocery)) {
+      oldGrocery.forEach(g => {
+        const store = String(g.name || '').replace(/^[^\p{L}\p{N}]+/u, '').trim() || 'Other';
+        (g.items || []).forEach(item => {
+          const dup = Object.values(S.grocery).some(x => !x.archived && x.store === store && norm(x.item) === norm(item));
+          if (dup) return;
+          stage('grocery', { id: newId('g'), item: String(item), store, checked: false, archived: false, quantity: null, notes: '', createdAt: Date.now() });
+          touched = true;
+        });
+        if (!stores().includes(store)) { setMetaStaged({ stores: [...stores(), store] }); touched = true; }
+      });
+    }
+
+    lsSet(LS.migrated, true);
+    if (touched) commit();
+  }
+
+  // ---------- domain helpers ----------
+  const meta = () => S.meta.main || {};
+  function setMetaStaged(patch) { stage('meta', Object.assign({ id: 'main' }, clone(meta()), patch)); }
+  function setMeta(patch) { setMetaStaged(patch); commit(); }
+  function stores() {
+    const list = Array.isArray(meta().stores) && meta().stores.length ? meta().stores.slice() : DEFAULT_STORES.slice();
+    Object.values(S.grocery).forEach(g => { if (!g.archived && g.store && !list.includes(g.store)) list.push(g.store); });
+    return list;
+  }
+  function makeTask(f) {
+    return { id: newId('t'), title: f.title, category: CATS[f.category] ? f.category : 'home', projectId: f.projectId || null,
+      date: f.date || null, time: f.time || null, duration: null, priority: null, status: 'todo', notes: '',
+      createdAt: Date.now(), completedAt: null, source: f.source || 'manual' };
+  }
+  function setTask(id, patch) {
+    const t = S.tasks[id]; if (!t) return;
+    const n = Object.assign({}, t, patch);
+    if (patch.status === 'done' && t.status !== 'done') n.completedAt = Date.now();
+    if (patch.status && patch.status !== 'done') n.completedAt = null;
+    put('tasks', n);
+  }
+  function moveTo(id, date) {
+    const t = S.tasks[id]; if (!t) return;
+    setTask(id, { date, originalDate: t.originalDate || t.date || null, status: t.status === 'dropped' ? 'todo' : t.status });
+  }
+  function views() {
+    const td = today(); const all = Object.values(S.tasks);
+    return {
+      td,
+      carry: all.filter(t => isOpen(t) && t.date && t.date < td).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : byTime(a, b)),
+      todayOpen: all.filter(t => isOpen(t) && t.date === td).sort(byTime),
+      anytime: all.filter(t => isOpen(t) && !t.date && !t.projectId).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
+      doneToday: all.filter(t => t.status === 'done' && t.completedAt && ymd(new Date(t.completedAt)) === td).sort((a, b) => b.completedAt - a.completedAt)
+    };
+  }
+  const projName = id => { const p = S.projects[id]; return p ? p.name : ''; };
+
+  // ---------- render ----------
+  function render() {
+    const keep = rememberFocus();
+    renderHeader(); renderTabs(); renderHint(); renderSync();
+    renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
+    renderSchedule(); renderWeek(); renderProjects(); renderIdeas(); renderGrocery(); renderLive();
+    restoreFocus(keep);
+  }
+  function rememberFocus() {
+    const a = document.activeElement;
+    if (!a || !a.id || !/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return null;
+    return { id: a.id, value: a.value, s: a.selectionStart, e: a.selectionEnd };
+  }
+  function restoreFocus(k) {
+    if (!k) return; const el = $(k.id); if (!el || el === document.activeElement) return;
+    el.value = k.value; el.focus();
+    try { if (k.s != null) el.setSelectionRange(k.s, k.e); } catch (e) {}
+  }
+
+  function renderSync() {
+    const el = $('sync'); const n = Object.keys(pending).length;
+    el.classList.remove('warn');
+    if (writeError) { el.textContent = writeError; el.classList.add('warn'); }
+    else if (mode === 'starting') el.textContent = 'Loading…';
+    else if (mode === 'local') el.textContent = '✓ Saved on this device';
+    else if (n || flushing) el.textContent = 'Saving…';
+    else el.textContent = '✓ Synced';
+  }
+  function renderHeader() {
+    const d = new Date();
+    $('dayName').textContent = d.toLocaleDateString('en-US', { weekday: 'long' });
+    $('dateStr').textContent = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const dc = meta().dress || {};
+    const big = dc.big || ''; const baby = dc.baby || '';
+    $('dress').innerHTML = `
+      <div class="dc-top"><strong>👕 Today's dress code</strong><button class="link-btn" data-act="dress-edit">${editDress ? 'Done' : 'Edit'}</button></div>
+      <div class="dc-grid">
+        <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="e.g. sweatshirt + light jacket">` : `<div class="what">${esc(big || 'Tap Edit to set')}</div>`}</div>
+        <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="e.g. onesie + fleece + hat">` : `<div class="what">${esc(baby || 'Tap Edit to set')}</div>`}</div>
+      </div>`;
+  }
+  function renderTabs() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab));
+    document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === ui.tab));
+    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
+    $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
+    $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
+    const gc = Object.values(S.grocery).filter(g => !g.archived && !g.checked).length;
+    const c = $('groceryCount'); c.textContent = gc; c.classList.toggle('hidden', !gc);
+  }
+  function renderHint() {
+    $('dumpHint').textContent = sample ? 'Claude sorts it into tasks, groceries and ideas. You review before anything is added.'
+      : 'Sorted with simple rules here. You review before anything is added.';
+  }
+
+  function taskRow(t, opts = {}) {
+    const done = t.status === 'done';
+    const metaBits = [];
+    if (t.time) metaBits.push(esc(t.time));
+    if (opts.showDate && t.date) metaBits.push(esc(dayLabel(t.date)));
+    if (t.status === 'doing') metaBits.push('in progress');
+    const badges = [];
+    const from = t.date && t.date < today() ? t.date : (t.originalDate && t.date && t.originalDate < t.date ? t.originalDate : null);
+    if (from && !done) badges.push(`<span class="badge">from ${esc(dayLabel(from))}</span>`);
+    if (t.projectId && opts.showProject !== false && S.projects[t.projectId]) badges.push(`<span class="badge proj">${esc(projName(t.projectId))}</span>`);
+    const acts = [];
+    if (!done && opts.today) acts.push(`<button class="mini" data-act="to-today" data-id="${esc(t.id)}">Today</button>`);
+    if (!done && opts.tomorrow !== false) acts.push(`<button class="mini" data-act="to-tomorrow" data-id="${esc(t.id)}" aria-label="Move to tomorrow">Tmrw</button>`);
+    if (!done && opts.drop) acts.push(`<button class="mini ghost" data-act="drop" data-id="${esc(t.id)}" aria-label="Drop task">✕</button>`);
+    return `<div class="task-item ${done ? 'done' : ''}" style="border-left-color:${catColor(t.category)}">
+      <input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${done ? 'checked' : ''} aria-label="Done">
+      <span class="text"><span class="t">${badges.join('')}${esc(t.title)}</span>${metaBits.length ? `<span class="meta">${metaBits.join(' · ')}</span>` : ''}</span>
+      ${acts.join('')}
+    </div>`;
+  }
+
+  function renderWaiting() {
+    const waiting = Object.values(S.dumps).filter(d => !d.processed && (!review || review.dumpId !== d.id)).sort((a, b) => a.createdAt - b.createdAt);
+    $('waitingBox').innerHTML = waiting.length ? `<div class="card"><h2>📝 Saved brain dumps to sort (${waiting.length})</h2>
+      ${waiting.map(d => `<div class="note-item"><span>${esc(d.text.length > 140 ? d.text.slice(0, 140) + '…' : d.text)}</span>
+        <button class="mini primary" data-act="dump-retry" data-id="${esc(d.id)}">Sort</button>
+        <button class="mini ghost" data-act="dump-dismiss" data-id="${esc(d.id)}" aria-label="Dismiss">${confirmKey === 'dd-' + d.id ? 'Sure?' : '✕'}</button></div>`).join('')}
+    </div>` : '';
+  }
+
+  function renderCarry() {
+    const { carry } = views();
+    if (!carry.length) { $('carryBox').innerHTML = ''; return; }
+    $('carryBox').innerHTML = `<div class="card carry"><h2><span>↪ Carried over (${carry.length})</span>
+      <span style="display:flex;gap:6px"><button class="mini" data-act="carry-all-today">All to today</button><button class="mini" data-act="carry-drop-all">${confirmKey === 'carry-drop' ? 'Tap again' : 'Drop all'}</button></span></h2>
+      ${carry.map(t => taskRow(t, { today: true, drop: true })).join('')}
+      <p class="muted" style="margin-top:4px">Nothing here disappears until you check it, move it, or drop it.</p></div>`;
+  }
+
+  function renderToday() {
+    const { todayOpen, doneToday } = views();
+    let html = todayOpen.length ? todayOpen.map(t => taskRow(t)).join('') : '<div class="empty">Nothing scheduled for today yet. Brain dump above or add one in Schedule.</div>';
+    if (doneToday.length) {
+      html += `<button class="toggle-line" data-act="toggle-done">${ui.showDone ? 'Hide' : 'Show'} ${doneToday.length} done today</button>`;
+      if (ui.showDone) html += doneToday.map(t => taskRow(t)).join('');
+    }
+    $('todayList').innerHTML = html;
+  }
+
+  function renderAnytime() {
+    const { anytime } = views();
+    $('anytimeBox').innerHTML = anytime.length ? `<div class="card"><h2>🗂 Anytime (${anytime.length})</h2>
+      ${anytime.map(t => taskRow(t, { today: true })).join('')}</div>` : '';
+  }
+
+  function renderSuggest() {
+    const { carry, todayOpen, anytime } = views();
+    const out = [];
+    const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
+    const next = todayOpen.find(t => t.time && timeMin(t.time) < 9000 && timeMin(t.time) >= nowMin);
+    if (next) out.push(`Next up: ${esc(next.title)} at ${esc(next.time)}.`);
+    if (carry.length) out.push(`${carry.length} ${carry.length === 1 ? 'item is' : 'items are'} carried over. Pick what still matters today and drop the rest.`);
+    const byStore = {};
+    Object.values(S.grocery).forEach(g => { if (!g.archived && !g.checked) byStore[g.store] = (byStore[g.store] || 0) + 1; });
+    const st = Object.keys(byStore);
+    if (st.length >= 2) out.push(`Shopping: ${st.map(s => `${esc(s)} (${byStore[s]})`).join(', ')}. Worth grouping into one trip.`);
+    else if (st.length === 1) out.push(`Shopping: ${byStore[st[0]]} item${byStore[st[0]] > 1 ? 's' : ''} waiting at ${esc(st[0])}.`);
+    const errands = todayOpen.filter(t => t.category === 'errands');
+    if (errands.length >= 2) out.push(`${errands.length} errands today could go in one outing.`);
+    if (!todayOpen.length && anytime.length) out.push(`Nothing is scheduled, and ${anytime.length} anytime ${anytime.length === 1 ? 'task is' : 'tasks are'} ready if you get a window.`);
+    $('suggestBox').innerHTML = out.length ? `<div class="suggestions"><strong>💡 Suggestions</strong>${out.map(s => `<div>${s}</div>`).join('')}</div>` : '';
+  }
+
+  function renderKeyTimes() {
+    const kt = Array.isArray(meta().keyTimes) ? meta().keyTimes : [];
+    $('keyTimes').innerHTML = kt.length ? kt.map((k, i) => `<div class="key-row"><span>${esc(k)}</span><button class="mini ghost" data-act="kt-del" data-i="${i}" aria-label="Remove">✕</button></div>`).join('')
+      : '<div class="empty">Add the anchors of your day: naps, pickup, bedtime.</div>';
+  }
+
+  // ---------- review ----------
+  function renderReview() {
+    const el = $('reviewBox');
+    if (!review) { el.innerHTML = ''; return; }
+    if (review.loading) {
+      el.innerHTML = `<div class="card review"><h2>Organizing…</h2><p class="muted">Your words are already saved, so nothing is lost if this takes a moment.</p></div>`;
+      return;
+    }
+    const td = today(), tm = addDays(td, 1);
+    const projOpts = sel => `<option value="">No project</option>${Object.values(S.projects).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).map(p => `<option value="${esc(p.id)}" ${sel === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}`;
+    const dateOpts = d => {
+      const opts = [['', 'No date'], [td, 'Today'], [tm, 'Tomorrow']];
+      if (d && d !== td && d !== tm) opts.push([d, dayLabel(d)]);
+      return opts.map(([v, l]) => `<option value="${v}" ${(d || '') === v ? 'selected' : ''}>${l}</option>`).join('');
+    };
+    const tasks = review.tasks.map((it, i) => `<div class="rv-row ${it.include ? '' : 'off'}" style="border-left-color:${catColor(it.category)}">
+        <input type="checkbox" data-act="rv-inc" data-kind="tasks" data-i="${i}" ${it.include ? 'checked' : ''} aria-label="Include">
+        <input type="text" id="rvt-${i}" data-rv="title" data-kind="tasks" data-i="${i}" value="${esc(it.title)}">
+        <select data-rv="category" data-kind="tasks" data-i="${i}" aria-label="Category">${CAT_KEYS.map(c => `<option value="${c}" ${it.category === c ? 'selected' : ''}>${CATS[c].label}</option>`).join('')}</select>
+        <select data-rv="date" data-kind="tasks" data-i="${i}" aria-label="Day">${dateOpts(it.date)}</select>
+        ${it.time ? `<span class="muted">${esc(it.time)}</span>` : ''}
+        <select data-rv="projectId" data-kind="tasks" data-i="${i}" aria-label="Project">${it.newProject ? `<option value="__new" selected>New: ${esc(it.newProject)}</option>` : ''}${projOpts(it.projectId)}</select>
+        ${it.dupOf ? `<div class="rv-note">Already on your list as "${esc(it.dupOf)}", so it's skipped. Tick it to add anyway.</div>` : ''}
+      </div>`).join('');
+    const storeList = stores();
+    const groc = review.grocery.map((it, i) => `<div class="rv-row ${it.include ? '' : 'off'}" style="border-left-color:var(--errands)">
+        <input type="checkbox" data-act="rv-inc" data-kind="grocery" data-i="${i}" ${it.include ? 'checked' : ''} aria-label="Include">
+        <input type="text" id="rvg-${i}" data-rv="item" data-kind="grocery" data-i="${i}" value="${esc(it.item)}">
+        <select data-rv="store" data-kind="grocery" data-i="${i}" aria-label="Store">${storeList.map(s => `<option ${it.store === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+        ${it.dup ? `<div class="rv-note">Already on the ${esc(it.store)} list.</div>` : ''}
+      </div>`).join('');
+    const ideas = review.ideas.map((it, i) => `<div class="rv-row ${it.include ? '' : 'off'}" style="border-left-color:var(--self)">
+        <input type="checkbox" data-act="rv-inc" data-kind="ideas" data-i="${i}" ${it.include ? 'checked' : ''} aria-label="Include">
+        <input type="text" id="rvi-${i}" data-rv="text" data-kind="ideas" data-i="${i}" value="${esc(it.text)}">
+        <select data-rv="projectId" data-kind="ideas" data-i="${i}" aria-label="Project">${projOpts(it.projectId)}</select>
+      </div>`).join('');
+    const n = review.tasks.filter(x => x.include).length + review.grocery.filter(x => x.include).length + review.ideas.filter(x => x.include).length;
+    el.innerHTML = `<div class="card review"><h2>Here's how I sorted it</h2>
+      <p class="muted">${review.how === 'claude' ? 'Sorted by Claude.' : 'Sorted with simple rules.'} Adjust anything, then add.</p>
+      ${review.tasks.length ? `<div class="rv-sec">Tasks</div>${tasks}` : ''}
+      ${review.grocery.length ? `<div class="rv-sec">Grocery</div>${groc}` : ''}
+      ${review.ideas.length ? `<div class="rv-sec">Ideas</div>${ideas}` : ''}
+      ${!n && !review.tasks.length && !review.grocery.length && !review.ideas.length ? '<div class="empty">I couldn\'t find separate items. Your note is saved below.</div>' : ''}
+      <div class="rv-actions">
+        <button class="btn-add" data-act="rv-commit" ${n ? '' : 'disabled'}>Add ${n} to dashboard</button>
+        <button class="btn-secondary" data-act="rv-cancel">Not now</button>
+      </div></div>`;
+  }
+
+  function buildPrompt(text) {
+    const td = today();
+    const projects = Object.values(S.projects).map(p => `${p.id}: ${p.name}`).join('\n') || '(none)';
+    const open = Object.values(S.tasks).filter(isOpen).slice(0, 120).map(t => `${t.id}: ${t.title}`).join('\n') || '(none)';
+    return `You organize a busy mom's brain dump into structured items for her personal dashboard.
+Today is ${parseYmd(td).toLocaleDateString('en-US', { weekday: 'long' })} ${td}.
+Household: Farah (mom), Omar (husband), sons Hamad (4.5), Talal (3), Yousef (6 months).
+Categories: kids, work, home, errands, self, activity, omar.
+Grocery stores: ${stores().join(', ')}.
+Existing projects (id: name):
+${projects}
+Tasks already open on her list (id: title):
+${open}
+
+Brain dump:
+"""
+${text}
+"""
+
+Return ONLY a JSON object, no other text:
+{"tasks":[{"title":string,"category":string,"projectId":string|null,"newProject":string|null,"date":"YYYY-MM-DD"|null,"time":"h:mm AM"|null,"duplicateOf":string|null}],
+ "grocery":[{"item":string,"store":string}],
+ "ideas":[{"text":string,"projectId":string|null}]}
+
+Rules:
+- Split into separate items. Keep her wording; short titles, starting with a verb where natural.
+- Food and household consumables to buy (yogurt, diapers, wipes, chicken) go in "grocery". Use the store she named; otherwise the most likely of the listed stores; otherwise "Other". A bare store name like "Costco" with nothing else is an errands task.
+- Non-grocery purchases (shoes, gifts) are errands tasks.
+- Link to an existing project by id when the item clearly belongs to it. Use "newProject" only for a clearly new ongoing body of work.
+- Dates: set only when stated or clearly implied. If the dump is labelled for a day ("brain dump Thursday") or says today, use that date for its tasks. Resolve "tomorrow" and weekday names to the next such date. Otherwise null.
+- Time only when she states one. Never invent details.
+- "duplicateOf": the id of an open task that means the same thing, else null.
+- Ideas are things to remember that aren't actions yet.`;
+  }
+
+  const GROCERY_WORDS = /\b(yogh?urt|milk|eggs?|bread|berr(y|ies)|blueberr|strawberr|chicken|beef|turkey|fish|rice|cheese|fruit|apples?|bananas?|grapes|water|oil|diapers?|wipes|formula|puffs|pasta|tomato|onions?|garlic|potato|cucumber|lettuce|spinach|butter|labneh|hummus|zaatar|za'atar|olive|dates|flour|sugar|cereal|oats|snacks?|juice|coffee|tea|paper towels?|toilet paper|detergent|soap|shampoo)\b/i;
+  const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  function guessCategory(s) {
+    if (/\bomar\b/i.test(s)) return 'omar';
+    if (/hamad|talal|yousef|yusuf|\bkids?\b|school|daycare|pediatric|diaper|nap|\brms\b|\bot\b|soccer|nanny/i.test(s)) return 'kids';
+    if (/workwave|\bwork\b|email|portfolio|course|meeting|interview|onboard|resume/i.test(s)) return 'work';
+    if (/shower|workout|gym|\bread\b|rest\b|sleep|walk|pray|nails|hair/i.test(s)) return 'self';
+    if (/park|library|museum|outing|picking|play ?date|class\b|zoo/i.test(s)) return 'activity';
+    if (/\bcall\b|walgreens|pharmacy|pick ?up|drop ?off|\border\b|\bbuy\b|return|post office|bank|appointment|costco|target|walmart|aldi|amazon/i.test(s)) return 'errands';
+    return 'home';
+  }
+  function guessDate(s, dumpDate) {
+    const l = s.toLowerCase(); const td = today();
+    if (/\btomorrow\b/.test(l)) return addDays(td, 1);
+    if (/\btoday\b|\btonight\b|this morning/.test(l)) return td;
+    for (let i = 0; i < 7; i++) {
+      if (new RegExp('\\b' + WEEKDAYS[i] + '\\b').test(l)) { const cur = new Date().getDay(); const diff = (i - cur + 7) % 7; return addDays(td, diff); }
+    }
+    return dumpDate;
+  }
+  function localParse(text) {
+    let s = String(text);
+    let dumpDate = null;
+    const head = s.match(/^\s*brain\s*dump\s*([a-z]*)\s*:/i);
+    if (head) { dumpDate = guessDate(head[1] || '', null) || today(); s = s.slice(head[0].length); }
+    const parts = s.split(/\n|,|;|•|\.\s+/).map(x => x.trim().replace(/^[-*\d.)\s]+/, '').replace(/\.$/, '')).filter(x => x.length > 1);
+    const storeList = stores();
+    const out = { tasks: [], grocery: [], ideas: [] };
+    parts.forEach(p => {
+      const storeHit = storeList.find(st => p.toLowerCase().includes(st.toLowerCase()));
+      const bare = storeHit && norm(p) === norm(storeHit);
+      if (!bare && (GROCERY_WORDS.test(p) && !/\b(call|order shoes|clean|fold)\b/i.test(p))) {
+        const item = p.replace(/^(buy|get|grab|need|pick up|order)\s+/i, '').replace(new RegExp('\\s*(at|from|to|@)?\\s*' + (storeHit || '\\b\\B') + '\\b', 'i'), '').trim();
+        item.split(/\s+and\s+/i).forEach(it => { if (it) out.grocery.push({ item: it, store: storeHit || 'Other' }); });
+        return;
+      }
+      if (/^(idea|maybe|someday|remember)\b[:\s]/i.test(p)) { out.ideas.push({ text: p.replace(/^(idea|maybe|someday|remember)\b[:\s]*/i, ''), projectId: null }); return; }
+      const proj = Object.values(S.projects).find(pr => {
+        const words = norm(pr.name).split(' ').filter(w => w.length > 3 && !['game', 'project', 'with', 'outing'].includes(w));
+        return words.some(w => norm(p).includes(w));
+      });
+      out.tasks.push({ title: bare ? `${storeHit} run` : p.charAt(0).toUpperCase() + p.slice(1), category: proj ? (proj.category || guessCategory(p)) : guessCategory(p),
+        projectId: proj ? proj.id : null, newProject: null, date: guessDate(p, dumpDate), time: null, duplicateOf: null });
+    });
+    return out;
+  }
+  function normalizeReview(raw, dumpId, how) {
+    const storeList = stores();
+    const openByNorm = new Map(Object.values(S.tasks).filter(isOpen).map(t => [norm(t.title), t]));
+    const dateOk = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
+    const tasks = (Array.isArray(raw.tasks) ? raw.tasks : []).filter(t => t && t.title).map(t => {
+      const dup = (t.duplicateOf && S.tasks[t.duplicateOf] && isOpen(S.tasks[t.duplicateOf])) ? S.tasks[t.duplicateOf] : openByNorm.get(norm(t.title));
+      return { title: String(t.title).trim(), category: CATS[t.category] ? t.category : guessCategory(t.title),
+        projectId: t.projectId && S.projects[t.projectId] ? t.projectId : null,
+        newProject: !t.projectId && t.newProject ? String(t.newProject).trim() : null,
+        date: dateOk(t.date), time: t.time ? String(t.time) : null, dupOf: dup ? dup.title : null, include: !dup };
+    });
+    const grocery = (Array.isArray(raw.grocery) ? raw.grocery : []).filter(g => g && g.item).map(g => {
+      const store = storeList.find(s => s.toLowerCase() === String(g.store || '').toLowerCase()) || 'Other';
+      const dup = Object.values(S.grocery).some(x => !x.archived && !x.checked && x.store === store && norm(x.item) === norm(g.item));
+      return { item: String(g.item).trim(), store, dup, include: !dup };
+    });
+    const ideas = (Array.isArray(raw.ideas) ? raw.ideas : []).filter(i => i && i.text).map(i => ({
+      text: String(i.text).trim(), projectId: i.projectId && S.projects[i.projectId] ? i.projectId : null, include: true }));
+    return { dumpId, how, tasks, grocery, ideas, loading: false };
+  }
+  async function sortDump(dump) {
+    review = { dumpId: dump.id, loading: true }; render();
+    let raw = null, how = 'rules';
+    if (sample) {
+      try { raw = await sample.json(buildPrompt(dump.text), { modelTier: 'quick' }); how = 'claude'; }
+      catch (e) { if (e && e.code === 'not_granted') { sample = null; } raw = null; }
+    }
+    if (!raw || typeof raw !== 'object') { raw = localParse(dump.text); how = 'rules'; }
+    if (!review || review.dumpId !== dump.id) return;
+    review = normalizeReview(raw, dump.id, how);
+    render();
+  }
+  function commitReview() {
+    if (!review || review.loading) return;
+    const madeProjects = {};
+    review.tasks.filter(t => t.include && t.title).forEach(t => {
+      let pid = t.projectId;
+      if (!pid && t.newProject) {
+        const key = norm(t.newProject);
+        const existing = Object.values(S.projects).find(p => norm(p.name) === key);
+        if (existing) pid = existing.id;
+        else if (madeProjects[key]) pid = madeProjects[key];
+        else { const p = { id: newId('p'), name: t.newProject, category: t.category, status: 'active', notes: '', createdAt: Date.now() }; stage('projects', p); pid = madeProjects[key] = p.id; }
+      }
+      stage('tasks', makeTask({ title: t.title, category: t.category, projectId: pid, date: t.date, time: t.time, source: 'brain-dump' }));
+    });
+    review.grocery.filter(g => g.include && g.item).forEach(g => {
+      stage('grocery', { id: newId('g'), item: g.item, store: g.store, checked: false, archived: false, quantity: null, notes: '', createdAt: Date.now() });
+    });
+    review.ideas.filter(i => i.include && i.text).forEach(i => {
+      stage('notes', { id: newId('n'), text: i.text, projectId: i.projectId || null, createdAt: Date.now() });
+    });
+    const d = S.dumps[review.dumpId];
+    if (d) stage('dumps', Object.assign({}, d, { processed: true, processedAt: Date.now() }));
+    review = null;
+    commit();
+  }
+
+  // ---------- schedule ----------
+  function renderSchedule() {
+    const sel = $('ntCat');
+    if (!sel.options.length) sel.innerHTML = CAT_KEYS.map(c => `<option value="${c}">${CATS[c].label}</option>`).join('');
+    const { carry, todayOpen, doneToday } = views();
+    const set = [...carry, ...todayOpen, ...doneToday];
+    $('countTodo').textContent = todayOpen.length;
+    $('countDelayed').textContent = carry.length;
+    $('countDone').textContent = doneToday.length;
+
+    // donut by category, real segments
+    const counts = {}; set.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
+    const total = set.length; const C = 2 * Math.PI * 45; let off = 0;
+    let svg = `<circle cx="60" cy="60" r="45" fill="none" style="stroke:var(--border)" stroke-width="20"></circle>`;
+    Object.entries(counts).forEach(([c, n]) => {
+      const len = (n / total) * C;
+      svg += `<circle cx="60" cy="60" r="45" fill="none" stroke="${catColor(c)}" stroke-width="20" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"></circle>`;
+      off += len;
+    });
+    const pct = total ? Math.round(doneToday.length / total * 100) : 0;
+    svg += `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${pct}%</text><text x="60" y="74" text-anchor="middle" font-size="9" style="fill:var(--muted)">done</text>`;
+    $('donut').innerHTML = svg;
+    $('donutLegend').innerHTML = Object.keys(counts).length
+      ? Object.entries(counts).map(([c, n]) => `<div class="legend-item"><div class="legend-color" style="background:${catColor(c)}"></div><span><span class="legend-count">${n}</span> ${esc((CATS[c] || {}).label || c)}</span></div>`).join('')
+      : '<div class="empty">No tasks today yet.</div>';
+
+    const card = (t, col) => {
+      const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
+      const id = esc(t.id);
+      let acts = '';
+      if (col === 'todo') acts = `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button><button class="mini" data-act="to-tomorrow" data-id="${id}">Tmrw</button>`;
+      if (col === 'doing') acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Back</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button>`;
+      if (col === 'done') acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Undo</button>`;
+      return `<div class="kcard ${col === 'done' ? 'done' : ''}" style="border-left-color:${catColor(t.category)}">
+        <div class="t">${from}${esc(t.title)}</div>
+        <div class="meta">${[t.time, (CATS[t.category] || {}).label, t.projectId ? projName(t.projectId) : ''].filter(Boolean).map(esc).join(' · ')}</div>
+        <div class="acts">${acts}</div></div>`;
+    };
+    const open = [...carry, ...todayOpen];
+    const todo = open.filter(t => t.status === 'todo'), doing = open.filter(t => t.status === 'doing');
+    $('kanban').innerHTML = `
+      <div class="kcol"><h3><span>To Do</span><span>${todo.length}</span></h3>${todo.map(t => card(t, 'todo')).join('') || '<div class="empty">Clear.</div>'}</div>
+      <div class="kcol"><h3><span>In Progress</span><span>${doing.length}</span></h3>${doing.map(t => card(t, 'doing')).join('') || '<div class="empty">Nothing started.</div>'}</div>
+      <div class="kcol"><h3><span>Done</span><span>${doneToday.length}</span></h3>${doneToday.map(t => card(t, 'done')).join('') || '<div class="empty">Checked items land here.</div>'}</div>`;
+  }
+
+  function renderWeek() {
+    const td = today(); const all = Object.values(S.tasks); const { carry } = views();
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(td, i);
+      const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
+      const evs = eventsOn(d);
+      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:var(--accent)"></span><span>📅 ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+      html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${items.filter(isOpen).length || ''}</span></div>
+        ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
+        ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
+      </div>`;
+    }
+    $('weekList').innerHTML = html;
+  }
+
+  // ---------- projects ----------
+  function renderProjects() {
+    const projects = Object.values(S.projects).filter(p => p.status !== 'archived').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.name).localeCompare(b.name));
+    if (!projects.length) { $('projectsList').innerHTML = '<div class="empty">No projects yet.</div>'; return; }
+    $('projectsList').innerHTML = projects.map(p => {
+      const tasks = Object.values(S.tasks).filter(t => t.projectId === p.id && t.status !== 'dropped');
+      const done = tasks.filter(t => t.status === 'done').length;
+      const open = tasks.filter(isOpen).sort((a, b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : (a.createdAt || 0) - (b.createdAt || 0));
+      const closed = tasks.filter(t => t.status === 'done').sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+      const notes = Object.values(S.notes).filter(n => n.projectId === p.id);
+      const isOpenAcc = !!ui.open['p-' + p.id];
+      const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+      return `<button class="accordion-header ${isOpenAcc ? 'active' : ''}" data-act="acc" data-key="p-${esc(p.id)}" aria-expanded="${isOpenAcc}">
+          <span>${esc(p.name)}</span><span class="right">${tasks.length ? `${done}/${tasks.length}<span class="progress"><i style="width:${pct}%"></i></span>` : ''}<span>${isOpenAcc ? '▲' : '▼'}</span></span></button>
+        ${isOpenAcc ? `<div class="accordion-content">
+          ${open.map(t => taskRow(t, { showProject: false, showDate: true, today: t.date !== today(), tomorrow: false })).join('')}
+          ${closed.map(t => taskRow(t, { showProject: false })).join('')}
+          ${!tasks.length ? '<div class="empty">No steps yet.</div>' : ''}
+          ${notes.map(n => `<div class="note-item"><span>💡 ${esc(n.text)}</span><button class="mini ghost" data-act="note-del" data-id="${esc(n.id)}" aria-label="Remove idea">${confirmKey === 'nd-' + n.id ? 'Sure?' : '✕'}</button></div>`).join('')}
+          <div class="add-row"><input type="text" id="pa-${esc(p.id)}" data-enter="proj-add" data-id="${esc(p.id)}" placeholder="Add a step…"></div>
+        </div>` : ''}`;
+    }).join('');
+  }
+  function renderIdeas() {
+    const notes = Object.values(S.notes).filter(n => !n.projectId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    $('ideasList').innerHTML = notes.length ? notes.map(n => `<div class="note-item"><span>${esc(n.text)}</span>
+      <button class="mini" data-act="note-task" data-id="${esc(n.id)}">Make task</button>
+      <button class="mini ghost" data-act="note-del" data-id="${esc(n.id)}" aria-label="Remove idea">${confirmKey === 'nd-' + n.id ? 'Sure?' : '✕'}</button></div>`).join('')
+      : '<div class="empty">Ideas from your brain dump land here without becoming tasks.</div>';
+  }
+
+  // ---------- grocery ----------
+  function renderGrocery() {
+    const list = stores();
+    const gs = $('gStore');
+    if (document.activeElement !== gs) {
+      const cur = gs.value || ui.store || 'Other';
+      gs.innerHTML = list.map(s => `<option ${s === cur ? 'selected' : ''}>${esc(s)}</option>`).join('');
+    }
+    const items = Object.values(S.grocery).filter(g => !g.archived);
+    $('groceryList').innerHTML = list.map((s, si) => {
+      const mine = items.filter(g => g.store === s);
+      const open = mine.filter(g => !g.checked).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      const checked = mine.filter(g => g.checked);
+      const accOpen = ui.open['g-' + s] ?? open.length > 0;
+      return `<button class="accordion-header ${accOpen ? 'active' : ''}" data-act="acc" data-key="g-${esc(s)}" aria-expanded="${accOpen}">
+          <span>${STORE_ICON[s] || '🏪'} ${esc(s)}</span><span class="right">${open.length ? open.length + ' to get' : ''}<span>${accOpen ? '▲' : '▼'}</span></span></button>
+        ${accOpen ? `<div class="accordion-content">
+          ${open.map(g => grocRow(g)).join('')}${checked.map(g => grocRow(g)).join('')}
+          ${!mine.length ? '<div class="empty">Nothing on this list.</div>' : ''}
+          <div class="add-row"><input type="text" id="ga-${si}" data-enter="groc-add" data-si="${si}" placeholder="Add to ${esc(s)}…"></div>
+          ${checked.length ? `<button class="toggle-line" data-act="groc-clear" data-si="${si}">${confirmKey === 'gc-' + si ? 'Tap again to clear' : `Clear ${checked.length} checked`}</button>` : ''}
+        </div>` : ''}`;
+    }).join('');
+  }
+  const grocRow = g => `<div class="task-item ${g.checked ? 'done' : ''}" style="border-left-color:var(--errands)">
+      <input type="checkbox" data-act="groc-toggle" data-id="${esc(g.id)}" ${g.checked ? 'checked' : ''} aria-label="Got it">
+      <span class="text"><span class="t">${esc(g.item)}</span></span>
+      <button class="mini ghost" data-act="groc-del" data-id="${esc(g.id)}" aria-label="Remove">✕</button></div>`;
+  function addGrocery(text, fallbackStore) {
+    const list = stores();
+    let s = String(text || '').trim(); if (!s) return 0;
+    let store = null;
+    for (const st of list) {
+      const re = new RegExp(`\\s*(?:\\bto\\b|\\bat\\b|\\bfrom\\b|@)?\\s*${st.replace(/[.*+?^${}()|[\]\\']/g, '\\$&')}\\s*:?`, 'i');
+      if (re.test(s)) { store = st; s = s.replace(re, ' ').trim(); break; }
+    }
+    store = store || fallbackStore || 'Other';
+    s = s.replace(/^(add|buy|get|need)\s+/i, '');
+    const parts = s.split(/,|\s+and\s+|\n/).map(x => x.trim()).filter(Boolean);
+    let n = 0;
+    parts.forEach(item => {
+      const dup = Object.values(S.grocery).some(x => !x.archived && !x.checked && x.store === store && norm(x.item) === norm(item));
+      if (dup) return;
+      stage('grocery', { id: newId('g'), item, store, checked: false, archived: false, quantity: null, notes: '', createdAt: Date.now() });
+      n++;
+    });
+    ui.open['g-' + store] = true; saveUi();
+    commit();
+    return n;
+  }
+
+  // ---------- events ----------
+  function armConfirm(key) {
+    confirmKey = key; clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { confirmKey = null; render(); }, 3500);
+    render();
+  }
+  function wireEvents() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const act = el.dataset.act, id = el.dataset.id;
+      switch (act) {
+        case 'tab': ui.tab = el.dataset.tab; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'sub': ui.sub = el.dataset.sub; saveUi(); render(); break;
+        case 'toggle': { const t = S.tasks[id]; if (t) setTask(id, { status: t.status === 'done' ? 'todo' : 'done' }); break; }
+        case 'status': setTask(id, { status: el.dataset.to }); break;
+        case 'to-today': moveTo(id, today()); break;
+        case 'to-tomorrow': moveTo(id, addDays(today(), 1)); break;
+        case 'drop': setTask(id, { status: 'dropped', droppedAt: Date.now() }); break;
+        case 'carry-all-today': { const td = today(); views().carry.forEach(t => stage('tasks', Object.assign({}, t, { date: td, originalDate: t.originalDate || t.date }))); commit(); break; }
+        case 'carry-drop-all': {
+          if (confirmKey !== 'carry-drop') { armConfirm('carry-drop'); return; }
+          confirmKey = null; views().carry.forEach(t => stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now() }))); commit(); break;
+        }
+        case 'toggle-done': ui.showDone = !ui.showDone; saveUi(); render(); break;
+        case 'organize': {
+          const ta = $('dumpText'); const text = ta.value.trim(); if (!text) { ta.focus(); return; }
+          const dump = { id: newId('d'), text, createdAt: Date.now(), processed: false };
+          put('dumps', dump); ta.value = ''; lsSet(LS.draft, '');
+          sortDump(dump); break;
+        }
+        case 'dump-retry': { const d = S.dumps[id]; if (d) sortDump(d); break; }
+        case 'dump-dismiss': {
+          if (confirmKey !== 'dd-' + id) { armConfirm('dd-' + id); return; }
+          confirmKey = null; const d = S.dumps[id]; if (d) put('dumps', Object.assign({}, d, { processed: true, dismissed: true, processedAt: Date.now() })); break;
+        }
+        case 'rv-inc': { const arr = review && review[el.dataset.kind]; if (arr) { arr[+el.dataset.i].include = el.checked; render(); } break; }
+        case 'rv-commit': commitReview(); break;
+        case 'rv-cancel': review = null; render(); break;
+        case 'kt-del': { const kt = (meta().keyTimes || []).slice(); kt.splice(+el.dataset.i, 1); setMeta({ keyTimes: kt }); break; }
+        case 'dress-edit': {
+          if (editDress) {
+            const big = ($('dcBig') || {}).value || ''; const baby = ($('dcBaby') || {}).value || '';
+            editDress = false; setMeta({ dress: { big: big.trim(), baby: baby.trim() } });
+          } else { editDress = true; render(); }
+          break;
+        }
+        case 'add-task': addTaskFromForm(); break;
+        case 'add-project': addProject(); break;
+        case 'acc': ui.open[el.dataset.key] = !(el.classList.contains('active')); saveUi(); render(); break;
+        case 'note-del': { if (confirmKey !== 'nd-' + id) { armConfirm('nd-' + id); return; } confirmKey = null; unstage('notes', id); commit(); break; }
+        case 'note-task': { const n = S.notes[id]; if (!n) return; stage('tasks', makeTask({ title: n.text, category: guessCategory(n.text), source: 'idea' })); unstage('notes', id); commit(); break; }
+        case 'groc-toggle': { const g = S.grocery[id]; if (g) put('grocery', Object.assign({}, g, { checked: !g.checked, checkedAt: !g.checked ? Date.now() : null })); break; }
+        case 'groc-del': { const g = S.grocery[id]; if (g) put('grocery', Object.assign({}, g, { archived: true, archivedAt: Date.now() })); break; }
+        case 'groc-clear': {
+          const si = el.dataset.si; if (confirmKey !== 'gc-' + si) { armConfirm('gc-' + si); return; }
+          confirmKey = null; const s = stores()[+si];
+          Object.values(S.grocery).filter(g => !g.archived && g.checked && g.store === s).forEach(g => stage('grocery', Object.assign({}, g, { archived: true, archivedAt: Date.now() })));
+          commit(); break;
+        }
+        case 'groc-quick': quickGrocery(); break;
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.shiftKey) return;
+      const el = e.target; const act = el.dataset && el.dataset.enter; if (!act) return;
+      e.preventDefault();
+      const v = el.value.trim();
+      switch (act) {
+        case 'add-task': addTaskFromForm(); break;
+        case 'add-project': addProject(); break;
+        case 'kt-add': if (v) { setMeta({ keyTimes: [...(meta().keyTimes || []), v] }); el.value = ''; } break;
+        case 'add-idea': if (v) { el.value = ''; put('notes', { id: newId('n'), text: v, projectId: null, createdAt: Date.now() }); } break;
+        case 'proj-add': if (v) { const p = S.projects[el.dataset.id]; el.value = ''; put('tasks', makeTask({ title: v, category: (p && p.category) || 'self', projectId: el.dataset.id })); } break;
+        case 'groc-add': if (v) { el.value = ''; addGrocery(v, stores()[+el.dataset.si]); } break;
+        case 'groc-quick': quickGrocery(); break;
+        case 'add-store': if (v && !stores().includes(v)) { el.value = ''; ui.open['g-' + v] = true; saveUi(); setMeta({ stores: [...stores(), v] }); } break;
+      }
+    });
+    document.addEventListener('input', e => {
+      const el = e.target;
+      if (el.id === 'dumpText') { lsSet(LS.draft, el.value); return; }
+      if (el.dataset && el.dataset.rv && review && review[el.dataset.kind] && el.tagName === 'INPUT') {
+        review[el.dataset.kind][+el.dataset.i][el.dataset.rv] = el.value;
+      }
+    });
+    document.addEventListener('change', e => {
+      const el = e.target;
+      if (el.id === 'gStore') { ui.store = el.value; saveUi(); return; }
+      if (el.dataset && el.dataset.rv && review && review[el.dataset.kind] && el.tagName === 'SELECT') {
+        const it = review[el.dataset.kind][+el.dataset.i]; const f = el.dataset.rv;
+        if (f === 'projectId') { if (el.value !== '__new') { it.projectId = el.value || null; it.newProject = null; } }
+        else it[f] = el.value || null;
+        render();
+      }
+    });
+  }
+  function addTaskFromForm() {
+    const title = $('ntTitle').value.trim(); if (!title) { $('ntTitle').focus(); return; }
+    const dv = $('ntDate').value;
+    const date = dv === 'today' ? today() : dv === 'tomorrow' ? addDays(today(), 1) : null;
+    $('ntTitle').value = ''; const time = fmt24($('ntTime').value); $('ntTime').value = '';
+    put('tasks', makeTask({ title, category: $('ntCat').value, date, time }));
+  }
+  function addProject() {
+    const name = $('npName').value.trim(); if (!name) return;
+    if (Object.values(S.projects).some(p => norm(p.name) === norm(name))) { $('npName').value = ''; return; }
+    const p = { id: newId('p'), name, category: 'self', status: 'active', notes: '', createdAt: Date.now() };
+    $('npName').value = ''; ui.open['p-' + p.id] = true; saveUi(); put('projects', p);
+  }
+  function quickGrocery() {
+    const el = $('gQuick'); const v = el.value.trim(); if (!v) return;
+    el.value = ''; addGrocery(v, $('gStore').value);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

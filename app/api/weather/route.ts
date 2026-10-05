@@ -2,7 +2,7 @@ export async function GET(request: Request) {
   try {
     // Open-Meteo API - free, no key required
     const response = await fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=43.8509&longitude=-92.2174&current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature&timezone=America/Chicago"
+      "https://api.open-meteo.com/v1/forecast?latitude=43.8509&longitude=-92.2174&current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature&temperature_unit=fahrenheit&timezone=America/Chicago"
     );
 
     const data = await response.json();

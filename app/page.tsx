@@ -1,44 +1,36 @@
 'use client';
 
-import { useSession, signIn, signOut } from "next-auth/react";
-import Dashboard from "@/components/Dashboard";
+import { useEffect } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 export default function Home() {
   const { data: session, status } = useSession();
 
-  if (status === "loading") {
+  useEffect(() => {
+    if (session && !session.error) window.location.replace("/dashboard");
+  }, [session]);
+
+  if (status === "loading" || (session && !session.error)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-purple-600">
-        <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-md">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Farah Dashboard</h1>
-          <p className="text-gray-600 mb-6">
-            Sign in with Google to access your personalized dashboard with Gmail, Calendar, and weather integration.
-          </p>
-          <button
-            onClick={() => signIn("google")}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg w-full transition"
-          >
-            Sign in with Google
-          </button>
-        </div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
       </div>
     );
   }
 
   return (
-    <main>
-      <Dashboard user={session.user} onSignOut={() => signOut()} />
-    </main>
+    <div className="flex items-center justify-center min-h-screen p-4" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
+      <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm w-full">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Farah</h1>
+        <p className="text-gray-600 mb-6 text-sm">Sign in with Google to load your Gmail and Calendar.</p>
+        <button
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          className="text-white font-semibold py-3 px-6 rounded-lg w-full"
+          style={{ background: "#667eea" }}
+        >
+          Sign in with Google
+        </button>
+      </div>
+    </div>
   );
 }
