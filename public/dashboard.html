@@ -234,6 +234,7 @@ a.sync { text-decoration: none; cursor: pointer; }
 .cal-item { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; color: var(--body); }
 .cal-item .when { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--accent); min-width: 64px; }
 .cal-item .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cal-item .src { flex: 0 0 auto; font-size: 12px; color: var(--muted); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
 .h2-link { font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
 
 /* SMART TIME TRACKER + SMART SUGGESTIONS */
@@ -564,6 +565,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     render();
   }
   const evDate = ev => ev.allDay ? String(ev.start).slice(0, 10) : ymd(new Date(ev.start));
+  const srcIcon = ev => ev.source === 'icloud' ? '☁️' : '📅';
   const evTime = ev => ev.allDay ? 'All day' : new Date(ev.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const evMin = ev => { if (ev.allDay) return -1; const d = new Date(ev.start); return d.getHours() * 60 + d.getMinutes(); };
   const eventsOn = d => (live.cal || []).filter(ev => evDate(ev) === d).sort((a, b) => evMin(a) - evMin(b));
@@ -583,7 +585,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     let ch = '';
     if (!live.authed) ch = signInHtml('your calendar');
     else if (live.calErr) ch = `<div class="empty">${esc(live.calErr)}</div>`;
-    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"${ev.color ? ` style="border-left-color:${esc(ev.color)}"` : ''} title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span></div>`).join('');
+    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"${ev.color ? ` style="border-left-color:${esc(ev.color)}"` : ''} title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span><span class="src">${srcIcon(ev)} ${esc(ev.calendar || (ev.source === 'icloud' ? 'iCloud' : 'Google'))}</span></div>`).join('');
     else if (live.cal) ch = '<div class="empty">Nothing on your calendar today.</div>';
     $('calTodayBox').innerHTML = ch ? `<div class="card"><h2><span>📅 Calendar today</span><a class="h2-link" href="https://calendar.google.com" target="_blank" rel="noopener">Open ↗</a></h2>${ch}</div>` : '';
   }
@@ -1157,7 +1159,7 @@ Rules:
       const d = addDays(td, i);
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
-      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:${esc(ev.color || 'var(--accent)')}"></span><span>📅 ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:${esc(ev.color || 'var(--accent)')}"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${items.filter(isOpen).length || ''}</span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}

@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { fetchIcloudEvents } from "@/lib/ical";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,12 @@ export async function GET() {
 
     // From a day and a half ago (covers "today" in any US time zone) through 8 days out.
     const now = Date.now();
+    const from = now - 36 * 3600 * 1000, to = now + 8 * 24 * 3600 * 1000;
+    // iCloud feeds (ICLOUD_CALENDAR_URLS in Vercel) load alongside Google; a failed feed is skipped, never fatal.
+    const icloudPromise = fetchIcloudEvents(from, to).catch(() => []);
     const params = new URLSearchParams({
-      timeMin: new Date(now - 36 * 3600 * 1000).toISOString(),
-      timeMax: new Date(now + 8 * 24 * 3600 * 1000).toISOString(),
+      timeMin: new Date(from).toISOString(),
+      timeMax: new Date(to).toISOString(),
       maxResults: "100",
       singleEvents: "true",
       orderBy: "startTime",
@@ -52,6 +56,7 @@ export async function GET() {
               allDay: !e.start?.dateTime,
               calendar: cal.summary || "",
               color,
+              source: "google" as const,
             }));
         } catch {
           return [];
@@ -60,11 +65,13 @@ export async function GET() {
     );
 
     // Same event on two calendars (e.g. an invite) shows once.
+    // Google first, so a calendar subscribed in both places keeps its Google copy.
+    const icloud = await icloudPromise;
     const seen = new Set<string>();
-    const events = perCalendar
-      .flat()
+    const events = [...perCalendar.flat(), ...icloud]
       .filter((e) => {
-        const key = `${e.title}|${e.start}`;
+        const when = e.allDay ? String(e.start).slice(0, 10) : String(new Date(e.start).getTime());
+        const key = `${String(e.title).trim().toLowerCase()}|${when}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
