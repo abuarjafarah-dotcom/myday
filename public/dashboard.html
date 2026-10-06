@@ -7,23 +7,29 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --primary: #2c3e50; --accent: #667eea; --pink: #f295b0; --pink-dark: #f06b9d;
-  --kids: #EC7A74; --home: #6C7FE0; --work: #F0A93B; --errands: #6E4FA3; --self: #8B7DC8; --activity: #5CAE5A; --omar: #FF6B6B;
-  --border: #e0e0e0; --bg: #fafafa; --card: #ffffff; --text: #2c3e50; --body: #333; --muted: #666; --faint: #999;
-  --soft: #f3f4fb; --carry: #fff9e6; --carry-line: #f0d48a; --chip: #eef0fb;
+  /* Calm palette from the Teta's Kitchen work: sage accent, warm paper neutrals, terracotta only for "now". */
+  --accent: #4E7358; --on-accent: #ffffff; --now: #B5543A; --cal: #8C8579;
+  --kids: #C4714A; --work: #B8893A; --home: #6E86A0; --errands: #8C6E9E; --self: #B47A86; --activity: #5E9690; --omar: #A68166;
+  --primary: #2B2A26; --text: #2B2A26; --body: #3A3833; --muted: #6B665D; --faint: #756F65;
+  --border: #E6DED2; --bg: #FAF7F2; --card: #ffffff; --soft: #F3EDE4; --chip: #E8EFE9;
+  --carry: #FBF1E4; --carry-line: #E2C9A6; --carry-ink: #8A5A2B;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --primary: #e6e9f2; --border: #343849; --bg: #15171f; --card: #1d2029; --text: #e6e9f2; --body: #d9dce6;
-    --muted: #a3a8b8; --faint: #7d8396; --soft: #232738; --carry: #2c2817; --carry-line: #6b5a25; --chip: #2a2e45;
+    --accent: #8FB59A; --on-accent: #1A1916; --now: #E08A6A; --cal: #8F887C;
+    --primary: #EDE8DF; --text: #EDE8DF; --body: #DDD7CC; --muted: #A9A296; --faint: #9A9387;
+    --border: #3A3731; --bg: #1A1916; --card: #22211D; --soft: #2A2824; --chip: #26302A;
+    --carry: #2E2820; --carry-line: #6B5536; --carry-ink: #E2C9A6;
   }
 }
 :root[data-theme="dark"] {
-  --primary: #e6e9f2; --border: #343849; --bg: #15171f; --card: #1d2029; --text: #e6e9f2; --body: #d9dce6;
-  --muted: #a3a8b8; --faint: #7d8396; --soft: #232738; --carry: #2c2817; --carry-line: #6b5a25; --chip: #2a2e45;
+  --accent: #8FB59A; --on-accent: #1A1916; --now: #E08A6A; --cal: #8F887C;
+  --primary: #EDE8DF; --text: #EDE8DF; --body: #DDD7CC; --muted: #A9A296; --faint: #9A9387;
+  --border: #3A3731; --bg: #1A1916; --card: #22211D; --soft: #2A2824; --chip: #26302A;
+  --carry: #2E2820; --carry-line: #6B5536; --carry-ink: #E2C9A6;
 }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg); }
 body {
@@ -34,116 +40,139 @@ body {
 }
 button { font-family: inherit; }
 input, select, textarea { font-family: inherit; font-size: 16px; color: var(--body); background: var(--card); }
-input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
+input[type="checkbox"] { width: 22px; height: 22px; margin: 11px 4px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.muted { color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); font-size: 13px; }
 .hidden { display: none !important; }
 
-/* HEADER */
-.header { margin-bottom: 16px; }
-.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.header-top h1 { font-size: 18px; font-weight: 700; color: var(--primary); }
-.sync { font-size: 11px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
-.sync.warn { color: #9a6a00; border-color: var(--carry-line); background: var(--carry); }
-.weather-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 16px; border-radius: 8px; margin-bottom: 12px; text-align: center; }
-.weather-header .day { font-size: 12px; opacity: .9; margin-bottom: 2px; }
-.weather-header .date { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-.weather-header .condition { font-size: 11px; opacity: .85; }
-.dress-code { background: linear-gradient(135deg, var(--pink) 0%, var(--pink-dark) 100%); color: #fff; padding: 14px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
-.dress-code .dc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.dress-code strong { font-size: 13px; }
+/* HEADER: one slim row (date · weather · dress-code chip) */
+.header { margin-bottom: 8px; }
+.hdr { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 44px; }
+.hdr-when { flex: 1 1 auto; min-width: 0; font-size: 15px; color: var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr-when strong { color: var(--primary); font-weight: 700; }
+.hdr-when .sep { color: var(--faint); margin: 0 4px; }
+.dress-chip { flex: 0 1 auto; max-width: 52%; min-height: 44px; display: inline-flex; align-items: center; gap: 6px; padding: 0 12px;
+  background: var(--soft); color: var(--body); border: 1px solid var(--border); border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.dress-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dress-chip[aria-expanded="true"] { border-color: var(--accent); }
+.dress-panel { flex-basis: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-size: 14px; color: var(--body); }
 .dc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.dc-box { text-align: center; padding: 10px; background: rgba(255,255,255,.2); border-radius: 6px; }
-.dc-box .who { font-size: 12px; font-weight: 700; }
-.dc-box .what { font-size: 11px; margin-top: 4px; }
-.dc-box input { width: 100%; margin-top: 6px; padding: 6px; border-radius: 4px; border: none; font-size: 14px; color: #2c3e50; background: #fff; }
-.link-btn { background: rgba(255,255,255,.25); border: none; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.dc-box { padding: 10px; background: var(--soft); border-radius: 8px; }
+.dc-box .who { font-size: 13px; font-weight: 700; color: var(--primary); }
+.dc-box .what { font-size: 14px; margin-top: 4px; }
+.dc-box input { width: 100%; margin-top: 6px; padding: 8px; border-radius: 6px; border: 1px solid var(--border); min-height: 44px; }
+.dc-acts { display: flex; justify-content: flex-end; margin-top: 10px; }
+.sync { font-size: 13px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; }
+.sync.warn { color: var(--carry-ink); border-color: var(--carry-line); background: var(--carry); flex-basis: 100%; text-align: center; border-radius: 8px; }
+.hdr .sync:not(.warn) { flex: 0 0 auto; width: 10px; height: 10px; padding: 0; overflow: hidden; color: transparent; background: var(--accent); border: none; }
+.page-foot { display: flex; justify-content: center; margin-top: 24px; }
+.page-foot a { font-size: 13px; color: var(--muted); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; }
 
 /* TABS */
 .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
 .tab-btn { padding: 12px 12px 10px; background: none; border: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
 .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
-.tab-btn .count { display: inline-block; min-width: 16px; font-size: 10px; background: var(--chip); color: var(--accent); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
+.tab-btn .count { display: inline-block; min-width: 16px; font-size: 13px; background: var(--chip); color: var(--accent); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 .sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
-.sub-tab-btn { flex: 1; padding: 10px; background: none; border: none; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.sub-tab-btn { flex: 1; padding: 10px; background: none; border: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
 .sub-tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
 
 /* CARD */
 .card { background: var(--card); border-radius: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
 .card h2 { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.card h3 { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+.card h3 { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
 .card.carry { background: var(--carry); border-color: var(--carry-line); }
 
 /* BRAIN DUMP */
 .dump textarea { width: 100%; min-height: 96px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; resize: vertical; line-height: 1.5; }
 .dump .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-.dump .row .muted { flex: 1; font-size: 11px; }
+.dump .row .muted { flex: 1; font-size: 13px; }
 
 /* TASK ROWS */
 .task-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; min-height: 44px; }
 .task-item .text { flex: 1; color: var(--body); min-width: 0; overflow-wrap: anywhere; }
-.task-item .meta { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+.task-item .meta { display: block; font-size: 13px; color: var(--faint); margin-top: 1px; }
 .task-item.done { opacity: .5; }
 .task-item.done .t { text-decoration: line-through; }
 .carry .task-item { background: var(--card); }
-.badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--carry); color: #9a6a00; border: 1px solid var(--carry-line); margin-right: 4px; }
+.badge { display: inline-block; font-size: 13px; font-weight: 600; padding: 0 6px; white-space: nowrap; line-height: 1.5; border-radius: 4px; background: var(--carry); color: var(--carry-ink); border: 1px solid var(--carry-line); margin-right: 4px; }
 .badge.proj { background: var(--chip); color: var(--accent); border-color: transparent; }
-.mini { flex: 0 0 auto; padding: 6px 8px; font-size: 11px; font-weight: 600; background: var(--card); color: var(--primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; min-height: 30px; }
-.mini.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mini { flex: 0 0 auto; padding: 6px 8px; font-size: 13px; font-weight: 600; background: var(--card); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; min-height: 44px; min-width: 44px; }
+.mini.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .mini.ghost { border-color: transparent; background: none; color: var(--faint); }
-.toggle-line { font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 0; font-weight: 600; }
-.empty { font-size: 12px; color: var(--faint); padding: 6px 2px; }
+.toggle-line { font-size: 13px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 0; font-weight: 600; }
+.empty { font-size: 13px; color: var(--faint); padding: 6px 2px; }
 
 /* KEY TIMES / SUGGESTIONS */
 .key-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--body); padding: 4px 0; border-bottom: 1px dashed var(--border); }
 .key-row:last-of-type { border-bottom: none; }
-.suggestions { background: linear-gradient(135deg, #f0f4ff 0%, #fff5f7 100%); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 13px; color: #2c3e50; line-height: 1.6; margin-bottom: 12px; }
+.suggestions { background: var(--soft); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 14px; color: var(--body); line-height: 1.6; margin-bottom: 12px; }
 .suggestions strong { display: block; margin-bottom: 4px; }
 .suggestions div + div { margin-top: 6px; }
 
 /* INPUT ROWS */
 .add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .add-row input[type="text"], .add-row select, .add-row input[type="time"] { flex: 1 1 140px; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
-.btn-add { padding: 10px 14px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.btn-add { padding: 10px 14px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 44px; }
 .btn-add.full { width: 100%; margin-top: 12px; }
 .btn-add:disabled { opacity: .6; cursor: default; }
-.btn-secondary { padding: 10px 14px; background: var(--bg); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.btn-secondary { padding: 10px 14px; background: var(--bg); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 44px; }
 
 /* REVIEW */
 .review { border-color: var(--accent); }
-.rv-sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
+.rv-sec { font-size: 13px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
 .rv-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border-radius: 6px; background: var(--bg); margin-bottom: 6px; border-left: 3px solid var(--accent); }
 .rv-row.off { opacity: .45; }
 .rv-row input[type="text"] { flex: 1 1 160px; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; }
 .rv-row select { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
-.rv-note { flex-basis: 100%; font-size: 11px; color: var(--faint); padding-left: 26px; }
+.rv-note { flex-basis: 100%; font-size: 13px; color: var(--faint); padding-left: 26px; }
 .rv-actions { display: flex; gap: 8px; margin-top: 10px; }
 .rv-actions .btn-add { flex: 1; }
 
 /* DONUT + STATUS */
 .donut-container { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
 .donut-svg { flex: 0 0 120px; width: 120px; height: 120px; }
-.donut-legend { flex: 1; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.donut-legend { flex: 1; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
 .legend-item { display: flex; align-items: center; gap: 6px; color: var(--body); }
 .legend-color { width: 12px; height: 12px; border-radius: 2px; }
 .legend-count { font-weight: 700; color: var(--primary); }
 .status-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .status-box { text-align: center; padding: 12px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); }
-.status-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.status-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
 .status-count { font-size: 28px; font-weight: 700; color: var(--primary); margin: 6px 0 0; }
 
 /* KANBAN */
 .kanban { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 680px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
 .kcol { background: var(--soft); border-radius: 8px; padding: 10px; }
-.kcol h3 { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.kcol h3 { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; justify-content: space-between; }
 .kcard { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; color: var(--body); }
-.kcard .meta { font-size: 11px; color: var(--faint); margin-top: 2px; }
+.kcard .meta { font-size: 13px; color: var(--faint); margin-top: 2px; }
 .kcard .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .kcard.done { opacity: .55; }
 .kcard.done .t { text-decoration: line-through; }
+
+/* Touch targets: 44px minimum */
+.tab-btn, .sub-tab-btn { min-height: 44px; }
+.toggle-line, .h2-link { min-height: 44px; display: inline-flex; align-items: center; }
+.task-item .mini.ghost, .key-row .mini.ghost { min-width: 44px; }
+.task-item { min-height: 52px; }
+
+/* FOLDS: collapsible Home sections (Inbox, Key times, Suggestions) */
+details.fold { padding: 0; }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 52px; padding: 0 14px; font-size: 14px; font-weight: 700; color: var(--primary); }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg); margin: -4px 4px 0 0; flex: 0 0 auto; }
+details.fold[open] > summary::after { transform: rotate(-135deg); margin-top: 4px; }
+details.fold > summary .count { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--accent); }
+details.fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+.fold-body { padding: 0 14px 14px; }
+.fold-body > div > .card { border: 0; padding: 0; margin: 0 0 8px; background: none; }
+.fold-body > div > .card > h2 { display: none; }
 
 /* NOW: next-up card with a full-day expansion (Home, top) */
 .now-card { padding: 14px; }
@@ -163,20 +192,20 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .now-row:last-child { border-bottom: none; }
 .now-row .when { flex: 0 0 72px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .now-row .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.now-row .rel { flex: 0 0 auto; font-size: 12px; color: var(--accent); font-weight: 600; }
+.now-row .rel { flex: 0 0 auto; font-size: 13px; color: var(--accent); font-weight: 600; }
 .now-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
-.now-dot.cal { border-radius: 2px; }
+.now-dot.cal { border-radius: 2px; background: transparent !important; border: 2px solid var(--cal); width: 10px; height: 10px; }
 .now-dot.key { background: transparent; border: 2px solid var(--faint); width: 9px; height: 9px; }
-.now-toggle { display: block; width: 100%; text-align: left; margin-top: 8px; min-height: 40px; }
+.now-toggle { display: flex; width: 100%; text-align: left; margin-top: 8px; min-height: 44px; }
 .now-day { margin-top: 4px; }
 .now-day .now-row.past { opacity: .5; }
 .now-day .now-row.done .what { text-decoration: line-through; }
 .now-allday { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
-.now-allday span { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--body); }
-.now-line { display: flex; align-items: center; gap: 8px; color: #d64545; font-size: 12px; font-weight: 600; margin: 4px 0; }
-.now-line i { flex: 1; height: 2px; background: #d64545; border-radius: 1px; }
+.now-allday span { font-size: 13px; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--body); }
+.now-line { display: flex; align-items: center; gap: 8px; color: var(--now); font-size: 13px; font-weight: 600; margin: 4px 0; }
+.now-line i { flex: 1; height: 2px; background: var(--now); border-radius: 1px; }
 .now-gap { border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; margin: 6px 0; }
-.now-gap .gh { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.now-gap .gh { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .now-gap .fit { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin-top: 6px; }
 .now-gap.current { border-color: var(--accent); }
 
@@ -184,7 +213,7 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .kcol h3 { font-size: 13px; }
 .kcard { display: flex; gap: 6px; align-items: flex-start; padding-left: 4px; }
 .kcard .kbody { flex: 1; min-width: 0; padding-top: 2px; }
-.drag-handle { flex: 0 0 auto; width: 36px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+.drag-handle { flex: 0 0 auto; width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;
   background: none; border: none; border-radius: 6px; color: var(--faint); font-size: 16px; line-height: 1; letter-spacing: -2px;
   cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
 .drag-handle:hover { background: var(--soft); color: var(--muted); }
@@ -204,17 +233,18 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 
 /* WEEK */
 .week-day { padding: 12px; margin-bottom: 10px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); border-left: 3px solid var(--accent); }
-.week-day.is-today { border-left-color: var(--pink-dark); }
+.week-day.is-today { border-left-color: var(--accent); }
 .week-day-title { font-weight: 700; color: var(--primary); font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; }
 .week-line { font-size: 13px; color: var(--body); padding: 2px 0; display: flex; gap: 8px; align-items: baseline; }
 .week-line .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; transform: translateY(-1px); }
+.week-line .dot.cal { border-radius: 2px; background: transparent !important; border: 2px solid var(--cal); width: 10px; height: 10px; }
 .week-line.done { opacity: .5; text-decoration: line-through; }
 
 /* ACCORDION */
 .accordion-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 12px; cursor: pointer; background: var(--bg); border-radius: 6px; margin-bottom: 8px; font-weight: 600; color: var(--primary); font-size: 13px; border: 1px solid var(--border); min-height: 44px; }
-.accordion-header .right { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--muted); }
-.accordion-header.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.accordion-header.active .right { color: #fff; }
+.accordion-header .right { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.accordion-header.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.accordion-header.active .right { color: var(--on-accent); }
 .progress { width: 44px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .progress i { display: block; height: 100%; background: var(--activity); }
 .accordion-content { padding: 10px; background: var(--bg); border-radius: 6px; margin: -4px 0 10px; border: 1px solid var(--border); }
@@ -223,26 +253,25 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 .note-item span { flex: 1; overflow-wrap: anywhere; }
 
 /* GMAIL placeholder */
-.not-connected { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.not-connected { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .not-connected a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
-.weather-header .temp { font-size: 13px; font-weight: 600; margin-top: 6px; }
 .head-right { display: flex; gap: 6px; align-items: center; }
 a.sync { text-decoration: none; cursor: pointer; }
 .mail-item { display: block; text-decoration: none; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); min-height: 44px; }
 .mail-item .subj { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
-.mail-item .from { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; overflow-wrap: anywhere; }
-.cal-item { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; color: var(--body); }
-.cal-item .when { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--accent); min-width: 64px; }
+.mail-item .from { display: block; font-size: 13px; color: var(--faint); margin-top: 1px; overflow-wrap: anywhere; }
+.cal-item { display: flex; gap: 10px; align-items: baseline; padding: 10px; margin-bottom: 6px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); border-left: 3px solid var(--cal); min-height: 44px; font-size: 14px; color: var(--body); }
+.cal-item .when { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 64px; }
 .cal-item .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.cal-item .src { flex: 0 0 auto; font-size: 12px; color: var(--muted); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
-.h2-link { font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.cal-item .src { flex: 0 0 auto; font-size: 13px; color: var(--muted); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.h2-link { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
 
 /* SMART TIME TRACKER + SMART SUGGESTIONS */
 .st-window { font-size: 13px; color: var(--body); margin-bottom: 10px; }
 .st-pick { padding: 10px 12px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); }
-.st-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+.st-label { font-size: 13px; font-weight: 600; color: var(--muted); }
 .st-title { font-size: 15px; font-weight: 600; color: var(--body); margin-top: 2px; overflow-wrap: anywhere; }
-.st-meta { font-size: 11px; color: var(--faint); margin-top: 1px; }
+.st-meta { font-size: 13px; color: var(--faint); margin-top: 1px; }
 .st-acts { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .st-acts .btn-add, .st-acts .btn-secondary { flex: 1 1 120px; }
 .st-acts .mini.ghost { flex: 0 0 auto; }
@@ -255,7 +284,7 @@ a.sync { text-decoration: none; cursor: pointer; }
 .sg-item:last-child { margin-bottom: 0; }
 .sg-item .sg-text { overflow-wrap: anywhere; }
 .sg-item .st-acts { margin-top: 8px; }
-.sg-item .st-acts .mini { min-height: 34px; padding: 6px 12px; }
+.sg-item .st-acts .mini { min-height: 44px; padding: 6px 12px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .tab-btn, .sub-tab-btn, .accordion-header { transition: background-color .15s, color .15s, border-color .15s; }
@@ -264,17 +293,11 @@ a.sync { text-decoration: none; cursor: pointer; }
 </head>
 <body>
 <header class="header">
-  <div class="header-top">
-    <h1>Farah</h1>
-    <span class="head-right"><span id="sync" class="sync">Loading…</span><a class="sync" href="/api/auth/signout?callbackUrl=/">Sign out</a></span>
+  <div class="hdr">
+    <div class="hdr-when"><strong><span id="dayName"></span> <span id="dateStr"></span></strong><span class="sep">·</span><span id="weatherTemp"></span> <span id="weatherLine"></span></div>
+    <span id="dress" style="display:contents"></span>
+    <span id="sync" class="sync" role="status" title="Sync status">Loading…</span>
   </div>
-  <div class="weather-header">
-    <div class="day" id="dayName"></div>
-    <div class="date" id="dateStr"></div>
-    <div class="temp" id="weatherTemp"></div>
-    <div class="condition" id="weatherLine">Loading Rochester weather…</div>
-  </div>
-  <div class="dress-code" id="dress"></div>
 </header>
 
 <nav class="tabs" id="tabs">
@@ -287,6 +310,18 @@ a.sync { text-decoration: none; cursor: pointer; }
 <!-- ======== HOME ======== -->
 <section id="home" class="tab-content">
   <div id="nowBox"></div>
+  <div class="card">
+    <h2>📋 Today</h2>
+    <div id="todayList"></div>
+  </div>
+  <div id="carryBox"></div>
+  <details class="card fold" data-fold="inbox">
+    <summary><span>✉️ Inbox</span><span class="count" id="mailCount"></span></summary>
+    <div class="fold-body">
+      <div id="gmailList"><div class="empty">Loading unread email…</div></div>
+      <a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail ↗</a>
+    </div>
+  </details>
   <div class="card dump">
     <h2>🧠 Brain dump</h2>
     <textarea id="dumpText" placeholder="Everything on your mind: tasks, groceries, kid things, ideas. Messy is fine."></textarea>
@@ -297,27 +332,25 @@ a.sync { text-decoration: none; cursor: pointer; }
   </div>
   <div id="reviewBox"></div>
   <div id="waitingBox"></div>
-  <div id="carryBox"></div>
   <div id="calTodayBox"></div>
-  <div class="card">
-    <h2>📋 Today</h2>
-    <div id="todayList"></div>
-  </div>
   <div id="anytimeBox"></div>
-  <div id="suggestBox"></div>
-  <div class="card">
-    <h2>⏱️ Key times</h2>
-    <div id="keyTimes"></div>
-    <div class="add-row">
-      <input type="text" id="ktAdd" data-enter="kt-add" placeholder="Add a key time, e.g. 3:00 PM pickup">
+  <details class="card fold" data-fold="keytimes">
+    <summary><span>⏱️ Key times</span></summary>
+    <div class="fold-body">
+      <div id="keyTimes"></div>
+      <div class="add-row">
+        <input type="text" id="ktAdd" data-enter="kt-add" placeholder="3:00 PM pickup">
+      </div>
     </div>
-  </div>
-  <div class="card">
-    <h2><span>✉️ Action items</span><a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail ↗</a></h2>
-    <div id="gmailList"><div class="empty">Loading unread email…</div></div>
-  </div>
+  </details>
+  <details class="card fold" data-fold="suggestions">
+    <summary><span>✨ Suggestions</span></summary>
+    <div class="fold-body">
+      <div id="suggestBox"></div>
+      <div id="smartBox"></div>
+    </div>
+  </details>
   <div id="trackerBox"></div>
-  <div id="smartBox"></div>
 </section>
 
 <!-- ======== SCHEDULE ======== -->
@@ -398,16 +431,18 @@ a.sync { text-decoration: none; cursor: pointer; }
   </div>
 </section>
 
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a></footer>
+
 <script>
 (() => {
   'use strict';
 
   // ---------- constants ----------
   const CATS = {
-    kids: { label: 'Kids', color: '#EC7A74' }, work: { label: 'Work', color: '#F0A93B' },
-    home: { label: 'Home', color: '#6C7FE0' }, errands: { label: 'Errands', color: '#6E4FA3' },
-    self: { label: 'Self', color: '#8B7DC8' }, activity: { label: 'Activity', color: '#5CAE5A' },
-    omar: { label: 'Omar', color: '#FF6B6B' }
+    kids: { label: 'Kids', color: '#C4714A' }, work: { label: 'Work', color: '#B8893A' },
+    home: { label: 'Home', color: '#6E86A0' }, errands: { label: 'Errands', color: '#8C6E9E' },
+    self: { label: 'Self', color: '#B47A86' }, activity: { label: 'Activity', color: '#5E9690' },
+    omar: { label: 'Omar', color: '#A68166' }
   };
   const CAT_KEYS = Object.keys(CATS);
   const DEFAULT_STORES = ['Costco', "Trader Joe's", 'Target', 'Walmart', 'Amazon', 'Aldi', 'Other'];
@@ -572,8 +607,9 @@ a.sync { text-decoration: none; cursor: pointer; }
   const signInHtml = what => `<div class="not-connected"><span>Sign in again to load ${what}.</span><a href="/">Sign in ↗</a></div>`;
   function renderLive() {
     const w = live.weather;
-    $('weatherTemp').textContent = w ? `${w.temperature}°F · feels like ${w.feelsLike}°` : '';
-    $('weatherLine').textContent = w ? `${w.condition} in Rochester, MN` : 'Loading Rochester weather…';
+    $('weatherTemp').textContent = w ? `${w.temperature}°F` : '…';
+    $('weatherLine').textContent = w ? String(w.condition || '').toLowerCase() : '';
+    const mc = $('mailCount'); if (mc) mc.textContent = live.authed && live.mail && live.mail.length ? `${live.mail.length} unread` : '';
     let mh;
     if (!live.authed) mh = signInHtml('Gmail');
     else if (live.mailErr) mh = `<div class="empty">${esc(live.mailErr)}</div>`;
@@ -585,7 +621,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     let ch = '';
     if (!live.authed) ch = signInHtml('your calendar');
     else if (live.calErr) ch = `<div class="empty">${esc(live.calErr)}</div>`;
-    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"${ev.color ? ` style="border-left-color:${esc(ev.color)}"` : ''} title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span><span class="src">${srcIcon(ev)} ${esc(ev.calendar || (ev.source === 'icloud' ? 'iCloud' : 'Google'))}</span></div>`).join('');
+    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item" title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span><span class="src">${srcIcon(ev)} ${esc(ev.calendar || (ev.source === 'icloud' ? 'iCloud' : 'Google'))}</span></div>`).join('');
     else if (live.cal) ch = '<div class="empty">Nothing on your calendar today.</div>';
     $('calTodayBox').innerHTML = ch ? `<div class="card"><h2><span>📅 Calendar today</span><a class="h2-link" href="https://calendar.google.com" target="_blank" rel="noopener">Open ↗</a></h2>${ch}</div>` : '';
   }
@@ -594,6 +630,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     wireEvents();
     wireSmart();
     wireNow();
+    wireFolds();
     render();
     loadLive();
     setInterval(loadLive, 10 * 60000);
@@ -813,17 +850,22 @@ a.sync { text-decoration: none; cursor: pointer; }
   }
   function renderHeader() {
     const d = new Date();
-    $('dayName').textContent = d.toLocaleDateString('en-US', { weekday: 'long' });
-    $('dateStr').textContent = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    $('dayName').textContent = d.toLocaleDateString('en-US', { weekday: 'short' }) + ',';
+    $('dateStr').textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const dc = meta().dress || {};
     const big = dc.big || ''; const baby = dc.baby || '';
-    $('dress').innerHTML = `
-      <div class="dc-top"><strong>👕 Today's dress code</strong><button class="link-btn" data-act="dress-edit">${editDress ? 'Done' : 'Edit'}</button></div>
-      <div class="dc-grid">
-        <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="e.g. sweatshirt + light jacket">` : `<div class="what">${esc(big || 'Tap Edit to set')}</div>`}</div>
-        <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="e.g. onesie + fleece + hat">` : `<div class="what">${esc(baby || 'Tap Edit to set')}</div>`}</div>
-      </div>`;
+    const open = !!(ui.open.dress || editDress);
+    const chipText = big || baby ? (big || baby) : 'Set dress code';
+    $('dress').innerHTML = `<button class="dress-chip" data-act="dress-toggle" aria-expanded="${open}" aria-controls="dressPanel" title="Today's dress code">👕 <span>${esc(chipText)}</span></button>
+      ${open ? `<div class="dress-panel" id="dressPanel">
+        <div class="dc-grid">
+          <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="sweatshirt + light jacket">` : `<div class="what">${esc(big || 'Not set')}</div>`}</div>
+          <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="onesie + fleece + hat">` : `<div class="what">${esc(baby || 'Not set')}</div>`}</div>
+        </div>
+        <div class="dc-acts"><button class="btn-secondary" data-act="dress-edit">${editDress ? 'Save' : 'Edit'}</button></div>
+      </div>` : ''}`;
   }
+
   function renderTabs() {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === ui.tab));
@@ -1127,7 +1169,7 @@ Rules:
       off += len;
     });
     const pct = total ? Math.round(doneToday.length / total * 100) : 0;
-    svg += `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${pct}%</text><text x="60" y="74" text-anchor="middle" font-size="9" style="fill:var(--muted)">done</text>`;
+    svg += `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${pct}%</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">done</text>`;
     $('donut').innerHTML = svg;
     $('donutLegend').innerHTML = Object.keys(counts).length
       ? Object.entries(counts).map(([c, n]) => `<div class="legend-item"><div class="legend-color" style="background:${catColor(c)}"></div><span><span class="legend-count">${n}</span> ${esc((CATS[c] || {}).label || c)}</span></div>`).join('')
@@ -1159,7 +1201,7 @@ Rules:
       const d = addDays(td, i);
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
-      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:${esc(ev.color || 'var(--accent)')}"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${items.filter(isOpen).length || ''}</span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
@@ -1573,7 +1615,7 @@ Rules:
       if (ev.allDay) return;
       const st = evMin(ev);
       const en = ev.end ? (d => d.getHours() * 60 + d.getMinutes())(new Date(ev.end)) : st;
-      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: ev.color || 'var(--home)' });
+      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: 'var(--cal)' });
     });
     Object.values(S.tasks).forEach(t => {
       if (t.date !== td || !t.time || !(isOpen(t) || t.status === 'done')) return;
@@ -1629,7 +1671,7 @@ Rules:
           <button class="btn-secondary" data-act="${run ? 'now-pause' : 'now-resume'}" data-id="${esc(t.id)}">${run ? 'Pause' : 'Resume'}</button>
         </div></div>`;
     } else if (c.busy) {
-      hero = `<div class="now-hero" style="border-left-color:var(--home)"><div class="lbl">Now</div>
+      hero = `<div class="now-hero" style="border-left-color:var(--cal)"><div class="lbl">Now</div>
         <div class="ttl">${esc(c.busy.title)}</div><div class="sub">Until ${esc(clockLabel(c.busy.until))}. Your next pick shows up when it ends.</div></div>`;
     } else if (c.minutes < 10 && c.next) {
       hero = `<div class="now-hero"><div class="lbl">Coming up</div>
@@ -1687,6 +1729,18 @@ Rules:
       ${hero}${full ? '' : then}
       ${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}
       ${day}</div>`;
+  }
+  function wireFolds() {
+    document.querySelectorAll('details.fold').forEach(el => { el.open = !!ui.open['fold-' + el.dataset.fold]; });
+    document.addEventListener('toggle', e => {
+      const el = e.target; if (!el.matches || !el.matches('details.fold')) return;
+      ui.open['fold-' + el.dataset.fold] = el.open; saveUi();
+    }, true);
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act="dress-toggle"]'); if (!el) return;
+      if (editDress) return;                     // finish editing with Save first
+      ui.open.dress = !ui.open.dress; saveUi(); renderHeader();
+    });
   }
   function wireNow() {
     document.addEventListener('click', e => {
