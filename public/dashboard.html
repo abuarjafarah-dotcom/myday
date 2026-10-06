@@ -179,6 +179,26 @@ a.sync { text-decoration: none; cursor: pointer; }
 .cal-item .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .h2-link { font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
 
+/* SMART TIME TRACKER + SMART SUGGESTIONS */
+.st-window { font-size: 13px; color: var(--body); margin-bottom: 10px; }
+.st-pick { padding: 10px 12px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); }
+.st-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+.st-title { font-size: 15px; font-weight: 600; color: var(--body); margin-top: 2px; overflow-wrap: anywhere; }
+.st-meta { font-size: 11px; color: var(--faint); margin-top: 1px; }
+.st-acts { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.st-acts .btn-add, .st-acts .btn-secondary { flex: 1 1 120px; }
+.st-acts .mini.ghost { flex: 0 0 auto; }
+.st-clock { font-size: 34px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 6px; }
+.st-clock.paused { color: var(--faint); }
+.st-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.st-bar i { display: block; height: 100%; background: var(--accent); }
+.st-bar i.over { background: var(--work); }
+.sg-item { padding: 10px 12px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 13px; color: var(--body); line-height: 1.5; }
+.sg-item:last-child { margin-bottom: 0; }
+.sg-item .sg-text { overflow-wrap: anywhere; }
+.sg-item .st-acts { margin-top: 8px; }
+.sg-item .st-acts .mini { min-height: 34px; padding: 6px 12px; }
+
 @media (prefers-reduced-motion: no-preference) {
   .tab-btn, .sub-tab-btn, .accordion-header { transition: background-color .15s, color .15s, border-color .15s; }
 }
@@ -237,6 +257,8 @@ a.sync { text-decoration: none; cursor: pointer; }
     <h2><span>✉️ Action items</span><a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail ↗</a></h2>
     <div id="gmailList"><div class="empty">Loading unread email…</div></div>
   </div>
+  <div id="trackerBox"></div>
+  <div id="smartBox"></div>
 </section>
 
 <!-- ======== SCHEDULE ======== -->
@@ -510,6 +532,7 @@ a.sync { text-decoration: none; cursor: pointer; }
 
   async function init() {
     wireEvents();
+    wireSmart();
     render();
     loadLive();
     setInterval(loadLive, 10 * 60000);
@@ -702,6 +725,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderIdeas(); renderGrocery(); renderLive();
+    renderTracker(); renderSmart();
     restoreFocus(keep);
   }
   function rememberFocus() {
@@ -1169,6 +1193,313 @@ Rules:
     confirmTimer = setTimeout(() => { confirmKey = null; render(); }, 3500);
     render();
   }
+  // ---------- smart time tracker + smart suggestions ----------
+  // Reads only the existing state (S.tasks, meta().keyTimes, live.cal) and writes only through setTask().
+  // The timer lives on the task itself (task.timer = { startedAt, elapsedMs }), so it syncs like any other edit
+  // and there is no second task system. Starting sets status 'doing' (shows in Kanban "In Progress");
+  // Complete sets status 'done' on the same task.
+  //
+  // Later signals (weather, Gmail, location, notifications) plug into smartContext() as new fields,
+  // and into SMART_RULES as new rules. Nothing else needs to change.
+  const SMART_LS = 'fmd4-smart-dismissed';
+  const DAY_END_MIN = 21 * 60;      // treat 9 PM as the end of a planning day when nothing else is scheduled
+  const OPEN_WINDOW_MIN = 60;       // a sensible focus block when there is no next commitment
+  const BUFFER_MIN = 5;             // transition time before the next commitment
+  let stSkip = [];                  // task ids skipped with "Another option" (this session only)
+  let smartDismissed = lsGet(SMART_LS, {});
+
+  const nowMinutes = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+  const minLabel = m => { const h = Math.floor(m / 60), r = m % 60; return h ? `${h} hr${r ? ` ${r} min` : ''}` : `${m} min`; };
+  const clockLabel = min => { const h = Math.floor(min / 60) % 24, m = min % 60; return `${((h + 11) % 12) + 1}:${pad(m)} ${h >= 12 ? 'PM' : 'AM'}`; };
+  const daysBetween = (a, b) => Math.round((parseYmd(b) - parseYmd(a)) / 86400000);
+
+  // Duration: the task's own value first, then a number in the title, then a light keyword estimate.
+  function taskMinutes(t) {
+    const d = t.duration;
+    if (typeof d === 'number' && d > 0) return d;
+    if (typeof d === 'string') { const n = parseInt(d, 10); if (n > 0) return /h/i.test(d) && n < 10 ? n * 60 : n; }
+    const m = String(t.title).match(/(\d+(?:\.\d+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minutes)\b/i);
+    if (m) return /^h/i.test(m[2]) ? Math.round(parseFloat(m[1]) * 60) : Math.round(parseFloat(m[1]));
+    const s = norm(t.title);
+    if (/\b(call|text|email|reply|book|reserve|order|pay|sign|schedule|switch|start .*load)\b/.test(s)) return 10;
+    if (/\blaundry\b|\bfold\b|\btidy\b|\bpack\b|\bsort\b/.test(s)) return 20;
+    if (/\b(run|trip|shopping|costco|trader|target|walmart|aldi|errand)\b/.test(s)) return 45;
+    if (/\b(cook|make|bake|dinner|lunch|kofta|maqlou?b|prep)\b/.test(s)) return 45;
+    if (/\b(course|study|learn|write|design|build|develop|launch|test|plan|stories|layout|sew)\b/.test(s)) return 45;
+    if (/\b(outing|stroll|park|picking|carving|museum|library)\b/.test(s)) return 45;
+    if (t.projectId) return 30;
+    return ({ kids: 20, work: 40, home: 20, errands: 40, self: 30, activity: 45, omar: 20 })[t.category] || 30;
+  }
+  const priorityScore = p => {
+    if (p == null || p === '') return 0;
+    const v = String(p).toLowerCase();
+    if (v === '1' || v.startsWith('h') || v === 'urgent') return 30;
+    if (v === '2' || v.startsWith('m')) return 15;
+    return 0;
+  };
+
+  // Everything the two sections reason about, gathered in one place.
+  function smartContext() {
+    const td = today(), nowMin = nowMinutes(), now = Date.now();
+    const all = Object.values(S.tasks);
+    const commitments = [];
+    all.forEach(t => {
+      if (!isOpen(t) || t.date !== td || !t.time) return;
+      const m = timeMin(t.time); if (m < 9000 && m > nowMin) commitments.push({ min: m, title: t.title, id: t.id, source: 'task' });
+    });
+    let busy = null;
+    eventsOn(td).forEach(ev => {
+      if (ev.allDay) return;
+      const st = new Date(ev.start).getTime(), en = ev.end ? new Date(ev.end).getTime() : st;
+      if (st <= now && en > now) { const e = new Date(en); busy = { title: ev.title || 'an event', until: e.getHours() * 60 + e.getMinutes() }; }
+      const m = evMin(ev); if (m > nowMin) commitments.push({ min: m, title: ev.title || 'Calendar event', source: 'calendar' });
+    });
+    (Array.isArray(meta().keyTimes) ? meta().keyTimes : []).forEach(k => {
+      const hit = String(k).match(/(\d{1,2}(?::\d{2})?\s*[ap]\.?\s*m\.?)/i); if (!hit) return;
+      const m = timeMin(hit[1].replace(/\s+/g, ' ')); if (m >= 9000 || m <= nowMin) return;
+      const label = String(k).replace(hit[1], '').replace(/[:\-–@]+\s*$/, '').replace(/\bat\s*$/i, '').trim();
+      commitments.push({ min: m, title: label || 'Key time', source: 'keyTime' });
+    });
+    commitments.sort((a, b) => a.min - b.min);
+    const next = commitments[0] || null;
+    let minutes, open = false;
+    if (busy) minutes = 0;
+    else if (next) minutes = Math.max(0, next.min - nowMin - BUFFER_MIN);
+    else { open = true; minutes = nowMin < DAY_END_MIN ? Math.max(OPEN_WINDOW_MIN, Math.min(180, DAY_END_MIN - nowMin)) : OPEN_WINDOW_MIN; }
+    minutes = Math.round(minutes / 5) * 5;
+    const active = all.filter(t => t.status === 'doing' && t.timer && (t.timer.startedAt || t.timer.elapsedMs))
+      .sort((a, b) => (b.timer.startedAt || b.updatedAt || 0) - (a.timer.startedAt || a.updatedAt || 0))[0] || null;
+    const candidates = rankCandidates(all, td, nowMin, minutes);
+    const fit = candidates.filter(x => x.fits && !stSkip.includes(x.t.id))[0];
+    return {
+      td, now, nowMin, all, busy, next, minutes, open, active, candidates,
+      pick: !active && !busy && fit ? fit.t : null,   // what the tracker is currently recommending
+      calendar: live.cal            // future: weather (live.weather), mail (live.mail), location, notifications
+    };
+  }
+
+  // Tasks it makes sense to work on now, best first. Future timed tasks are commitments, not candidates;
+  // timed kids routines (naps, meals) that already passed aren't offered as work.
+  function rankCandidates(all, td, nowMin, minutes) {
+    return all.filter(t => {
+      if (!isOpen(t)) return false;
+      if (t.date && t.date > td) return false;
+      if (t.time && t.date === td) { const m = timeMin(t.time); if (m < 9000 && m > nowMin) return false; if (t.category === 'kids') return false; }
+      if (t.time && t.date && t.date < td && t.category === 'kids') return false;
+      return true;
+    }).map(t => {
+      const mins = taskMinutes(t);
+      let score = priorityScore(t.priority);
+      if (t.status === 'doing') score += 25;
+      if (t.date && t.date < td) score += 20 + Math.min(10, daysBetween(t.date, td) * 2);
+      else if (t.date === td) score += 15;
+      else if (!t.projectId) score += 5;
+      if (t.originalDate && t.originalDate < td) score += Math.min(12, 4 + daysBetween(t.originalDate, td) * 2);
+      const fits = mins <= minutes;
+      if (fits && minutes > 0) score += Math.round((mins / minutes) * 12);
+      return { t, mins, fits, score };
+    }).sort((a, b) => (b.fits - a.fits) || (b.score - a.score) || (a.mins - b.mins));
+  }
+
+  // ----- timer actions (all through setTask) -----
+  const elapsedMs = t => !t || !t.timer ? 0 : (t.timer.elapsedMs || 0) + (t.timer.startedAt ? Date.now() - t.timer.startedAt : 0);
+  function pauseTimerStaged(t) {
+    if (!t || !t.timer || !t.timer.startedAt) return;
+    stage('tasks', Object.assign({}, t, { timer: { startedAt: null, elapsedMs: elapsedMs(t) } }));
+  }
+  function startTimer(id) {
+    const t = S.tasks[id]; if (!t || !isOpen(t)) return;
+    Object.values(S.tasks).forEach(o => { if (o.id !== id && o.timer && o.timer.startedAt) pauseTimerStaged(o); });
+    stSkip = [];
+    setTask(id, { status: 'doing', timer: { startedAt: Date.now(), elapsedMs: (t.timer && t.timer.elapsedMs) || 0 } });
+  }
+  function pauseTimer(id) { const t = S.tasks[id]; if (t) setTask(id, { timer: { startedAt: null, elapsedMs: elapsedMs(t) } }); }
+  function completeTimer(id) {
+    const t = S.tasks[id]; if (!t) return;
+    const spent = Math.round(elapsedMs(t) / 60000);
+    setTask(id, { status: 'done', timer: null, spentMin: (t.spentMin || 0) + spent });
+  }
+  function setAside(id) {
+    const t = S.tasks[id]; if (!t) return;
+    setTask(id, { status: 'todo', timer: null, spentMin: (t.spentMin || 0) + Math.round(elapsedMs(t) / 60000) });
+  }
+  const fmtElapsed = ms => { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60; return h ? `${h}:${pad(m)}:${pad(x)}` : `${pad(m)}:${pad(x)}`; };
+  const metaLine = (t, mins) => [`~${mins} min`, (CATS[t.category] || {}).label, t.projectId ? projName(t.projectId) : '',
+    t.date && t.date < today() ? `from ${dayLabel(t.date)}` : ''].filter(Boolean).map(esc).join(' · ');
+
+  function renderTracker() {
+    const box = $('trackerBox'); if (!box) return;
+    const c = smartContext();
+    let body;
+    if (c.active) {
+      const t = c.active, mins = taskMinutes(t), run = !!t.timer.startedAt, ms = elapsedMs(t);
+      const pct = Math.min(100, Math.round(ms / 60000 / mins * 100));
+      body = `<div class="st-pick" style="border-left-color:${catColor(t.category)}">
+          <div class="st-label">${run ? 'Working on' : 'Paused'}</div>
+          <div class="st-title">${esc(t.title)}</div>
+          <div class="st-clock ${run ? '' : 'paused'}" id="stClock" aria-live="off">${fmtElapsed(ms)}</div>
+          <div class="st-meta" id="stPlan">${esc(`~${mins} min planned`)}${c.next ? ` · ${esc(c.next.title)} at ${esc(clockLabel(c.next.min))}` : ''}</div>
+          <div class="st-bar"><i id="stBar" class="${ms / 60000 > mins ? 'over' : ''}" style="width:${pct}%"></i></div>
+          <div class="st-acts">
+            ${run ? `<button class="btn-secondary" data-act="st-pause" data-id="${esc(t.id)}">Pause</button>`
+                  : `<button class="btn-secondary" data-act="st-resume" data-id="${esc(t.id)}">Resume</button>`}
+            <button class="btn-add" data-act="st-complete" data-id="${esc(t.id)}">Complete</button>
+            <button class="mini ghost" data-act="st-aside" data-id="${esc(t.id)}">Set aside</button>
+          </div></div>`;
+    } else if (c.busy) {
+      body = `<div class="empty">You're in ${esc(c.busy.title)} until ${esc(clockLabel(c.busy.until))}. A pick shows up here when you're free.</div>`;
+    } else if (!c.candidates.length) {
+      body = `<div class="empty">Your list is clear. Tasks you add in Brain dump or Schedule show up here.</div>`;
+    } else if (c.minutes < 10 && c.next) {
+      body = `<div class="st-window">${esc(c.next.title)} is at ${esc(clockLabel(c.next.min))}. Not enough time to start something new.</div>`;
+    } else {
+      const fitting = c.candidates.filter(x => x.fits && !stSkip.includes(x.t.id));
+      const windowLine = c.open ? `Nothing else is scheduled. Plan on about ${minLabel(c.minutes)}.`
+        : `You have about ${minLabel(c.minutes)} before ${esc(c.next.title)} at ${esc(clockLabel(c.next.min))}.`;
+      if (fitting.length) {
+        const { t, mins } = fitting[0];
+        const more = c.candidates.filter(x => x.fits).length > 1;
+        body = `<div class="st-window">${windowLine}</div>
+          <div class="st-pick" style="border-left-color:${catColor(t.category)}">
+            <div class="st-label">Good use of this time</div>
+            <div class="st-title">${esc(t.title)}</div>
+            <div class="st-meta">${metaLine(t, mins)}</div>
+            <div class="st-acts">
+              <button class="btn-add" data-act="st-start" data-id="${esc(t.id)}">Start timer</button>
+              ${more ? `<button class="mini ghost" data-act="st-skip" data-id="${esc(t.id)}">Another option</button>` : ''}
+            </div></div>`;
+      } else if (stSkip.length && c.candidates.some(x => x.fits)) {
+        stSkip = []; return renderTracker();
+      } else {
+        const shortest = c.candidates.slice().sort((a, b) => a.mins - b.mins)[0];
+        body = `<div class="st-window">${windowLine}</div>
+          <div class="st-pick" style="border-left-color:${catColor(shortest.t.category)}">
+            <div class="st-label">Nothing on your list fits this window. Quickest option</div>
+            <div class="st-title">${esc(shortest.t.title)}</div>
+            <div class="st-meta">${metaLine(shortest.t, shortest.mins)}</div>
+            <div class="st-acts"><button class="btn-secondary" data-act="st-start" data-id="${esc(shortest.t.id)}">Start anyway</button></div></div>`;
+      }
+    }
+    box.innerHTML = `<div class="card"><h2>⏳ Smart Time Tracker</h2>${body}</div>`;
+  }
+
+  // ----- suggestions: each rule looks at the context and returns one suggestion or nothing -----
+  // A suggestion never changes a task by itself; only its buttons do, when tapped.
+  const SMART_RULES = [
+    // A short window: steer toward something quick.
+    c => {
+      if (c.active || c.busy || c.open || !c.next || c.minutes < 5 || c.minutes > 20) return null;
+      const isQuick = x => x.mins <= Math.max(10, c.minutes);
+      if (c.pick && c.candidates.some(x => x.t === c.pick && isQuick(x)) && !c.candidates.some(x => x.t !== c.pick && isQuick(x))) return null;
+      const quick = c.candidates.find(x => x.t !== c.pick && isQuick(x));
+      const until = `${esc(c.next.title)} at ${esc(clockLabel(c.next.min))}`;
+      return quick
+        ? { key: 'short:' + quick.t.id, w: 90, task: quick.t, text: `You only have about ${c.minutes} minutes before ${until}. ${esc(quick.t.title)} (~${quick.mins} min) fits better than starting something that needs a longer focus block.` }
+        : { key: 'short-none', w: 85, text: `You only have about ${c.minutes} minutes before ${until}. A good moment to reset or get ready rather than start a longer task.` };
+    },
+    // Something started a while ago and left in progress.
+    c => {
+      const stale = c.all.filter(t => t.status === 'doing' && t !== c.active && (c.now - (t.updatedAt || 0)) > 86400000)
+        .sort((a, b) => (a.updatedAt || 0) - (b.updatedAt || 0))[0];
+      if (!stale) return null;
+      const d = Math.max(1, Math.round((c.now - stale.updatedAt) / 86400000));
+      return { key: 'stale:' + stale.id, w: 80, task: stale, label: 'Pick it back up',
+        text: `You started ${esc(stale.title)} ${d === 1 ? 'yesterday' : d + ' days ago'} and it's still in progress. Finishing it beats opening something new.` };
+    },
+    // Repeatedly pushed back.
+    c => {
+      const pushed = c.candidates.filter(x => x.t.originalDate && x.t.originalDate < c.td && daysBetween(x.t.originalDate, c.td) >= 2)
+        .sort((a, b) => a.t.originalDate < b.t.originalDate ? -1 : 1)[0];
+      if (!pushed) return null;
+      const fit = !c.busy && pushed.mins <= c.minutes;
+      return { key: 'pushed:' + pushed.t.id, w: 70, task: fit ? pushed.t : null, cat: pushed.t.category,
+        text: `${esc(pushed.t.title)} was first planned for ${esc(dayLabel(pushed.t.originalDate))} and keeps moving. ${fit ? `It fits in the time you have now (~${pushed.mins} min).` : 'Worth deciding whether it still matters, or giving it a fixed time.'}` };
+    },
+    // Momentum: a project step finished today, so suggest that project's next step.
+    c => {
+      const doneStep = c.all.filter(t => t.status === 'done' && t.projectId && t.completedAt && ymd(new Date(t.completedAt)) === c.td)
+        .sort((a, b) => b.completedAt - a.completedAt)[0];
+      if (!doneStep || !S.projects[doneStep.projectId]) return null;
+      const nextStep = c.candidates.find(x => x.t.projectId === doneStep.projectId);
+      if (!nextStep) return null;
+      return { key: 'momentum:' + nextStep.t.id, w: 60, task: nextStep.t,
+        text: `You finished ${esc(doneStep.title)} for ${esc(projName(doneStep.projectId))} today. Next step while it's fresh: ${esc(nextStep.t.title)} (~${nextStep.mins} min).` };
+    },
+    // A long clear stretch: good for focused work.
+    c => {
+      if (c.active || c.busy || c.minutes < 60) return null;
+      const deep = c.candidates.find(x => x.fits && x.mins >= 40 && (x.t.projectId || ['work', 'self'].includes(x.t.category)));
+      if (!deep) return null;
+      const span = c.open ? 'a clear stretch with nothing else scheduled' : `about ${minLabel(c.minutes)} before ${esc(c.next.title)}`;
+      return { key: 'deep:' + deep.t.id, w: 50, task: deep.t,
+        text: `You have ${span}. That's long enough for ${esc(deep.t.title)}, which needs a real focus block (~${deep.mins} min).` };
+    },
+    // A project that hasn't moved in two weeks.
+    c => {
+      const stuck = Object.values(S.projects).filter(p => p.status !== 'archived').map(p => {
+        const steps = c.all.filter(t => t.projectId === p.id);
+        const last = Math.max(p.createdAt || 0, ...steps.map(t => t.completedAt || 0));
+        const nextStep = c.candidates.filter(x => x.t.projectId === p.id).sort((a, b) => a.mins - b.mins)[0];
+        return { p, last, nextStep };
+      }).filter(x => x.nextStep && c.now - x.last > 14 * 86400000).sort((a, b) => a.last - b.last)[0];
+      if (!stuck) return null;
+      return { key: 'stuck:' + stuck.p.id, w: 30, task: stuck.nextStep.t,
+        text: `${esc(stuck.p.name)} hasn't moved in over two weeks. Smallest next step: ${esc(stuck.nextStep.t.title)} (~${stuck.nextStep.mins} min).` };
+    }
+  ];
+
+  function renderSmart() {
+    const box = $('smartBox'); if (!box) return;
+    const c = smartContext();
+    const td = today();
+    const out = [];
+    SMART_RULES.forEach(rule => { try { const s = rule(c); if (s && smartDismissed[s.key] !== td) out.push(s); } catch (e) { console.warn('suggestion', e); } });
+    const seen = new Set();
+    const list = out.sort((a, b) => b.w - a.w).filter(s => { const k = s.task ? s.task.id : s.key; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3);
+    const items = list.map(s => `<div class="sg-item" ${s.task || s.cat ? `style="border-left-color:${catColor(s.task ? s.task.category : s.cat)}"` : ''}>
+        <div class="sg-text">${s.text}</div>
+        <div class="st-acts">
+          ${s.task && s.task !== c.pick && !(c.active && c.active.id === s.task.id) ? `<button class="mini primary" data-act="sg-start" data-id="${esc(s.task.id)}">${esc(s.label || 'Start this')}</button>` : ''}
+          <button class="mini" data-act="sg-dismiss" data-key="${esc(s.key)}">Dismiss</button>
+        </div></div>`).join('');
+    box.innerHTML = `<div class="card"><h2>✨ Smart Suggestions</h2>${items || '<div class="empty">Nothing needs a nudge right now. Suggestions appear as your day and list change.</div>'}</div>`;
+  }
+
+  function tickClock() {
+    const el = $('stClock'); if (!el) return;
+    const t = Object.values(S.tasks).find(x => x.status === 'doing' && x.timer && x.timer.startedAt);
+    if (!t || el.classList.contains('paused')) return;
+    const ms = elapsedMs(t); el.textContent = fmtElapsed(ms);
+    const bar = $('stBar'); const mins = taskMinutes(t);
+    if (bar) { bar.style.width = Math.min(100, Math.round(ms / 60000 / mins * 100)) + '%'; bar.classList.toggle('over', ms / 60000 > mins); }
+  }
+
+  function wireSmart() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'st-start': case 'st-resume': startTimer(id); break;
+        case 'st-pause': pauseTimer(id); break;
+        case 'st-complete': completeTimer(id); break;
+        case 'st-aside': setAside(id); break;
+        case 'st-skip': stSkip.push(id); renderTracker(); break;
+        case 'sg-start': {
+          startTimer(id);
+          const tb = $('trackerBox'); if (tb && tb.scrollIntoView) tb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          break;
+        }
+        case 'sg-dismiss': {
+          const td = today();
+          Object.keys(smartDismissed).forEach(k => { if (smartDismissed[k] !== td) delete smartDismissed[k]; });
+          smartDismissed[el.dataset.key] = td; lsSet(SMART_LS, smartDismissed); renderSmart(); break;
+        }
+      }
+    });
+    setInterval(tickClock, 1000);
+    setInterval(() => { if (!document.hidden) { renderTracker(); renderSmart(); } }, 60000);
+  }
+
   function wireEvents() {
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-act]'); if (!el) return;
