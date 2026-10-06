@@ -145,6 +145,63 @@ input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent);
 .kcard.done { opacity: .55; }
 .kcard.done .t { text-decoration: line-through; }
 
+/* NOW: next-up card with a full-day expansion (Home, top) */
+.now-card { padding: 14px; }
+.now-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.now-head h2 { margin: 0; }
+.now-clock { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.now-hero { background: var(--chip); border-radius: 10px; padding: 12px 14px; border-left: 4px solid var(--accent); }
+.now-hero .lbl { font-size: 13px; color: var(--muted); }
+.now-hero .ttl { font-size: 18px; font-weight: 700; color: var(--primary); margin: 2px 0; line-height: 1.3; overflow-wrap: anywhere; }
+.now-hero .sub { font-size: 13px; color: var(--muted); }
+.now-hero .big { font-size: 26px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; margin: 2px 0; }
+.now-hero .acts { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.now-hero .acts .btn-add, .now-hero .acts .btn-secondary { min-height: 44px; }
+.now-then { margin-top: 12px; }
+.now-then .h { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.now-row { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--body); }
+.now-row:last-child { border-bottom: none; }
+.now-row .when { flex: 0 0 72px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.now-row .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.now-row .rel { flex: 0 0 auto; font-size: 12px; color: var(--accent); font-weight: 600; }
+.now-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
+.now-dot.cal { border-radius: 2px; }
+.now-dot.key { background: transparent; border: 2px solid var(--faint); width: 9px; height: 9px; }
+.now-toggle { display: block; width: 100%; text-align: left; margin-top: 8px; min-height: 40px; }
+.now-day { margin-top: 4px; }
+.now-day .now-row.past { opacity: .5; }
+.now-day .now-row.done .what { text-decoration: line-through; }
+.now-allday { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
+.now-allday span { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--body); }
+.now-line { display: flex; align-items: center; gap: 8px; color: #d64545; font-size: 12px; font-weight: 600; margin: 4px 0; }
+.now-line i { flex: 1; height: 2px; background: #d64545; border-radius: 1px; }
+.now-gap { border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; margin: 6px 0; }
+.now-gap .gh { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.now-gap .fit { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin-top: 6px; }
+.now-gap.current { border-color: var(--accent); }
+
+/* BOARD: shared by Home "Today" and the Kanban, with pointer drag-and-drop */
+.kcol h3 { font-size: 13px; }
+.kcard { display: flex; gap: 6px; align-items: flex-start; padding-left: 4px; }
+.kcard .kbody { flex: 1; min-width: 0; padding-top: 2px; }
+.drag-handle { flex: 0 0 auto; width: 36px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 6px; color: var(--faint); font-size: 16px; line-height: 1; letter-spacing: -2px;
+  cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+.drag-handle:hover { background: var(--soft); color: var(--muted); }
+.task-item .drag-handle { margin-left: -8px; }
+.drop { min-height: 48px; border-radius: 8px; transition: background-color .12s; }
+.drop.over { background: var(--chip); }
+.grp-h { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 6px; }
+.grp-h:first-child { margin-top: 0; }
+.drop .empty { padding: 12px 8px; border: 1px dashed var(--border); border-radius: 6px; text-align: center; }
+.drag-src { visibility: hidden; height: 0 !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; overflow: hidden; }
+.drag-ghost { position: fixed; z-index: 50; pointer-events: none; margin: 0 !important; transform: rotate(1.5deg) scale(1.02);
+  box-shadow: 0 12px 28px rgba(20, 24, 40, .22); opacity: .97; }
+.drag-placeholder { border: 2px dashed var(--accent); border-radius: 6px; background: var(--chip); margin-bottom: 8px; }
+body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+.carry-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--body); }
+@media (prefers-reduced-motion: reduce) { .drag-ghost { transform: none; } .drop { transition: none; } }
+
 /* WEEK */
 .week-day { padding: 12px; margin-bottom: 10px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); border-left: 3px solid var(--accent); }
 .week-day.is-today { border-left-color: var(--pink-dark); }
@@ -228,6 +285,7 @@ a.sync { text-decoration: none; cursor: pointer; }
 
 <!-- ======== HOME ======== -->
 <section id="home" class="tab-content">
+  <div id="nowBox"></div>
   <div class="card dump">
     <h2>🧠 Brain dump</h2>
     <textarea id="dumpText" placeholder="Everything on your mind: tasks, groceries, kid things, ideas. Messy is fine."></textarea>
@@ -533,6 +591,7 @@ a.sync { text-decoration: none; cursor: pointer; }
   async function init() {
     wireEvents();
     wireSmart();
+    wireNow();
     render();
     loadLive();
     setInterval(loadLive, 10 * 60000);
@@ -721,11 +780,12 @@ a.sync { text-decoration: none; cursor: pointer; }
 
   // ---------- render ----------
   function render() {
+    if (drag) { renderDeferred = true; return; }   // never rebuild the DOM under a finger
     const keep = rememberFocus();
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart();
+    renderTracker(); renderSmart(); renderNow();
     restoreFocus(keep);
   }
   function rememberFocus() {
@@ -781,7 +841,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     const metaBits = [];
     if (t.time) metaBits.push(esc(t.time));
     if (opts.showDate && t.date) metaBits.push(esc(dayLabel(t.date)));
-    if (t.status === 'doing') metaBits.push('in progress');
+    if (t.status === 'doing' && !opts.board) metaBits.push('in progress');
     const badges = [];
     const from = t.date && t.date < today() ? t.date : (t.originalDate && t.date && t.originalDate < t.date ? t.originalDate : null);
     if (from && !done) badges.push(`<span class="badge">from ${esc(dayLabel(from))}</span>`);
@@ -790,8 +850,9 @@ a.sync { text-decoration: none; cursor: pointer; }
     if (!done && opts.today) acts.push(`<button class="mini" data-act="to-today" data-id="${esc(t.id)}">Today</button>`);
     if (!done && opts.tomorrow !== false) acts.push(`<button class="mini" data-act="to-tomorrow" data-id="${esc(t.id)}" aria-label="Move to tomorrow">Tmrw</button>`);
     if (!done && opts.drop) acts.push(`<button class="mini ghost" data-act="drop" data-id="${esc(t.id)}" aria-label="Drop task">✕</button>`);
-    return `<div class="task-item ${done ? 'done' : ''}" style="border-left-color:${catColor(t.category)}">
-      <input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${done ? 'checked' : ''} aria-label="Done">
+    const handle = opts.board ? dragHandle(t, opts.board) : '';
+    return `<div class="task-item ${done ? 'done' : ''}" ${opts.board ? `data-drag-id="${esc(t.id)}"` : ''} style="border-left-color:${catColor(t.category)}">
+      ${handle}<input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${done ? 'checked' : ''} aria-label="Done">
       <span class="text"><span class="t">${badges.join('')}${esc(t.title)}</span>${metaBits.length ? `<span class="meta">${metaBits.join(' · ')}</span>` : ''}</span>
       ${acts.join('')}
     </div>`;
@@ -809,20 +870,21 @@ a.sync { text-decoration: none; cursor: pointer; }
   function renderCarry() {
     const { carry } = views();
     if (!carry.length) { $('carryBox').innerHTML = ''; return; }
-    $('carryBox').innerHTML = `<div class="card carry"><h2><span>↪ Carried over (${carry.length})</span>
-      <span style="display:flex;gap:6px"><button class="mini" data-act="carry-all-today">All to today</button><button class="mini" data-act="carry-drop-all">${confirmKey === 'carry-drop' ? 'Tap again' : 'Drop all'}</button></span></h2>
-      ${carry.map(t => taskRow(t, { today: true, drop: true })).join('')}
-      <p class="muted" style="margin-top:4px">Nothing here disappears until you check it, move it, or drop it.</p></div>`;
+    $('carryBox').innerHTML = `<div class="card carry carry-bar">
+      <span>↪ ${carry.length} carried over. ${carry.length === 1 ? 'It\'s' : 'They\'re'} in Today with a “from” tag.</span>
+      <span style="display:flex;gap:6px"><button class="mini" data-act="carry-all-today">All to today</button><button class="mini" data-act="carry-drop-all">${confirmKey === 'carry-drop' ? 'Tap again' : 'Drop all'}</button></span></div>`;
   }
 
   function renderToday() {
-    const { todayOpen, doneToday } = views();
-    let html = todayOpen.length ? todayOpen.map(t => taskRow(t)).join('') : '<div class="empty">Nothing scheduled for today yet. Brain dump above or add one in Schedule.</div>';
-    if (doneToday.length) {
-      html += `<button class="toggle-line" data-act="toggle-done">${ui.showDone ? 'Hide' : 'Show'} ${doneToday.length} done today</button>`;
-      if (ui.showDone) html += doneToday.map(t => taskRow(t)).join('');
+    const b = board();
+    if (!b.todo.length && !b.doing.length && !b.done.length) {
+      $('todayList').innerHTML = '<div class="empty">Nothing scheduled for today yet. Brain dump above or add one in Schedule.</div>';
+      return;
     }
-    $('todayList').innerHTML = html;
+    const rowOpts = t => ({ board: 'home', drop: t.date && t.date < today(), tomorrow: t.status !== 'done' });
+    const group = (col, emptyText) => `<div class="grp-h"><span>${COL_LABEL[col]}</span><span>${b[col].length}</span></div>
+      <div class="drop" data-drop="${col}" data-board="home">${b[col].map(t => taskRow(t, rowOpts(t))).join('') || `<div class="empty">${emptyText}</div>`}</div>`;
+    $('todayList').innerHTML = group('doing', 'Drag a task here to start it.') + group('todo', 'All clear.') + group('done', 'Finished tasks stay here, grayed out.');
   }
 
   function renderAnytime() {
@@ -1073,20 +1135,19 @@ Rules:
       const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
       const id = esc(t.id);
       let acts = '';
-      if (col === 'todo') acts = `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button><button class="mini" data-act="to-tomorrow" data-id="${id}">Tmrw</button>`;
+      if (col === 'todo') acts = `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button><button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move to tomorrow">Tmrw</button>`;
       if (col === 'doing') acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Back</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button>`;
       if (col === 'done') acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Undo</button>`;
-      return `<div class="kcard ${col === 'done' ? 'done' : ''}" style="border-left-color:${catColor(t.category)}">
-        <div class="t">${from}${esc(t.title)}</div>
+      return `<div class="kcard ${col === 'done' ? 'done' : ''}" data-drag-id="${id}" style="border-left-color:${catColor(t.category)}">
+        ${dragHandle(t, 'kanban')}
+        <div class="kbody"><div class="t">${from}${esc(t.title)}</div>
         <div class="meta">${[t.time, (CATS[t.category] || {}).label, t.projectId ? projName(t.projectId) : ''].filter(Boolean).map(esc).join(' · ')}</div>
-        <div class="acts">${acts}</div></div>`;
+        <div class="acts">${acts}</div></div></div>`;
     };
-    const open = [...carry, ...todayOpen];
-    const todo = open.filter(t => t.status === 'todo'), doing = open.filter(t => t.status === 'doing');
-    $('kanban').innerHTML = `
-      <div class="kcol"><h3><span>To Do</span><span>${todo.length}</span></h3>${todo.map(t => card(t, 'todo')).join('') || '<div class="empty">Clear.</div>'}</div>
-      <div class="kcol"><h3><span>In Progress</span><span>${doing.length}</span></h3>${doing.map(t => card(t, 'doing')).join('') || '<div class="empty">Nothing started.</div>'}</div>
-      <div class="kcol"><h3><span>Done</span><span>${doneToday.length}</span></h3>${doneToday.map(t => card(t, 'done')).join('') || '<div class="empty">Checked items land here.</div>'}</div>`;
+    const b = board();
+    const empty = { todo: 'All clear.', doing: 'Drag a task here to start it.', done: 'Finished tasks stay here, grayed out.' };
+    $('kanban').innerHTML = COLS.map(col => `<div class="kcol"><h3><span>${COL_LABEL[col]}</span><span>${b[col].length}</span></h3>
+      <div class="drop" data-drop="${col}" data-board="kanban">${b[col].map(t => card(t, col)).join('') || `<div class="empty">${empty[col]}</div>`}</div></div>`).join('');
   }
 
   function renderWeek() {
@@ -1500,7 +1561,299 @@ Rules:
     setInterval(() => { if (!document.hidden) { renderTracker(); renderSmart(); } }, 60000);
   }
 
+  // ---------- Now: next-up card + full-day timeline. Reads the same data as the tracker; adds no new state ----------
+  const DAY_START_MIN = 7 * 60;
+  const MIN_GAP = 20;                                   // shorter gaps aren't worth suggesting into
+  const relLabel = m => m <= 0 ? 'now' : `in ${minLabel(Math.round(m / 5) * 5 || m)}`;
+  function dayItems(td, nowMin) {
+    const items = [];
+    eventsOn(td).forEach(ev => {
+      if (ev.allDay) return;
+      const st = evMin(ev);
+      const en = ev.end ? (d => d.getHours() * 60 + d.getMinutes())(new Date(ev.end)) : st;
+      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: ev.color || 'var(--home)' });
+    });
+    Object.values(S.tasks).forEach(t => {
+      if (t.date !== td || !t.time || !(isOpen(t) || t.status === 'done')) return;
+      const m = timeMin(t.time); if (m >= 9000) return;
+      items.push({ kind: 'task', start: m, end: m + taskMinutes(t), title: t.title, color: catColor(t.category), done: t.status === 'done', id: t.id });
+    });
+    (Array.isArray(meta().keyTimes) ? meta().keyTimes : []).forEach(k => {
+      const hit = String(k).match(/(\d{1,2}(?::\d{2})?\s*[ap]\.?\s*m\.?)/i); if (!hit) return;
+      const m = timeMin(hit[1].replace(/\s+/g, ' ')); if (m >= 9000) return;
+      const label = String(k).replace(hit[1], '').replace(/[:\-–@]+\s*$/, '').replace(/\bat\s*$/i, '').trim();
+      items.push({ kind: 'key', start: m, end: m, title: label || 'Key time' });
+    });
+    return items.sort((a, b) => a.start - b.start || a.end - b.end);
+  }
+  // Free windows from now to the end of the day, each with a best-fit task (no task used twice).
+  function freeGaps(items, td, nowMin) {
+    const gaps = []; let cursor = Math.max(nowMin, DAY_START_MIN);
+    const busy = items.filter(i => !i.done && i.end > cursor);
+    for (const it of busy) {
+      const end = it.start - BUFFER_MIN;
+      if (end - cursor >= MIN_GAP) gaps.push({ start: cursor, end });
+      cursor = Math.max(cursor, it.end);
+    }
+    if (DAY_END_MIN - cursor >= MIN_GAP) gaps.push({ start: cursor, end: DAY_END_MIN });
+    const used = new Set(stSkip);
+    const all = Object.values(S.tasks);
+    gaps.forEach(g => {
+      const len = g.end - g.start;
+      const fit = rankCandidates(all, td, g.start, len).find(x => x.fits && !used.has(x.t.id) && !(x.t.date === td && x.t.time));  // timed tasks already own a slot
+      if (fit) { used.add(fit.t.id); g.fit = fit; }
+    });
+    return gaps;
+  }
+  function renderNow() {
+    const box = $('nowBox'); if (!box) return;
+    const c = smartContext();
+    const td = c.td, nowMin = c.nowMin;
+    const items = dayItems(td, nowMin);
+    const upcoming = items.filter(i => !i.done && i.start > nowMin).slice(0, 3);
+    const gaps = freeGaps(items, td, nowMin);
+    const fitting = c.candidates.filter(x => x.fits && !stSkip.includes(x.t.id));
+
+    let hero;
+    if (c.active) {
+      const t = c.active, run = !!t.timer.startedAt;
+      hero = `<div class="now-hero" style="border-left-color:${catColor(t.category)}">
+        <div class="lbl">${run ? 'Working on' : 'Paused'}</div>
+        <div class="ttl">${esc(t.title)}</div>
+        <div class="big" id="nowClock">${fmtElapsed(elapsedMs(t))}</div>
+        <div class="sub">~${taskMinutes(t)} min planned${c.next ? ` · ${esc(c.next.title)} at ${esc(clockLabel(c.next.min))}` : ''}</div>
+        <div class="acts">
+          <button class="btn-add" data-act="now-done" data-id="${esc(t.id)}">Mark done</button>
+          <button class="btn-secondary" data-act="${run ? 'now-pause' : 'now-resume'}" data-id="${esc(t.id)}">${run ? 'Pause' : 'Resume'}</button>
+        </div></div>`;
+    } else if (c.busy) {
+      hero = `<div class="now-hero" style="border-left-color:var(--home)"><div class="lbl">Now</div>
+        <div class="ttl">${esc(c.busy.title)}</div><div class="sub">Until ${esc(clockLabel(c.busy.until))}. Your next pick shows up when it ends.</div></div>`;
+    } else if (c.minutes < 10 && c.next) {
+      hero = `<div class="now-hero"><div class="lbl">Coming up</div>
+        <div class="ttl">${esc(c.next.title)}</div><div class="sub">At ${esc(clockLabel(c.next.min))}. Not enough time to start something new.</div></div>`;
+    } else if (fitting.length) {
+      const { t, mins } = fitting[0];
+      const win = c.open ? `Free for about ${minLabel(c.minutes)}` : `Free until ${clockLabel(c.next.min)} · ${minLabel(c.minutes)}`;
+      const from = t.date && t.date < td ? ` · from ${esc(dayLabel(t.date))}` : '';
+      hero = `<div class="now-hero" style="border-left-color:${catColor(t.category)}">
+        <div class="lbl">${esc(win)}</div>
+        <div class="ttl">${esc(t.title)}</div>
+        <div class="sub">~${mins} min${from}${t.projectId ? ` · ${esc(projName(t.projectId))}` : ''}</div>
+        <div class="acts">
+          <button class="btn-add" data-act="now-start" data-id="${esc(t.id)}">Start</button>
+          ${fitting.length > 1 ? `<button class="btn-secondary" data-act="now-skip" data-id="${esc(t.id)}">Something else</button>` : ''}
+        </div></div>`;
+    } else if (stSkip.length && c.candidates.some(x => x.fits)) {
+      stSkip = []; return renderNow();
+    } else if (c.candidates.length) {
+      hero = `<div class="now-hero"><div class="lbl">${c.open ? `Free for about ${esc(minLabel(c.minutes))}` : `Free until ${esc(clockLabel(c.next.min))}`}</div>
+        <div class="ttl">Nothing on your list fits this window</div><div class="sub">A quick reset or a break works here.</div></div>`;
+    } else {
+      hero = `<div class="now-hero"><div class="lbl">Now</div><div class="ttl">Your list is clear</div>
+        <div class="sub">Add tasks in Brain dump below and they'll show up here.</div></div>`;
+    }
+
+    const row = (i, rel) => {
+      const dot = i.kind === 'key' ? '<span class="now-dot key"></span>'
+        : `<span class="now-dot ${i.kind === 'cal' ? 'cal' : ''}" style="background:${esc(i.color)}"></span>`;
+      return `<div class="now-row ${i.past ? 'past' : ''} ${i.done ? 'done' : ''}"><span class="when">${esc(clockLabel(i.start))}</span>${dot}
+        <span class="what">${esc(i.title)}</span>${rel ? `<span class="rel">${esc(rel)}</span>` : ''}</div>`;
+    };
+    const then = upcoming.length
+      ? `<div class="now-then"><div class="h">Then</div>${upcoming.map((i, n) => row(i, n === 0 ? relLabel(i.start - nowMin) : '')).join('')}</div>` : '';
+
+    const full = !!ui.open.nowFull;
+    let day = '';
+    if (full) {
+      const allDay = eventsOn(td).filter(ev => ev.allDay);
+      const seq = [];
+      items.forEach(i => seq.push({ at: i.start, html: row(Object.assign({}, i, { past: i.end <= nowMin && i.start < nowMin })) }));
+      gaps.forEach((g, n) => {
+        const current = g.start <= nowMin + 1;
+        seq.push({ at: g.start + 0.5, html: `<div class="now-gap ${current ? 'current' : ''}"><div class="gh"><span>Free ${esc(clockLabel(g.start))} to ${esc(clockLabel(g.end))}</span><span>${esc(minLabel(g.end - g.start))}</span></div>
+          ${g.fit ? `<div class="fit"><span class="now-dot" style="background:${catColor(g.fit.t.category)}"></span><span style="flex:1">${esc(g.fit.t.title)}</span><span class="muted">~${g.fit.mins} min</span></div>` : ''}</div>` });
+      });
+      seq.push({ at: nowMin + 0.25, html: `<div class="now-line"><span>${esc(clockLabel(nowMin))}</span><i></i></div>` });
+      seq.sort((a, b) => a.at - b.at);
+      day = `<div class="now-day">${allDay.length ? `<div class="now-allday">${allDay.map(ev => `<span>${esc(ev.title || 'All day')}</span>`).join('')}</div>` : ''}
+        ${seq.map(x => x.html).join('')}</div>`;
+    }
+    const hasDay = items.length || gaps.length;
+    box.innerHTML = `<div class="card now-card">
+      <div class="now-head"><h2>Now</h2><span class="now-clock">${esc(clockLabel(nowMin))}</span></div>
+      ${hero}${full ? '' : then}
+      ${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}
+      ${day}</div>`;
+  }
+  function wireNow() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'now-start': case 'now-resume': startTimer(id); break;
+        case 'now-pause': pauseTimer(id); break;
+        case 'now-done': completeTimer(id); break;
+        case 'now-skip': stSkip.push(id); render(); break;
+        case 'now-full': ui.open.nowFull = !ui.open.nowFull; saveUi(); renderNow(); break;
+      }
+    });
+    setInterval(() => { const el = $('nowClock'); if (!el) return; const t = Object.values(S.tasks).find(x => x.status === 'doing' && x.timer && x.timer.startedAt); if (t) el.textContent = fmtElapsed(elapsedMs(t)); }, 1000);
+    setInterval(() => { if (!document.hidden && !drag) renderNow(); }, 60000);
+  }
+
+  // ---------- board: one ordered view of today's tasks, shared by Home and the Kanban ----------
+  const COLS = ['todo', 'doing', 'done'];
+  const COL_LABEL = { todo: 'To do', doing: 'In progress', done: 'Done' };
+  const byBoardOrder = (a, b) => {
+    const ao = a.order, bo = b.order;
+    if (ao != null && bo != null) return ao - bo || byTime(a, b);
+    if (ao != null) return -1;
+    if (bo != null) return 1;
+    return (a.date || '') < (b.date || '') ? -1 : (a.date || '') > (b.date || '') ? 1 : byTime(a, b);
+  };
+  function board() {
+    const { carry, todayOpen, doneToday } = views();
+    const open = [...carry, ...todayOpen];
+    return {
+      todo: open.filter(t => t.status === 'todo').sort(byBoardOrder),
+      doing: open.filter(t => t.status === 'doing').sort(byBoardOrder),
+      done: doneToday
+    };
+  }
+  function dragHandle(t, boardName) {
+    return `<button type="button" class="drag-handle" data-handle data-id="${esc(t.id)}" data-board="${boardName}"
+      aria-label="Move “${esc(t.title)}”. Arrow keys: up and down to reorder, left and right to change column.">⋮⋮</button>`;
+  }
+  // Put task `id` into column `col` at position `index`; renumber that column so the order syncs everywhere.
+  function dropTask(id, col, index) {
+    const t = S.tasks[id]; if (!t) return;
+    const statusPatch = {};
+    if (t.status !== col) {
+      statusPatch.status = col;
+      if (t.timer) { statusPatch.spentMin = (t.spentMin || 0) + Math.round(elapsedMs(t) / 60000); statusPatch.timer = null; }
+      statusPatch.completedAt = col === 'done' ? Date.now() : null;
+    }
+    if (col === 'done') {                      // Done is ordered by completion time, newest first
+      if (statusPatch.status) { stage('tasks', Object.assign({}, t, statusPatch)); commit(); } else render();
+      return;
+    }
+    const list = board()[col].filter(x => x.id !== id);
+    index = Math.max(0, Math.min(index, list.length));
+    list.splice(index, 0, Object.assign({}, t, statusPatch));
+    let changed = false;
+    list.forEach((x, i) => {
+      const order = (i + 1) * 1000;
+      if (x.order === order && x.id !== id) return;
+      if (x.id === id && x.order === order && !statusPatch.status) return;
+      stage('tasks', Object.assign({}, x, { order })); changed = true;
+    });
+    changed ? commit() : render();
+  }
+
+  let drag = null, renderDeferred = false;
+  function startDrag(e, handle) {
+    const item = handle.closest('[data-drag-id]'), zone = handle.closest('[data-drop]');
+    if (!item || !zone) return;
+    e.preventDefault();
+    const r = item.getBoundingClientRect();
+    const ghost = item.cloneNode(true);
+    ghost.classList.add('drag-ghost');
+    Object.assign(ghost.style, { width: r.width + 'px', left: r.left + 'px', top: r.top + 'px' });
+    ghost.removeAttribute('data-drag-id');
+    document.body.appendChild(ghost);
+    const ph = document.createElement('div');
+    ph.className = 'drag-placeholder'; ph.style.height = r.height + 'px';
+    item.after(ph);
+    item.classList.add('drag-src');
+    try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+    drag = { id: item.dataset.dragId, board: handle.dataset.board, item, ghost, ph, zone, pointerId: e.pointerId,
+      dx: e.clientX - r.left, dy: e.clientY - r.top, x: e.clientX, y: e.clientY, raf: 0 };
+    zone.classList.add('over');
+    document.body.classList.add('dragging');
+    if (navigator.vibrate) navigator.vibrate(8);
+    const tick = () => {                          // auto-scroll near the screen edges
+      if (!drag) return;
+      const edge = 72, h = window.innerHeight;
+      const v = drag.y < edge ? -Math.ceil((edge - drag.y) / 6) : drag.y > h - edge ? Math.ceil((drag.y - (h - edge)) / 6) : 0;
+      if (v) { window.scrollBy(0, v); placeDrag(); }
+      drag.raf = requestAnimationFrame(tick);
+    };
+    drag.raf = requestAnimationFrame(tick);
+  }
+  function moveDrag(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    e.preventDefault();
+    drag.x = e.clientX; drag.y = e.clientY;
+    drag.ghost.style.left = (e.clientX - drag.dx) + 'px';
+    drag.ghost.style.top = (e.clientY - drag.dy) + 'px';
+    placeDrag();
+  }
+  function placeDrag() {
+    const under = document.elementFromPoint(drag.x, drag.y);
+    let zone = under && under.closest('[data-drop]');
+    if (!zone) {                                  // between columns: snap to the closest one on this board
+      let best = null, bestD = Infinity;
+      document.querySelectorAll(`[data-drop][data-board="${drag.board}"]`).forEach(z => {
+        const r = z.getBoundingClientRect();
+        const dx = drag.x < r.left ? r.left - drag.x : drag.x > r.right ? drag.x - r.right : 0;
+        const dy = drag.y < r.top ? r.top - drag.y : drag.y > r.bottom ? drag.y - r.bottom : 0;
+        const d = dx * dx + dy * dy; if (d < bestD) { bestD = d; best = z; }
+      });
+      if (!best || bestD > 120 * 120) return;
+      zone = best;
+    }
+    if (zone.dataset.board !== drag.board) return;
+    if (zone !== drag.zone) { drag.zone.classList.remove('over'); zone.classList.add('over'); drag.zone = zone; }
+    const before = [...zone.querySelectorAll(':scope > [data-drag-id]')]
+      .filter(el => el !== drag.item)
+      .find(el => { const r = el.getBoundingClientRect(); return drag.y < r.top + r.height / 2; });
+    if (before) { if (drag.ph.nextElementSibling !== before) zone.insertBefore(drag.ph, before); }
+    else if (zone.lastElementChild !== drag.ph) zone.appendChild(drag.ph);
+  }
+  function endDrag(cancel) {
+    if (!drag) return;
+    const d = drag; drag = null;
+    cancelAnimationFrame(d.raf);
+    const col = d.zone.dataset.drop;
+    let index = 0;
+    for (let n = d.ph.previousElementSibling; n; n = n.previousElementSibling) if (n.dataset && n.dataset.dragId && n !== d.item) index++;
+    d.ghost.remove(); d.ph.remove(); d.item.classList.remove('drag-src'); d.zone.classList.remove('over');
+    document.body.classList.remove('dragging');
+    renderDeferred = false;
+    if (cancel) render(); else dropTask(d.id, col, index);
+  }
+  function keyMove(e, h) {
+    const id = h.dataset.id, t = S.tasks[id]; if (!t) return;
+    const col = t.status === 'done' ? 'done' : t.status;
+    const ci = COLS.indexOf(col), i = board()[col].findIndex(x => x.id === id);
+    if (e.key === 'ArrowUp' && i > 0) dropTask(id, col, i - 1);
+    else if (e.key === 'ArrowDown') dropTask(id, col, i + 1);
+    else if (e.key === 'ArrowLeft' && ci > 0) dropTask(id, COLS[ci - 1], 0);
+    else if (e.key === 'ArrowRight' && ci < COLS.length - 1) dropTask(id, COLS[ci + 1], 0);
+    else return;
+    e.preventDefault();
+    const again = document.querySelector(`[data-handle][data-board="${h.dataset.board}"][data-id="${CSS.escape(id)}"]`);
+    if (again) again.focus();
+  }
+  function wireDrag() {
+    document.addEventListener('pointerdown', e => {
+      const h = e.target.closest && e.target.closest('[data-handle]');
+      if (!h || drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      startDrag(e, h);
+    });
+    document.addEventListener('pointermove', moveDrag, { passive: false });
+    document.addEventListener('pointerup', e => { if (drag && e.pointerId === drag.pointerId) endDrag(false); });
+    document.addEventListener('pointercancel', e => { if (drag && e.pointerId === drag.pointerId) endDrag(true); });
+    document.addEventListener('keydown', e => {
+      if (drag && e.key === 'Escape') { endDrag(true); return; }
+      const h = e.target.closest && e.target.closest('[data-handle]');
+      if (h && /^Arrow/.test(e.key)) keyMove(e, h);
+    });
+  }
+
   function wireEvents() {
+    wireDrag();
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-act]'); if (!el) return;
       const act = el.dataset.act, id = el.dataset.id;
