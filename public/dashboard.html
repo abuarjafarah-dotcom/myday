@@ -174,6 +174,48 @@ details.fold > summary:focus-visible { outline: 2px solid var(--accent); outline
 .fold-body > div > .card { border: 0; padding: 0; margin: 0 0 8px; background: none; }
 .fold-body > div > .card > h2 { display: none; }
 
+/* CAPACITY: Full / Light / Survival */
+.cap { display: inline-flex; background: var(--soft); border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; }
+.cap button { min-height: 44px; min-width: 44px; padding: 0 12px; border: none; background: none; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.cap button[aria-pressed="true"] { background: var(--card); color: var(--primary); box-shadow: 0 0 0 1px var(--border); }
+body[data-cap="survival"] .cap button[aria-pressed="true"] { background: var(--carry); color: var(--carry-ink); }
+.cap-note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.paused { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.paused .task-item { opacity: .6; }
+body[data-cap="survival"] .tab-btn[data-tab="projects"] { display: none; }
+
+/* DRESS: auto from weather */
+.dc-why { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.dc-acts { gap: 8px; }
+
+/* INBOX: one-tap "Make task" */
+.mail-row { display: flex; gap: 8px; align-items: stretch; margin-bottom: 6px; }
+.mail-row .mail-item { flex: 1; min-width: 0; margin-bottom: 0; }
+.mail-row .mini { align-self: center; white-space: nowrap; }
+.mail-row .mini.made { color: var(--accent); border-color: var(--chip); background: var(--chip); }
+
+/* WEEKLY RESET */
+.reset-banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: var(--chip); border-color: transparent; }
+.reset-banner span { font-size: 14px; color: var(--body); }
+.rs-stat { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.rs-stat div { flex: 1 1 90px; background: var(--soft); border-radius: 8px; padding: 10px; }
+.rs-stat b { display: block; font-size: 24px; color: var(--primary); }
+.rs-stat span { font-size: 13px; color: var(--muted); }
+.rs-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin: 4px 0; }
+.rs-bar .lbl { flex: 0 0 72px; }
+.rs-bar .trk { flex: 1; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+.rs-bar .trk i { display: block; height: 100%; border-radius: 4px; }
+.rs-stuck { padding: 10px; border: 1px solid var(--border); border-left: 3px solid var(--carry-line); border-radius: 8px; margin-bottom: 8px; background: var(--card); }
+.rs-stuck .t { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
+.rs-stuck .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.rs-stuck .acts { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+.rs-stuck input[type="date"] { flex: 1 1 120px; min-width: 0; min-height: 44px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; }
+.rs-store { border-top: 1px solid var(--border); padding: 8px 0; }
+.rs-store:first-child { border-top: none; }
+.rs-store .hd { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--primary); }
+.rs-store .hd .n { flex: 1; }
+.rs-store ul { margin: 4px 0 0 22px; font-size: 14px; color: var(--body); }
+
 /* NOW: next-up card with a full-day expansion (Home, top) */
 .now-card { padding: 14px; }
 .now-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
@@ -310,6 +352,7 @@ a.sync { text-decoration: none; cursor: pointer; }
 <!-- ======== HOME ======== -->
 <section id="home" class="tab-content">
   <div id="nowBox"></div>
+  <div id="resetBanner"></div>
   <div class="card">
     <h2>📋 Today</h2>
     <div id="todayList"></div>
@@ -358,6 +401,7 @@ a.sync { text-decoration: none; cursor: pointer; }
   <div class="sub-tabs">
     <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="reset">Weekly reset</button>
   </div>
   <div id="sub-today">
     <div class="donut-container">
@@ -391,6 +435,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     <p class="muted" style="margin-bottom:10px">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
     <div id="weekList"></div>
   </div>
+  <div id="sub-reset" class="hidden"><div id="resetView"></div></div>
 </section>
 
 <!-- ======== PROJECTS ======== -->
@@ -615,7 +660,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     else if (live.mailErr) mh = `<div class="empty">${esc(live.mailErr)}</div>`;
     else if (!live.mail) mh = '<div class="empty">Loading unread email…</div>';
     else if (!live.mail.length) mh = '<div class="empty">Inbox zero. No unread email.</div>';
-    else mh = live.mail.map(m => `<a class="mail-item" href="https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}" target="_blank" rel="noopener"><span class="subj">${esc(m.subject)}</span>${m.from ? `<span class="from">${esc(m.from)}</span>` : ''}</a>`).join('');
+    else mh = live.mail.map(m => `<div class="mail-row">${mailTaskBtn(m)}<a class="mail-item" href="https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}" target="_blank" rel="noopener"><span class="subj">${esc(m.subject)}</span>${m.from ? `<span class="from">${esc(m.from)}</span>` : ''}</a></div>`).join('');
     $('gmailList').innerHTML = mh;
     const evs = eventsOn(today());
     let ch = '';
@@ -631,6 +676,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     wireSmart();
     wireNow();
     wireFolds();
+    wireExtras();
     render();
     loadLive();
     setInterval(loadLive, 10 * 60000);
@@ -806,9 +852,11 @@ a.sync { text-decoration: none; cursor: pointer; }
     setTask(id, { date, originalDate: t.originalDate || t.date || null, status: t.status === 'dropped' ? 'todo' : t.status });
   }
   function views() {
-    const td = today(); const all = Object.values(S.tasks);
+    const td = today(); const everything = Object.values(S.tasks);
+    const all = everything.filter(capVisible);
     return {
       td,
+      paused: everything.filter(t => isOpen(t) && !capVisible(t) && t.date && t.date <= td).sort(byTime),
       carry: all.filter(t => isOpen(t) && t.date && t.date < td).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : byTime(a, b)),
       todayOpen: all.filter(t => isOpen(t) && t.date === td).sort(byTime),
       anytime: all.filter(t => isOpen(t) && !t.date && !t.projectId).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
@@ -824,7 +872,7 @@ a.sync { text-decoration: none; cursor: pointer; }
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow();
+    renderTracker(); renderSmart(); renderNow(); renderResetBanner(); renderReset();
     restoreFocus(keep);
   }
   function rememberFocus() {
@@ -848,21 +896,52 @@ a.sync { text-decoration: none; cursor: pointer; }
     else if (n || flushing) el.textContent = 'Saving…';
     else el.textContent = '✓ Synced';
   }
+  // Dress code. Rules: the big boys get as few layers as the weather allows (sensory comfort);
+  // Yousef gets the full bundle. Edit these rows to tune; `max` is the feels-like °F ceiling for that row.
+  const DRESS_RULES = [
+    { max: 20,  big: 'Winter coat + hat + mittens', baby: 'Thermal onesie + fleece + snowsuit + hat & mittens' },
+    { max: 32,  big: 'Sweatshirt + warm jacket + hat', baby: 'Thermal onesie + fleece + puffer + hat & mittens' },
+    { max: 45,  big: 'Sweatshirt + light jacket', baby: 'Thermal onesie + fleece + jacket + hat' },
+    { max: 55,  big: 'Sweatshirt', baby: 'Long-sleeve onesie + pants + fleece + socks' },
+    { max: 65,  big: 'Long sleeves', baby: 'Long-sleeve onesie + pants + socks' },
+    { max: 75,  big: 'T-shirt + pants', baby: 'Onesie + light pants' },
+    { max: 999, big: 'T-shirt + shorts', baby: 'Short-sleeve onesie + sun hat' }
+  ];
+  function autoDress(w) {
+    if (!w || w.feelsLike == null) return null;
+    const feel = Math.min(w.feelsLike, w.lowFeels != null ? w.lowFeels + 6 : w.feelsLike);   // dress for the cold end of the outing
+    const row = DRESS_RULES.find(r => feel <= r.max) || DRESS_RULES[DRESS_RULES.length - 1];
+    const cond = String(w.condition || '');
+    const wet = /rain|drizzle|shower|thunder/i.test(cond) || (w.precipChance || 0) >= 50;
+    const snow = /snow/i.test(cond);
+    let big = row.big, baby = row.baby;
+    if (snow) { big += ' + snow boots'; baby += ' + snow boots'; }
+    else if (wet) { big = big.replace(/light jacket|warm jacket/, 'rain jacket'); if (!/rain jacket/.test(big)) big += ' + rain jacket'; baby += ' + stroller rain cover'; }
+    const why = `Feels like ${Math.round(feel)}°F${cond ? ', ' + cond.toLowerCase() : ''}${w.precipChance >= 30 ? `, ${w.precipChance}% chance of rain` : ''}`;
+    return { big, baby, why };
+  }
+  function dressToday() {
+    const dc = meta().dress || {};
+    if (dc.date === today() && (dc.big || dc.baby)) return { big: dc.big || '', baby: dc.baby || '', manual: true };
+    const a = autoDress(live.weather);
+    return a ? Object.assign(a, { manual: false }) : { big: '', baby: '', manual: false, why: 'Waiting for the weather…' };
+  }
   function renderHeader() {
     const d = new Date();
     $('dayName').textContent = d.toLocaleDateString('en-US', { weekday: 'short' }) + ',';
     $('dateStr').textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const dc = meta().dress || {};
-    const big = dc.big || ''; const baby = dc.baby || '';
+    const dr = dressToday();
+    const big = dr.big, baby = dr.baby;
     const open = !!(ui.open.dress || editDress);
-    const chipText = big || baby ? (big || baby) : 'Set dress code';
+    const chipText = big || baby || 'Dress code';
     $('dress').innerHTML = `<button class="dress-chip" data-act="dress-toggle" aria-expanded="${open}" aria-controls="dressPanel" title="Today's dress code">👕 <span>${esc(chipText)}</span></button>
       ${open ? `<div class="dress-panel" id="dressPanel">
+        <div class="dc-why">${dr.manual ? 'Your choice for today. It goes back to automatic tomorrow.' : esc(dr.why || '') + ' · set automatically'}</div>
         <div class="dc-grid">
           <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="sweatshirt + light jacket">` : `<div class="what">${esc(big || 'Not set')}</div>`}</div>
           <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="onesie + fleece + hat">` : `<div class="what">${esc(baby || 'Not set')}</div>`}</div>
         </div>
-        <div class="dc-acts"><button class="btn-secondary" data-act="dress-edit">${editDress ? 'Save' : 'Edit'}</button></div>
+        <div class="dc-acts">${dr.manual && !editDress ? '<button class="btn-secondary" data-act="dress-auto">Use automatic</button>' : ''}<button class="btn-secondary" data-act="dress-edit">${editDress ? 'Save for today' : 'Edit'}</button></div>
       </div>` : ''}`;
   }
 
@@ -872,6 +951,9 @@ a.sync { text-decoration: none; cursor: pointer; }
     document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
     $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
+    $('sub-reset').classList.toggle('hidden', ui.sub !== 'reset');
+    document.body.dataset.cap = capMode();
+    if (capMode() === 'survival' && ui.tab === 'projects') { ui.tab = 'home'; saveUi(); return renderTabs(); }
     const gc = Object.values(S.grocery).filter(g => !g.archived && !g.checked).length;
     const c = $('groceryCount'); c.textContent = gc; c.classList.toggle('hidden', !gc);
   }
@@ -904,8 +986,8 @@ a.sync { text-decoration: none; cursor: pointer; }
 
   function renderWaiting() {
     const waiting = Object.values(S.dumps).filter(d => !d.processed && (!review || review.dumpId !== d.id)).sort((a, b) => a.createdAt - b.createdAt);
-    $('waitingBox').innerHTML = waiting.length ? `<div class="card"><h2>📝 Saved brain dumps to sort (${waiting.length})</h2>
-      ${waiting.map(d => `<div class="note-item"><span>${esc(d.text.length > 140 ? d.text.slice(0, 140) + '…' : d.text)}</span>
+    $('waitingBox').innerHTML = waiting.length ? `<div class="card"><h2>📥 Brain dumps to sort (${waiting.length})</h2>
+      ${waiting.map(d => `<div class="note-item"><span>${d.source === 'shortcut' ? '📱 ' : ''}${esc(d.text.length > 140 ? d.text.slice(0, 140) + '…' : d.text)}</span>
         <button class="mini primary" data-act="dump-retry" data-id="${esc(d.id)}">Sort</button>
         <button class="mini ghost" data-act="dump-dismiss" data-id="${esc(d.id)}" aria-label="Dismiss">${confirmKey === 'dd-' + d.id ? 'Sure?' : '✕'}</button></div>`).join('')}
     </div>` : '';
@@ -915,20 +997,26 @@ a.sync { text-decoration: none; cursor: pointer; }
     const { carry } = views();
     if (!carry.length) { $('carryBox').innerHTML = ''; return; }
     $('carryBox').innerHTML = `<div class="card carry carry-bar">
-      <span>↪ ${carry.length} carried over. ${carry.length === 1 ? 'It\'s' : 'They\'re'} in Today with a “from” tag.</span>
+      <span>↪ ${carry.length} carried over. ${carry.length === 1 ? 'It\'s' : 'They\'re'} in Today with a “from” tag.${capMode() === 'survival' ? ' No pressure today.' : ''}</span>
       <span style="display:flex;gap:6px"><button class="mini" data-act="carry-all-today">All to today</button><button class="mini" data-act="carry-drop-all">${confirmKey === 'carry-drop' ? 'Tap again' : 'Drop all'}</button></span></div>`;
   }
 
   function renderToday() {
     const b = board();
     if (!b.todo.length && !b.doing.length && !b.done.length) {
-      $('todayList').innerHTML = '<div class="empty">Nothing scheduled for today yet. Brain dump above or add one in Schedule.</div>';
+      $('todayList').innerHTML = (capMode() === 'survival' ? '<div class="empty">Nothing essential left today. Rest counts.</div>' : '<div class="empty">Nothing scheduled for today yet. Brain dump below or add one in Schedule.</div>') + pausedHtml();
       return;
     }
     const rowOpts = t => ({ board: 'home', drop: t.date && t.date < today(), tomorrow: t.status !== 'done' });
     const group = (col, emptyText) => `<div class="grp-h"><span>${COL_LABEL[col]}</span><span>${b[col].length}</span></div>
       <div class="drop" data-drop="${col}" data-board="home">${b[col].map(t => taskRow(t, rowOpts(t))).join('') || `<div class="empty">${emptyText}</div>`}</div>`;
-    $('todayList').innerHTML = group('doing', 'Drag a task here to start it.') + group('todo', 'All clear.') + group('done', 'Finished tasks stay here, grayed out.');
+    $('todayList').innerHTML = group('doing', 'Drag a task here to start it.') + group('todo', 'All clear.') + group('done', 'Finished tasks stay here, grayed out.') + pausedHtml();
+  }
+  function pausedHtml() {
+    const { paused } = views(); if (!paused.length) return '';
+    const open = !!ui.open.paused;
+    return `<div class="paused"><button class="toggle-line" data-act="paused-toggle" aria-expanded="${open}">${open ? 'Hide' : 'Show'} ${paused.length} paused in Survival mode</button>
+      ${open ? paused.map(t => taskRow(t, { tomorrow: true })).join('') : ''}</div>`;
   }
 
   function renderAnytime() {
@@ -943,6 +1031,11 @@ a.sync { text-decoration: none; cursor: pointer; }
     const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
     const next = todayOpen.find(t => t.time && timeMin(t.time) < 9000 && timeMin(t.time) >= nowMin);
     if (next) out.push(`Next up: ${esc(next.title)} at ${esc(next.time)}.`);
+    if (capMode() === 'survival') {
+      out.push('Survival mode is on. Only kids, self-care, and timed items are showing. Everything else is safe and waiting.');
+      $('suggestBox').innerHTML = `<div class="suggestions"><strong>💡 Suggestions</strong>${out.map(s => `<div>${s}</div>`).join('')}</div>`;
+      return;
+    }
     if (carry.length) out.push(`${carry.length} ${carry.length === 1 ? 'item is' : 'items are'} carried over. Pick what still matters today and drop the rest.`);
     const byStore = {};
     Object.values(S.grocery).forEach(g => { if (!g.archived && !g.checked) byStore[g.store] = (byStore[g.store] || 0) + 1; });
@@ -1346,7 +1439,7 @@ Rules:
   // Everything the two sections reason about, gathered in one place.
   function smartContext() {
     const td = today(), nowMin = nowMinutes(), now = Date.now();
-    const all = Object.values(S.tasks);
+    const all = Object.values(S.tasks).filter(capVisible);
     const commitments = [];
     all.forEach(t => {
       if (!isOpen(t) || t.date !== td || !t.time) return;
@@ -1400,7 +1493,7 @@ Rules:
       else if (t.date === td) score += 15;
       else if (!t.projectId) score += 5;
       if (t.originalDate && t.originalDate < td) score += Math.min(12, 4 + daysBetween(t.originalDate, td) * 2);
-      const fits = mins <= minutes;
+      const fits = mins <= minutes && mins <= CAP[capMode()].maxTask;
       if (fits && minutes > 0) score += Math.round((mins / minutes) * 12);
       return { t, mins, fits, score };
     }).sort((a, b) => (b.fits - a.fits) || (b.score - a.score) || (a.mins - b.mins));
@@ -1560,14 +1653,15 @@ Rules:
     const out = [];
     SMART_RULES.forEach(rule => { try { const s = rule(c); if (s && smartDismissed[s.key] !== td) out.push(s); } catch (e) { console.warn('suggestion', e); } });
     const seen = new Set();
-    const list = out.sort((a, b) => b.w - a.w).filter(s => { const k = s.task ? s.task.id : s.key; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3);
+    const list = out.sort((a, b) => b.w - a.w).filter(s => { const k = s.task ? s.task.id : s.key; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, CAP[capMode()].suggestions);
     const items = list.map(s => `<div class="sg-item" ${s.task || s.cat ? `style="border-left-color:${catColor(s.task ? s.task.category : s.cat)}"` : ''}>
         <div class="sg-text">${s.text}</div>
         <div class="st-acts">
           ${s.task && s.task !== c.pick && !(c.active && c.active.id === s.task.id) ? `<button class="mini primary" data-act="sg-start" data-id="${esc(s.task.id)}">${esc(s.label || 'Start this')}</button>` : ''}
           <button class="mini" data-act="sg-dismiss" data-key="${esc(s.key)}">Dismiss</button>
         </div></div>`).join('');
-    box.innerHTML = `<div class="card"><h2>✨ Smart Suggestions</h2>${items || '<div class="empty">Nothing needs a nudge right now. Suggestions appear as your day and list change.</div>'}</div>`;
+    const gentle = capMode() === 'survival' ? '<div class="cap-note" style="margin:0 0 8px">Survival mode: essentials only. Rest counts as getting something done.</div>' : '';
+    box.innerHTML = `<div class="card"><h2>✨ Smart Suggestions</h2>${gentle}${items || '<div class="empty">Nothing needs a nudge right now. Suggestions appear as your day and list change.</div>'}</div>`;
   }
 
   function tickClock() {
@@ -1683,7 +1777,7 @@ Rules:
       hero = `<div class="now-hero" style="border-left-color:${catColor(t.category)}">
         <div class="lbl">${esc(win)}</div>
         <div class="ttl">${esc(t.title)}</div>
-        <div class="sub">~${mins} min${from}${t.projectId ? ` · ${esc(projName(t.projectId))}` : ''}</div>
+        <div class="sub">~${mins} min${from}${t.projectId ? ` · ${esc(projName(t.projectId))}` : ''}${capMode() === 'survival' ? ' · or rest, that counts too' : ''}</div>
         <div class="acts">
           <button class="btn-add" data-act="now-start" data-id="${esc(t.id)}">Start</button>
           ${fitting.length > 1 ? `<button class="btn-secondary" data-act="now-skip" data-id="${esc(t.id)}">Something else</button>` : ''}
@@ -1692,7 +1786,7 @@ Rules:
       stSkip = []; return renderNow();
     } else if (c.candidates.length) {
       hero = `<div class="now-hero"><div class="lbl">${c.open ? `Free for about ${esc(minLabel(c.minutes))}` : `Free until ${esc(clockLabel(c.next.min))}`}</div>
-        <div class="ttl">Nothing on your list fits this window</div><div class="sub">A quick reset or a break works here.</div></div>`;
+        <div class="ttl">${capMode() === 'survival' ? 'Nothing essential right now' : 'Nothing on your list fits this window'}</div><div class="sub">${capMode() === 'survival' ? 'Rest counts. Sit down if you can.' : 'A quick reset or a break works here.'}</div></div>`;
     } else {
       hero = `<div class="now-hero"><div class="lbl">Now</div><div class="ttl">Your list is clear</div>
         <div class="sub">Add tasks in Brain dump below and they'll show up here.</div></div>`;
@@ -1725,10 +1819,133 @@ Rules:
     }
     const hasDay = items.length || gaps.length;
     box.innerHTML = `<div class="card now-card">
-      <div class="now-head"><h2>Now</h2><span class="now-clock">${esc(clockLabel(nowMin))}</span></div>
+      <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capToggle()}</div>
       ${hero}${full ? '' : then}
       ${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}
       ${day}</div>`;
+  }
+  // ---------- capacity modes ----------
+  const CAP = {
+    full:     { label: 'Full',     maxTask: 999, suggestions: 3 },
+    light:    { label: 'Light',    maxTask: 30,  suggestions: 2 },
+    survival: { label: 'Survival', maxTask: 20,  suggestions: 1 }
+  };
+  const capMode = () => { const m = (meta().capacity || {}).mode; return CAP[m] ? m : 'full'; };
+  // Survival keeps the essentials: kids, self-care, anything timed for today, and high priority. Projects pause.
+  function isEssential(t) {
+    if (t.date === today() && t.time) return true;
+    if (priorityScore(t.priority) >= 30) return true;
+    if (t.projectId) return false;
+    return t.category === 'kids' || t.category === 'self';
+  }
+  const capVisible = t => !isOpen(t) || capMode() !== 'survival' || isEssential(t);
+  const capToggle = () => `<div class="cap" role="group" aria-label="Capacity today">${Object.keys(CAP).map(k =>
+    `<button data-act="cap-set" data-mode="${k}" aria-pressed="${capMode() === k}">${CAP[k].label}</button>`).join('')}</div>`;
+
+  // ---------- inbox -> task ----------
+  const mailTask = m => Object.values(S.tasks).find(t => t.mailId === m.id && t.status !== 'dropped');
+  const mailTaskBtn = m => mailTask(m)
+    ? `<button class="mini made" data-act="tab" data-tab="home" aria-label="Already a task">✓ Task</button>`
+    : `<button class="mini" data-act="mail-task" data-id="${esc(m.id)}">Make task</button>`;
+  function makeMailTask(id) {
+    const m = (live.mail || []).find(x => x.id === id); if (!m || mailTask(m)) return;
+    const t = makeTask({ title: m.subject, category: guessCategory(`${m.subject} ${m.from || ''}`), date: today(), source: 'gmail' });
+    t.mailId = m.id; t.notes = `From ${m.from || 'email'} · https://mail.google.com/mail/u/0/#inbox/${m.threadId || m.id}`;
+    put('tasks', t);
+  }
+
+  // ---------- weekly reset ----------
+  const weekStart = () => { const d = parseYmd(today()); const back = (d.getDay() + 6) % 7; return addDays(today(), -back); };   // Monday
+  function stuckTasks() {
+    const td = today();
+    const wk = weekStart();
+    return Object.values(S.tasks).filter(t => isOpen(t) && t.reviewedOn !== wk && !(t.date && t.date > td)
+        && (t.originalDate || t.date) && daysBetween(t.originalDate || t.date, td) >= 3)
+      .map(t => ({ t, days: daysBetween(t.originalDate || t.date, td) })).sort((a, b) => b.days - a.days);
+  }
+  function renderResetBanner() {
+    const el = $('resetBanner'); if (!el) return;
+    const d = new Date().getDay(), key = weekStart();
+    const show = (d === 0 || (d === 1 && new Date().getHours() < 12)) && meta().resetDone !== key && ui.resetHidden !== key;
+    const stuck = stuckTasks().length;
+    el.innerHTML = show ? `<div class="card reset-banner"><span>🧺 Weekly reset is ready${stuck ? ` · ${stuck} stuck task${stuck === 1 ? '' : 's'}` : ''}</span>
+      <span style="display:flex;gap:6px"><button class="mini primary" data-act="reset-open">Open</button><button class="mini ghost" data-act="reset-hide" aria-label="Hide for this week">✕</button></span></div>` : '';
+  }
+  function renderReset() {
+    const el = $('resetView'); if (!el) return;
+    const td = today(), from = addDays(td, -6);
+    const done = Object.values(S.tasks).filter(t => t.status === 'done' && t.completedAt && ymd(new Date(t.completedAt)) >= from);
+    const byCat = {}; done.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + 1; });
+    const maxN = Math.max(1, ...Object.values(byCat));
+    const dropped = Object.values(S.tasks).filter(t => t.status === 'dropped' && t.droppedAt && ymd(new Date(t.droppedAt)) >= from).length;
+    const stuck = stuckTasks();
+    const list = stores();
+    const items = Object.values(S.grocery).filter(g => !g.archived && !g.checked);
+    const route = list.filter(st => items.some(g => g.store === st));
+    const stuckHtml = stuck.length ? stuck.map(({ t, days }) => `<div class="rs-stuck">
+        <div class="t">${esc(t.title)}</div>
+        <div class="meta">Waiting ${days} days · ${esc((CATS[t.category] || {}).label || '')}${t.projectId ? ' · ' + esc(projName(t.projectId)) : ''}</div>
+        <div class="acts">
+          <button class="mini primary" data-act="rs-commit" data-id="${esc(t.id)}">Commit today</button>
+          <input type="date" aria-label="Schedule ${esc(t.title)}" data-act="rs-date" data-id="${esc(t.id)}" min="${td}" value="">
+          <button class="mini" data-act="drop" data-id="${esc(t.id)}">Drop</button>
+        </div></div>`).join('') : '<div class="empty">Nothing has been waiting 3 days or more.</div>';
+    const routeHtml = route.length ? route.map((st, i) => `<div class="rs-store">
+        <div class="hd"><span class="n">${i + 1}. ${STORE_ICON[st] || '🏪'} ${esc(st)}</span>
+          <button class="mini ghost" data-act="rs-up" data-store="${esc(st)}" aria-label="Move ${esc(st)} earlier" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="mini ghost" data-act="rs-down" data-store="${esc(st)}" aria-label="Move ${esc(st)} later" ${i === route.length - 1 ? 'disabled' : ''}>↓</button></div>
+        <ul>${items.filter(g => g.store === st).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).map(g => `<li>${esc(g.item)}</li>`).join('')}</ul></div>`).join('')
+      : '<div class="empty">Your grocery lists are empty.</div>';
+    el.innerHTML = `
+      <div class="card"><h2>✅ This week</h2>
+        <div class="rs-stat"><div><b>${done.length}</b><span>done</span></div><div><b>${stuck.length}</b><span>stuck 3+ days</span></div><div><b>${dropped}</b><span>let go</span></div></div>
+        ${Object.keys(byCat).length ? Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<div class="rs-bar"><span class="lbl">${esc((CATS[c] || {}).label || c)}</span><span class="trk"><i style="width:${Math.round(n / maxN * 100)}%;background:${catColor(c)}"></i></span><span>${n}</span></div>`).join('') : '<div class="empty">Finished tasks from the last 7 days show up here.</div>'}
+      </div>
+      <div class="card"><h2>⏳ Stuck for 3+ days</h2><p class="cap-note" style="margin:0 0 8px">For each one: commit to today, pick a day, or drop it.</p>${stuckHtml}</div>
+      <div class="card"><h2><span>🛒 Next week's groceries</span>${route.length ? '<button class="mini" data-act="rs-copy">Copy list</button>' : ''}</h2>
+        <p class="cap-note" style="margin:0 0 8px">In route order. Use the arrows to match how you drive.</p>${routeHtml}</div>
+      <button class="btn-add full" data-act="reset-done">Finish weekly reset</button>`;
+  }
+  function moveStore(st, dir) {
+    const list = stores(); const i = list.indexOf(st), j = i + dir;
+    const items = Object.values(S.grocery).filter(g => !g.archived && !g.checked);
+    // step over stores with nothing on their list so the arrows move past what's visible
+    let k = j; while (k >= 0 && k < list.length && !items.some(g => g.store === list[k])) k += dir;
+    if (i < 0 || k < 0 || k >= list.length) return;
+    list.splice(i, 1); list.splice(k, 0, st); setMeta({ stores: list });
+  }
+  function groceryText() {
+    const items = Object.values(S.grocery).filter(g => !g.archived && !g.checked);
+    return stores().filter(st => items.some(g => g.store === st))
+      .map(st => `${st}\n${items.filter(g => g.store === st).map(g => '- ' + g.item).join('\n')}`).join('\n\n');
+  }
+  function wireExtras() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'cap-set': setMeta({ capacity: { mode: el.dataset.mode, setOn: today() } }); break;
+        case 'paused-toggle': ui.open.paused = !ui.open.paused; saveUi(); renderToday(); break;
+        case 'dress-auto': { const dc = Object.assign({}, meta().dress || {}); delete dc.date; editDress = false; setMeta({ dress: dc }); break; }
+        case 'mail-task': makeMailTask(id); break;
+        case 'reset-open': ui.tab = 'schedule'; ui.sub = 'reset'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'reset-hide': ui.resetHidden = weekStart(); saveUi(); renderResetBanner(); break;
+        case 'reset-done': setMeta({ resetDone: weekStart() }); ui.tab = 'home'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'rs-commit': { const t = S.tasks[id]; if (t) { moveTo(id, today()); setTask(id, { priority: 'high', reviewedOn: weekStart() }); } break; }
+        case 'rs-up': moveStore(el.dataset.store, -1); break;
+        case 'rs-down': moveStore(el.dataset.store, 1); break;
+        case 'rs-copy': {
+          const txt = groceryText();
+          (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { el.textContent = 'Copied'; setTimeout(() => { el.textContent = 'Copy list'; }, 1500); })
+            .catch(() => { window.prompt('Copy your list:', txt); });
+          break;
+        }
+      }
+    });
+    document.addEventListener('change', e => {
+      const el = e.target; if (!el.matches || !el.matches('[data-act="rs-date"]') || !el.value) return;
+      moveTo(el.dataset.id, el.value); setTask(el.dataset.id, { reviewedOn: weekStart() });
+    });
   }
   function wireFolds() {
     document.querySelectorAll('details.fold').forEach(el => { el.open = !!ui.open['fold-' + el.dataset.fold]; });
@@ -1945,7 +2162,7 @@ Rules:
         case 'dress-edit': {
           if (editDress) {
             const big = ($('dcBig') || {}).value || ''; const baby = ($('dcBaby') || {}).value || '';
-            editDress = false; setMeta({ dress: { big: big.trim(), baby: baby.trim() } });
+            editDress = false; setMeta({ dress: { big: big.trim(), baby: baby.trim(), date: today() } });
           } else { editDress = true; render(); }
           break;
         }
