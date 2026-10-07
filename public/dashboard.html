@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F8F7F4">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="myday">
 <title>Farah Master Dashboard</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -434,8 +438,8 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-reset { order: 2; } .h-mail { order: 3; } .h-dump { order: 4; } .h-review { order: 5; } .h-waiting { order: 6; }
-.h-cal { order: 7; } .h-today { order: 8; } .h-carry { order: 9; } .h-any { order: 10; } .h-keys { order: 11; } .h-tracker { order: 12; } .h-heads { order: 13; }
+.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-reset { order: 3; } .h-mail { order: 4; } .h-dump { order: 5; } .h-review { order: 6; } .h-waiting { order: 7; }
+.h-cal { order: 8; } .h-today { order: 9; } .h-carry { order: 10; } .h-any { order: 11; } .h-keys { order: 12; } .h-tracker { order: 13; } .h-heads { order: 14; } .h-remind { order: 15; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -458,6 +462,40 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 .dp-main { flex: 1; min-width: 0; }
 .dp-name { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .dp-meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+
+/* Routines, plan, work day, settings */
+.rt-row { display: flex; align-items: center; gap: 10px; min-height: 56px; border-bottom: 1px solid var(--hair); }
+.rt-row.off { opacity: .6; }
+.rt-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rt-t { font-size: 15px; overflow-wrap: anywhere; }
+.rt-m { font-size: 13px; color: var(--muted); }
+.now-links { display: flex; gap: 18px; flex-wrap: wrap; }
+.now-links .now-toggle { width: auto; }
+.work-note { margin-top: 10px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--hair); padding-top: 10px; }
+.plan-row { align-items: center; }
+.plan-time { width: 116px; min-height: 44px; padding: 0 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); font-size: 16px; }
+.plan-title { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; font-size: 15px; }
+.dl-work { position: absolute; top: 2px; bottom: 2px; background: var(--soft); border-radius: 6px; }
+.dl-work[hidden] { display: none; }
+.dl-track svg, .dl-dot { position: relative; z-index: 1; }
+.dl-dot { position: absolute; }
+.set-sec { padding: 4px 0 14px; display: flex; flex-direction: column; gap: 8px; }
+.set-sec + .set-sec { border-top: 1px solid var(--hair); padding-top: 14px; }
+.set-h { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
+.set-acts { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.set-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.set-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 130px; }
+.set-grid input { min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; }
+.set-chk { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 15px; }
+.set-days { display: flex; flex-wrap: wrap; column-gap: 14px; }
+
+/* Recap */
+.rc-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.rc-month { font-family: var(--serif); font-size: 22px; font-weight: 700; }
+.rc-card { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: #F8F7F4; }
+.rc-card svg { display: block; width: 100%; height: auto; }
+.rc-acts { margin-top: 14px; display: flex; }
+.rc-acts .btn-add { width: 100%; }
 </style>
 </head>
 <body>
@@ -474,6 +512,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   <div class="dayline" id="dayline">
     <div class="dl-track" role="img" aria-label="Your day from 6 AM to bedtime at 9 PM. The dot marks where you are now.">
       <svg viewBox="0 0 1000 24" preserveAspectRatio="none"><path id="dlPath" d="M2 17 C 250 9, 500 8, 750 9 S 950 13, 998 17"></path></svg>
+      <span class="dl-work" id="dlWork" hidden></span>
       <span class="dl-dot" id="dlDot"></span>
     </div>
     <div class="dl-axis" aria-hidden="true"><span class="a0" style="left:0">6 AM</span><span style="left:40%">NOON</span><span style="left:80%">6 PM</span><span class="a3" style="left:100%">BED</span></div>
@@ -493,7 +532,9 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   <div id="smartBox" class="h-smart"></div>
   <div class="home-main">
     <div id="nowBox" class="h-now"></div>
+    <div id="planBox" class="h-plan"></div>
     <div id="resetBanner" class="h-reset"></div>
+    <div id="recapBanner" class="h-reset"></div>
     <div class="card h-today">
       <h2>Today</h2>
       <div id="todayList"></div>
@@ -532,6 +573,10 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     </details>
     <div id="trackerBox" class="h-tracker"></div>
     <div id="suggestBox" class="h-heads"></div>
+    <details class="card fold h-remind" data-fold="reminders">
+      <summary><span>Reminders &amp; work day</span></summary>
+      <div class="fold-body" id="settingsBody"></div>
+    </details>
   </div>
 </section>
 
@@ -541,6 +586,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="reset">Weekly reset</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="recap">Monthly recap</button>
   </div>
   <div id="sub-today">
     <div class="donut-container">
@@ -564,9 +610,14 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
           <option value="tomorrow">Tomorrow</option>
           <option value="none">No date</option>
         </select>
+        <select id="ntRepeat" aria-label="Repeats"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="weekdays">Every weekday</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Every month</option></select>
         <input type="time" id="ntTime" aria-label="Time">
         <button class="btn-add" data-act="add-task">Add</button>
       </div>
+    </div>
+    <div class="card">
+      <h2>Routines</h2>
+      <div id="routinesList"></div>
     </div>
     <div class="kanban" id="kanban"></div>
   </div>
@@ -575,6 +626,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <div id="weekList"></div>
   </div>
   <div id="sub-reset" class="hidden"><div id="resetView"></div></div>
+  <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
 
 <!-- ======== PROJECTS ======== -->
@@ -828,6 +880,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   }
 
   async function init() {
+    registerSw();
     wireEvents();
     wireSmart();
     wireNow();
@@ -1024,11 +1077,14 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   // ---------- render ----------
   function render() {
     if (drag) { renderDeferred = true; return; }   // never rebuild the DOM under a finger
+    materializeOnce();
     const keep = rememberFocus();
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow(); renderResetBanner(); renderReset();
+    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderResetBanner(); renderReset();
+    renderRoutines(); renderSettings(); renderRecapBanner();
+    if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
     restoreFocus(keep);
   }
   function rememberFocus() {
@@ -1106,7 +1162,9 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     else {
       l1 = `${d.getHours() < 12 ? 'Morning' : d.getHours() < 17 ? 'Afternoon' : 'Evening'}, Farah.`;
       const next = dayItems(today(), nowMin).find(i => !i.done && i.start > nowMin && i.start < BED_MIN);
-      if (next) {
+      const wh = workNow(nowMin);
+      if (wh) l2 = `At work until ${clockLabel(wh.end).replace(':00', '')}.`;
+      else if (next) {
         let t = tidyTitle(next.title);
         if (t.length > 40) t = t.slice(0, 39).trimEnd() + '…';
         l2 = `${t} at ${clockLabel(next.start).replace(':00', '')}.`;
@@ -1124,6 +1182,11 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
       if (len > 0) { let lo = 0, hi = len; for (let k = 0; k < 22; k++) { const mid = (lo + hi) / 2; if (p.getPointAtLength(mid).x < tx) lo = mid; else hi = mid; } y = p.getPointAtLength(lo).y; }
     } catch (e) {}
     const dot = $('dlDot'); dot.style.left = (f * 100) + '%'; dot.style.top = y + 'px';
+    const wh = workHours(today()), band = $('dlWork');
+    if (wh) {
+      const a = Math.min(1, Math.max(0, (wh.start - 360) / (BED_MIN - 360))), b = Math.min(1, Math.max(0, (wh.end - 360) / (BED_MIN - 360)));
+      band.hidden = false; band.style.left = (a * 100) + '%'; band.style.width = ((b - a) * 100) + '%';
+    } else band.hidden = true;
     const items = dayItems(today(), nowMin).filter(i => !i.done);
     const spans = [['6 AM – Noon', 360, 720], ['Noon – 6 PM', 720, 1080], ['6 PM – bed', 1080, BED_MIN]];
     $('dlPeriods').innerHTML = spans.map(([label, a, b]) => {
@@ -1139,6 +1202,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
     $('sub-reset').classList.toggle('hidden', ui.sub !== 'reset');
+    $('sub-recap').classList.toggle('hidden', ui.sub !== 'recap');
     document.body.dataset.cap = capMode();
     if (capMode() === 'survival' && ui.tab === 'projects') { ui.tab = 'home'; saveUi(); return renderTabs(); }
     const gc = Object.values(S.grocery).filter(g => !g.archived && !g.checked).length;
@@ -1155,6 +1219,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     if (t.time) metaBits.push(esc(t.time));
     if (opts.showDate && t.date) metaBits.push(esc(dayLabel(t.date)));
     if (t.due && t.status !== 'done') metaBits.push('due ' + esc(dayLabel(t.due)));
+    if (t.routineId) metaBits.push('repeats');
     if (t.status === 'doing' && !opts.board) metaBits.push('in progress');
     const catLabel = (CATS[t.category] || {}).label;
     if (catLabel) metaBits.push(esc(catLabel));
@@ -1647,7 +1712,7 @@ Rules:
   // Everything the two sections reason about, gathered in one place.
   function smartContext() {
     const td = today(), nowMin = nowMinutes(), now = Date.now();
-    const all = Object.values(S.tasks).filter(capVisible);
+    const all = Object.values(S.tasks).filter(capVisible).filter(t => okAt(t, nowMin));
     const commitments = [];
     all.forEach(t => {
       if (!isOpen(t) || t.date !== td || !t.time) return;
@@ -1949,7 +2014,7 @@ Rules:
     const all = Object.values(S.tasks);
     gaps.forEach(g => {
       const len = g.end - g.start;
-      const fit = rankCandidates(all, td, g.start, len).find(x => x.fits && !used.has(x.t.id) && !(x.t.date === td && x.t.time));  // timed tasks already own a slot
+      const fit = rankCandidates(all, td, g.start, len).find(x => x.fits && !used.has(x.t.id) && !(x.t.date === td && x.t.time) && okAt(x.t, g.start, td));  // timed tasks already own a slot
       if (fit) { used.add(fit.t.id); g.fit = fit; }
     });
     return gaps;
@@ -2041,11 +2106,14 @@ Rules:
       day = `<div class="now-day">${allDay.length ? `<div class="now-allday">${allDay.map(ev => `<span>${esc(ev.title || 'All day')}</span>`).join('')}</div>` : ''}
         ${seq.map(x => x.html).join('')}</div>`;
     }
+    const wh = workNow(nowMin);
+    const waiting = wh ? Object.values(S.tasks).filter(t => isOpen(t) && t.category !== 'work' && (!t.date || t.date <= td)).length : 0;
+    const workNote = wh && !resting ? `<div class="work-note">Work day until ${esc(clockLabel(wh.end))}. ${waiting ? `${waiting} personal task${waiting === 1 ? '' : 's'} wait${waiting === 1 ? 's' : ''} until then.` : 'Personal tasks wait until then.'}</div>` : '';
     const hasDay = !resting && (items.length || gaps.length);
     box.innerHTML = `<div class="card now-card">
       <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capToggle()}</div>
-      ${hero}${full || resting ? '' : then}
-      ${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}
+      ${hero}${workNote}${full || resting ? '' : then}
+      <div class="now-links">${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}${resting ? '' : '<button class="toggle-line now-toggle" data-act="plan-open">Plan my day</button>'}</div>
       ${day}</div>`;
   }
   // ---------- capacity modes ----------
@@ -2352,6 +2420,8 @@ Rules:
   function wireEvents() {
     wireDrag();
     wireProjectsDone();
+    wireFeatures();
+    wireRecap();
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-act]'); if (!el) return;
       const act = el.dataset.act, id = el.dataset.id;
@@ -2448,6 +2518,8 @@ Rules:
     const dv = $('ntDate').value;
     const date = dv === 'today' ? today() : dv === 'tomorrow' ? addDays(today(), 1) : null;
     $('ntTitle').value = ''; const time = fmt24($('ntTime').value); $('ntTime').value = '';
+    const every = $('ntRepeat').value; $('ntRepeat').value = '';
+    if (every) { addRoutine({ title, category: $('ntCat').value, freq: every, time, startDate: date || today() }); return; }
     put('tasks', makeTask({ title, category: $('ntCat').value, date, time }));
   }
   // ---------- email -> tasks: scan the last 7 days, review, then add (nothing is added until approved) ----------
@@ -2548,6 +2620,472 @@ Rules:
     document.addEventListener('input', upd); document.addEventListener('change', upd);
     document.addEventListener('keydown', e => {
       if (e.key === 'Enter' && e.target.dataset && e.target.dataset.enter === 'proj-log') { e.preventDefault(); logDone(); }
+    });
+  }
+
+  // ---------- routines: recurring tasks ----------
+  // A routine lives in settings (meta.routines). Its next 7 days are kept filled in as ordinary tasks with fixed ids,
+  // so two phones can never create duplicates. Missed daily or weekday instances drop away instead of piling up.
+  const routinesList = () => Array.isArray(meta().routines) ? meta().routines : [];
+  const FREQ_LABEL = { daily: 'Every day', weekdays: 'Every weekday', weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month' };
+  const DOW_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10 < 4 ? n % 10 : 0]);
+  function routineHits(r, d) {
+    if (r.active === false || d < r.start) return false;
+    const dt = parseYmd(d), dow = dt.getDay();
+    switch (r.freq) {
+      case 'daily': return true;
+      case 'weekdays': return dow >= 1 && dow <= 5;
+      case 'weekly': return dow === r.dow;
+      case 'biweekly': return dow === r.dow && Math.floor(daysBetween(r.start, d) / 7) % 2 === 0;
+      case 'monthly': return dt.getDate() === Math.min(r.dom, new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate());
+    }
+    return false;
+  }
+  function routineText(r) {
+    const on = r.freq === 'weekly' || r.freq === 'biweekly' ? ` on ${DOW_NAME[r.dow]}` : r.freq === 'monthly' ? ` on the ${ord(r.dom)}` : '';
+    return `${FREQ_LABEL[r.freq] || r.freq}${on}${r.time ? ' · ' + r.time : ''}`;
+  }
+  let materializing = false;
+  function materializeOnce() {
+    if (materializing) return;
+    if (!(mode === 'cloud' || (mode === 'local' && cloudNote))) return;      // wait until this phone has the latest from the cloud
+    materializing = true;
+    try { materializeRoutines(); } finally { materializing = false; }
+  }
+  function materializeRoutines() {
+    const list = routinesList(); if (!list.length) return;
+    const td = today(); let changed = false;
+    const have = new Set(); Object.values(S.tasks).forEach(t => { if (t.routineId) have.add(t.routineId + '|' + t.date); });
+    list.forEach(r => {
+      if (r.active === false) return;
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(td, i);
+        if (!routineHits(r, d) || have.has(r.id + '|' + d)) continue;
+        const t = makeTask({ title: r.title, category: r.category, date: d, time: r.time || null, source: 'routine' });
+        t.id = `t-${r.id}-${d}`; t.routineId = r.id;
+        stage('tasks', t); changed = true;
+      }
+    });
+    Object.values(S.tasks).forEach(t => {
+      if (!t.routineId || !isOpen(t) || !t.date || t.date >= td) return;
+      const r = list.find(x => x.id === t.routineId);
+      if (!r || r.freq === 'daily' || r.freq === 'weekdays') { stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now(), missed: true })); changed = true; }
+    });
+    if (changed) commit();
+  }
+  function addRoutine({ title, category, freq, time, startDate }) {
+    const dt = parseYmd(startDate);
+    const r = { id: 'r' + Date.now().toString(36), title, category, freq, time: time || null, start: startDate, dow: dt.getDay(), dom: dt.getDate(), active: true, createdAt: Date.now() };
+    setMeta({ routines: [...routinesList(), r] });
+  }
+  function renderRoutines() {
+    const el = $('routinesList'); if (!el) return;
+    const list = routinesList();
+    el.innerHTML = list.length ? list.map(r => `<div class="rt-row ${r.active === false ? 'off' : ''}">
+        <span class="cdot" style="background:${catColor(r.category)}"></span>
+        <span class="rt-main"><span class="rt-t">${esc(r.title)}</span><span class="rt-m">${esc(routineText(r))}${r.active === false ? ' · paused' : ''}</span></span>
+        <button class="mini" data-act="rt-toggle" data-id="${esc(r.id)}">${r.active === false ? 'Resume' : 'Pause'}</button>
+        <button class="mini ghost" data-act="rt-del" data-id="${esc(r.id)}" aria-label="Remove routine">${confirmKey === 'rt-' + r.id ? 'Sure?' : '✕'}</button></div>`).join('')
+      : '<div class="empty">No routines yet. Choose "Every day", "Every week" and so on when you add a task, and it shows up on its own.</div>';
+  }
+
+  // ---------- work-day mode ----------
+  const workCfg = () => Object.assign({ on: false, from: '2026-10-26', days: [1, 2, 3, 4, 5], start: '09:00', end: '17:00' }, meta().work || {});
+  function workHours(dateStr = today()) {
+    const w = workCfg(); if (!w.on || dateStr < w.from) return null;
+    if (!w.days.includes(parseYmd(dateStr).getDay())) return null;
+    const a = timeMin(w.start), b = timeMin(w.end);
+    return a < 9000 && b < 9000 && b > a ? { start: a, end: b } : null;
+  }
+  const workNow = (m = nowMinutes()) => { const h = workHours(); return h && m >= h.start && m < h.end ? h : null; };
+  // During work hours only work tasks are suggested. On work days outside them, work tasks wait unless high priority.
+  function okAt(t, min, dateStr = today()) {
+    const h = workHours(dateStr); if (!h) return true;
+    if (min >= h.start && min < h.end) return t.category === 'work';
+    return t.category !== 'work' || priorityScore(t.priority) >= 30;
+  }
+
+  // ---------- plan my day ----------
+  let plan = null;   // { items: [{ id, title, category, start, mins, include }] }
+  const PLAN_MAX = { full: 6, light: 3, survival: 1 };
+  function buildPlan() {
+    const td = today(), nowMin = nowMinutes();
+    const items = dayItems(td, nowMin);
+    const stop = BED_MIN - 30;                                   // leave the last half hour to wind down
+    const gaps = freeGaps(items, td, nowMin).map(g => ({ start: g.start, end: Math.min(g.end, stop) })).filter(g => g.end - g.start >= MIN_GAP);
+    const pool = Object.values(S.tasks).filter(t => capVisible(t) && isOpen(t) && !(t.time && t.date === td));
+    const ranked = rankCandidates(pool, td, nowMin, 600);
+    const cap = PLAN_MAX[capMode()], out = [], used = new Set();
+    for (const g of gaps) {
+      let cur = Math.ceil(g.start / 5) * 5;
+      while (out.length < cap) {
+        const room = g.end - cur;
+        const pick = ranked.find(c => !used.has(c.t.id) && c.mins <= room && c.mins <= CAP[capMode()].maxTask && okAt(c.t, cur, td));
+        if (!pick) break;
+        used.add(pick.t.id);
+        out.push({ id: pick.t.id, title: pick.t.title, category: pick.t.category, start: cur, mins: pick.mins, include: true });
+        cur += Math.ceil((pick.mins + BUFFER_MIN) / 5) * 5;
+      }
+    }
+    return { items: out.sort((a, b) => a.start - b.start) };
+  }
+  const hhmm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+  function renderPlan() {
+    const el = $('planBox'); if (!el) return;
+    if (!plan) { el.innerHTML = ''; return; }
+    const n = plan.items.filter(i => i.include).length;
+    const rows = plan.items.map((it, i) => `<div class="rv-row plan-row ${it.include ? '' : 'off'}" style="border-left-color:${catColor(it.category)}">
+        <input type="checkbox" data-act="plan-inc" data-i="${i}" ${it.include ? 'checked' : ''} aria-label="Include ${esc(it.title)}">
+        <input type="time" class="plan-time" data-plan="start" data-i="${i}" value="${hhmm(it.start)}" aria-label="Start time for ${esc(it.title)}">
+        <span class="plan-title">${esc(it.title)}</span><span class="muted">~${it.mins} min</span></div>`).join('');
+    el.innerHTML = `<div class="card review"><h2>Plan for today</h2>
+      <p class="muted">${plan.items.length ? 'Placed in your free time, with a break between each. The last half hour before bed stays clear. Adjust anything, then add.' : 'Nothing to place right now. Your free time is full, or your list is clear.'}</p>
+      ${rows}
+      <div class="rv-actions">${plan.items.length ? `<button class="btn-add" data-act="plan-commit" ${n ? '' : 'disabled'}>Add ${n} to my day</button>` : ''}<button class="btn-secondary" data-act="plan-cancel">${plan.items.length ? 'Not now' : 'Close'}</button></div></div>`;
+  }
+  function commitPlan() {
+    if (!plan) return;
+    const td = today();
+    plan.items.filter(i => i.include).forEach(i => {
+      const t = S.tasks[i.id]; if (!t) return;
+      stage('tasks', Object.assign({}, t, { date: td, originalDate: t.originalDate || (t.date && t.date !== td ? t.date : null), time: clockLabel(i.start), duration: i.mins }));
+    });
+    plan = null; commit();
+  }
+
+  // ---------- reminders (installable app + notifications) and work-day settings ----------
+  const notifyCfg = () => Object.assign({ on: false, morning: '05:30', wind: '20:30', due: true, timed: true }, meta().notify || {});
+  let pushInfo = { checked: false, supported: false, perm: 'default', subscribed: false, msg: '' };
+  const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isStandalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  const b64uBytes = str => { const b = atob((str + '='.repeat((4 - str.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+  async function postJson(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body || {}) });
+    if (r.status === 401) { const e = new Error('auth'); e.auth = true; throw e; }
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  }
+  function registerSw() {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').then(refreshPush).catch(refreshPush); else refreshPush();
+  }
+  async function refreshPush() {
+    pushInfo.supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; pushInfo.checked = true;
+    if (pushInfo.supported) {
+      pushInfo.perm = Notification.permission;
+      try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); pushInfo.subscribed = !!sub; } catch (e) { pushInfo.subscribed = false; }
+    }
+    renderSettings();
+  }
+  async function pushOn() {
+    pushInfo.msg = 'Setting up…'; renderSettings();
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js'); await navigator.serviceWorker.ready;
+      const perm = await Notification.requestPermission(); pushInfo.perm = perm;
+      if (perm !== 'granted') { pushInfo.msg = 'Notifications were not allowed. You can change that in Settings, Notifications, myday.'; return refreshPush(); }
+      const { publicKey } = await getJson('/api/push?action=key');
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(publicKey) });
+      await postJson('/api/push?action=subscribe', { subscription: sub.toJSON(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      setMeta({ notify: Object.assign(notifyCfg(), { on: true }) });
+      pushInfo.msg = 'Reminders are on. Tap "Send a test" to check.';
+    } catch (e) { pushInfo.msg = e && e.auth ? 'Sign in again, then try once more.' : "Couldn't set up reminders. Try again in a moment."; }
+    refreshPush();
+  }
+  async function pushOff() {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription();
+      if (sub) { const endpoint = sub.endpoint; await sub.unsubscribe(); await postJson('/api/push?action=unsubscribe', { endpoint }).catch(() => {}); }
+    } catch (e) {}
+    setMeta({ notify: Object.assign(notifyCfg(), { on: false }) }); pushInfo.msg = 'Reminders are off for this phone.'; refreshPush();
+  }
+  async function pushTest() {
+    pushInfo.msg = 'Sending…'; renderSettings();
+    try { const r = await postJson('/api/push?action=test'); pushInfo.msg = r.sent ? 'Sent. It should arrive in a few seconds.' : 'No phone is set up yet. Tap "Turn on reminders" first.'; }
+    catch (e) { pushInfo.msg = "Couldn't send the test. Try again in a moment."; }
+    renderSettings();
+  }
+  function renderSettings() {
+    const el = $('settingsBody'); if (!el) return;
+    const n = notifyCfg(), w = workCfg();
+    let status, buttons = '';
+    if (!pushInfo.checked) status = 'Checking…';
+    else if (!pushInfo.supported) status = isIos() && !isStandalone() ? 'On iPhone, reminders need the Home Screen app. Tap Share, then Add to Home Screen. Open myday from your Home Screen and come back here.' : "This browser can't show reminders.";
+    else if (pushInfo.perm === 'denied') status = 'Notifications are blocked for myday. Turn them on in Settings, Notifications, myday.';
+    else if (pushInfo.subscribed && n.on) { status = 'Reminders are on for this phone.'; buttons = '<button class="btn-secondary" data-act="push-test">Send a test</button><button class="mini" data-act="push-off">Turn off</button>'; }
+    else { status = 'A morning plan, due-date alerts, 15-minute heads-ups, and a wind-down before bed.'; buttons = '<button class="btn-add" data-act="push-on">Turn on reminders</button>'; }
+    const dayBox = (d, label) => `<label class="set-chk"><input type="checkbox" data-set="work.day" data-day="${d}" ${w.days.includes(d) ? 'checked' : ''}>${label}</label>`;
+    el.innerHTML = `<div class="set-sec"><div class="set-h">Reminders</div>
+        <p class="muted">${esc(status)}</p>${pushInfo.msg ? `<p class="muted">${esc(pushInfo.msg)}</p>` : ''}
+        ${buttons ? `<div class="set-acts">${buttons}</div>` : ''}
+        <div class="set-grid">
+          <label>Morning plan<input type="time" id="stMorning" data-set="notify.morning" value="${esc(n.morning)}"></label>
+          <label>Wind-down<input type="time" id="stWind" data-set="notify.wind" value="${esc(n.wind)}"></label>
+        </div>
+        <label class="set-chk"><input type="checkbox" data-set="notify.due" ${n.due !== false ? 'checked' : ''}>Due-date alerts</label>
+        <label class="set-chk"><input type="checkbox" data-set="notify.timed" ${n.timed !== false ? 'checked' : ''}>15-minute heads-up for timed tasks</label>
+        <p class="muted">No reminders between 9 PM and 5 AM, except the wind-down.</p></div>
+      <div class="set-sec"><div class="set-h">Work day</div>
+        <label class="set-chk"><input type="checkbox" data-set="work.on" ${w.on ? 'checked' : ''}>Work-day mode</label>
+        <p class="muted">During work hours the dashboard suggests only work tasks, and personal tasks wait until you are off.</p>
+        <div class="set-grid">
+          <label>Starts on<input type="date" id="stFrom" data-set="work.from" value="${esc(w.from)}"></label>
+          <label>From<input type="time" id="stWs" data-set="work.start" value="${esc(w.start)}"></label>
+          <label>Until<input type="time" id="stWe" data-set="work.end" value="${esc(w.end)}"></label>
+        </div>
+        <div class="set-days">${dayBox(1, 'Mon')}${dayBox(2, 'Tue')}${dayBox(3, 'Wed')}${dayBox(4, 'Thu')}${dayBox(5, 'Fri')}${dayBox(6, 'Sat')}${dayBox(0, 'Sun')}</div></div>`;
+  }
+
+  // ---------- wiring for routines, plan and settings ----------
+  function wireFeatures() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'rt-toggle': setMeta({ routines: routinesList().map(r => r.id === id ? Object.assign({}, r, { active: r.active === false }) : r) }); break;
+        case 'rt-del': {
+          if (confirmKey !== 'rt-' + id) { armConfirm('rt-' + id); return; }
+          confirmKey = null; const td = today();
+          Object.values(S.tasks).filter(t => t.routineId === id && isOpen(t) && t.date && t.date >= td).forEach(t => stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now(), missed: true })));
+          setMetaStaged({ routines: routinesList().filter(r => r.id !== id) }); commit(); break;
+        }
+        case 'plan-open': plan = buildPlan(); renderPlan(); { const pb = $('planBox'); if (pb && pb.scrollIntoView) pb.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } break;
+        case 'plan-cancel': plan = null; renderPlan(); break;
+        case 'plan-commit': commitPlan(); break;
+        case 'plan-inc': if (plan) { plan.items[+el.dataset.i].include = el.checked; renderPlan(); } break;
+        case 'push-on': pushOn(); break;
+        case 'push-off': pushOff(); break;
+        case 'push-test': pushTest(); break;
+      }
+    });
+    document.addEventListener('change', e => {
+      const el = e.target; if (!el.dataset) return;
+      if (el.dataset.plan === 'start' && plan) { const m = timeMin(el.value); if (m < 9000) { plan.items[+el.dataset.i].start = m; plan.items.sort((a, b) => a.start - b.start); renderPlan(); } return; }
+      if (!el.dataset.set) return;
+      const [grp, key] = el.dataset.set.split('.');
+      const cur = Object.assign({}, grp === 'work' ? workCfg() : notifyCfg());
+      if (key === 'day') { const d = +el.dataset.day; const set = new Set(cur.days); if (el.checked) set.add(d); else set.delete(d); cur.days = [...set].sort(); }
+      else cur[key] = el.type === 'checkbox' ? el.checked : el.value;
+      setMeta({ [grp]: cur });
+    });
+  }
+
+  // ---------- monthly recap: one infographic per month, built from what you finished ----------
+  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const ymOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+  const curYm = () => ymOf(new Date());
+  const shiftYm = (ym, n) => { const [y, m] = ym.split('-').map(Number); return ymOf(new Date(y, m - 1 + n, 1)); };
+  function recapMonths() {
+    const set = new Set([curYm()]);
+    Object.values(S.tasks).forEach(t => { if (t.completedAt) set.add(ymOf(new Date(t.completedAt))); });
+    Object.values(S.projects).forEach(p => { if (p.status === 'done' && p.completedAt) set.add(ymOf(new Date(p.completedAt))); });
+    return [...set].sort();
+  }
+  function recapData(ym) {
+    const [Y, M] = ym.split('-').map(Number);
+    const inMonth = ts => { if (!ts) return false; const d = new Date(ts); return d.getFullYear() === Y && d.getMonth() + 1 === M; };
+    const tasks = Object.values(S.tasks);
+    const done = tasks.filter(t => t.status === 'done' && inMonth(t.completedAt));
+    const dim = new Date(Y, M, 0).getDate();
+    const perDay = Array(dim).fill(0), dayCat = Array.from({ length: dim }, () => ({})), byCat = {}, byHour = Array(24).fill(0), byDow = Array(7).fill(0);
+    let focusMs = 0;
+    done.forEach(t => {
+      const d = new Date(t.completedAt), di = d.getDate() - 1;
+      perDay[di]++; dayCat[di][t.category] = (dayCat[di][t.category] || 0) + 1;
+      byCat[t.category] = (byCat[t.category] || 0) + 1; byHour[d.getHours()]++; byDow[d.getDay()]++;
+      if (t.timer && t.timer.elapsedMs) focusMs += t.timer.elapsedMs;
+    });
+    let streak = 0, run = 0; perDay.forEach(n => { run = n > 0 ? run + 1 : 0; streak = Math.max(streak, run); });
+    const best = perDay.reduce((b, n, i) => n > b.n ? { n, i } : b, { n: 0, i: -1 });
+    const prevYm = shiftYm(ym, -1), [py, pm] = prevYm.split('-').map(Number);
+    const prev = tasks.filter(t => t.status === 'done' && t.completedAt && new Date(t.completedAt).getFullYear() === py && new Date(t.completedAt).getMonth() + 1 === pm).length;
+    const td = today(), inYm = d => d && d.slice(0, 7) === ym && d <= td;
+    const rt = tasks.filter(t => t.routineId && inYm(t.date));
+    const rtKept = rt.filter(t => t.status === 'done').length;
+    const peakHour = byHour.reduce((b, n, h) => h >= 4 && n > b.n ? { n, h } : b, { n: 0, h: -1 });
+    const peakDow = byDow.reduce((b, n, i) => n > b.n ? { n, i } : b, { n: 0, i: -1 });
+    return {
+      ym, year: Y, month: M, monthName: MONTH_NAMES[M - 1], prevName: MONTH_NAMES[(M + 10) % 12], nextName: MONTH_NAMES[M % 12], dim, done: done.length, prev, perDay, dayCat, byCat, byHour,
+      activeDays: perDay.filter(n => n > 0).length, streak, best, focusMs, peakHour, peakDow,
+      routines: rt.length ? { kept: rtKept, total: rt.length } : null,
+      email: done.filter(t => t.source === 'gmail').length,
+      groceries: Object.values(S.grocery).filter(g => inMonth(g.checkedAt)).length,
+      ideas: Object.values(S.notes).filter(n => inMonth(n.createdAt)).length + Object.values(S.dumps).filter(x => inMonth(x.createdAt)).length,
+      projects: Object.values(S.projects).filter(p => p.status === 'done' && inMonth(p.completedAt)).sort((a, b) => a.completedAt - b.completedAt)
+    };
+  }
+  function recapSvg(d) {
+    const W = 720, X = 48, IW = W - 2 * X;
+    const INK = '#262624', MUTED = '#6B6A66', LINE = '#E3E1DC', BG = '#F8F7F4', SOFT = '#CFCBC2';
+    const SERIF = "Georgia, 'Times New Roman', serif", SANS = "-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    const o = [];
+    const text = (x, y, str, f = {}) => o.push(`<text x="${x}" y="${y}" font-family="${f.serif ? SERIF : SANS}" font-size="${f.size || 26}" font-weight="${f.bold ? 700 : 400}" fill="${f.fill || INK}"${f.anchor ? ` text-anchor="${f.anchor}"` : ''}${f.ls ? ` letter-spacing="${f.ls}"` : ''}${f.italic ? ' font-style="italic"' : ''}>${esc(str)}</text>`);
+    const label = (y, str) => text(X, y, str.toUpperCase(), { size: 22, fill: MUTED, ls: 3 });
+    const rule = y => o.push(`<line x1="${X}" y1="${y}" x2="${W - X}" y2="${y}" stroke="${LINE}" stroke-width="2"/>`);
+    const cut = (str, n) => { str = String(str); return str.length > n ? str.slice(0, n - 1).trimEnd() + '…' : str; };
+    const hLabel = h => `${((h + 11) % 12) + 1} ${h >= 12 ? 'PM' : 'AM'}`;
+    const cats = Object.entries(d.byCat).sort((a, b) => b[1] - a[1]);
+
+    // header: the day-line mark, the month, a rule
+    text(X, 74, 'MONTHLY RECAP', { size: 22, fill: MUTED, ls: 4 });
+    o.push(`<path d="M${W - X - 170} 76 C ${W - X - 120} 56, ${W - X - 50} 54, ${W - X} 74" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><circle cx="${W - X - 112}" cy="62" r="9" fill="${INK}"/>`);
+    text(X, 196, d.monthName, { serif: true, bold: true, size: 112 });
+    text(X, 250, String(d.year), { serif: true, size: 40, fill: MUTED });
+    rule(290);
+
+    // hero number
+    text(X, 482, String(d.done), { serif: true, bold: true, size: 220 });
+    text(X, 534, d.done === 1 ? 'thing done' : 'things done', { serif: true, italic: true, size: 40 });
+    if (d.prev > 0) {
+      const pct = Math.round((d.done - d.prev) / d.prev * 100);
+      text(W - X, 534, `${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)}% vs ${d.prevName}`, { anchor: 'end', size: 26, fill: pct >= 0 ? '#4E7358' : MUTED });
+    }
+    text(X, 584, d.done ? `${d.activeDays} active day${d.activeDays === 1 ? '' : 's'} · about ${(d.done / Math.max(1, d.activeDays)).toFixed(1).replace(/\.0$/, '')} a day` : 'A quiet month. Rest counts.', { size: 26, fill: MUTED });
+    rule(626);
+
+    // heatmap
+    label(682, 'The month, day by day');
+    const cw = IW / 7, off = new Date(d.year, d.month - 1, 1).getDay(), rows = Math.ceil((off + d.dim) / 7), top = 738, pitch = 94;
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((ch, i) => text(X + (i + .5) * cw, top, ch, { anchor: 'middle', size: 22, fill: MUTED }));
+    const max = Math.max(1, ...d.perDay), now = new Date(), isCur = now.getFullYear() === d.year && now.getMonth() + 1 === d.month;
+    for (let i = 0; i < d.dim; i++) {
+      const cx = X + ((off + i) % 7 + .5) * cw, cy = top + 54 + Math.floor((off + i) / 7) * pitch, n = d.perDay[i];
+      const topCat = Object.entries(d.dayCat[i]).sort((a, b) => b[1] - a[1])[0];
+      if (n > 0) o.push(`<circle cx="${cx.toFixed(1)}" cy="${cy}" r="${(9 + 24 * Math.sqrt(n / max)).toFixed(1)}" fill="${catColor(topCat[0])}"/>`);
+      else o.push(`<circle cx="${cx.toFixed(1)}" cy="${cy}" r="5" fill="${LINE}"/>`);
+      if (isCur && now.getDate() === i + 1) o.push(`<circle cx="${cx.toFixed(1)}" cy="${cy}" r="37" fill="none" stroke="${INK}" stroke-width="2.5"/>`);
+      text(cx, cy + 56, String(i + 1), { anchor: 'middle', size: 20, fill: n > 0 ? INK : MUTED });
+    }
+    let y = top + 54 + (rows - 1) * pitch + 96;
+    text(X, y, 'Bigger dot, more done. Color, the day\'s main theme.', { size: 22, fill: MUTED });
+    y += 44; rule(y); y += 56;
+
+    // where the energy went
+    label(y, 'Where your energy went'); y += 30;
+    if (cats.length) {
+      const total = cats.reduce((a, [, n]) => a + n, 0);
+      o.push(`<clipPath id="barclip"><rect x="${X}" y="${y}" width="${IW}" height="40" rx="20"/></clipPath><g clip-path="url(#barclip)">`);
+      let bx = X; cats.forEach(([c, n]) => { const w = IW * n / total; o.push(`<rect x="${bx.toFixed(1)}" y="${y}" width="${(w + .5).toFixed(1)}" height="40" fill="${catColor(c)}"/>`); bx += w; });
+      o.push('</g>'); y += 40 + 44;
+      cats.slice(0, 8).forEach(([c, n], i) => {
+        const col = i % 2, ry = y + Math.floor(i / 2) * 46, x0 = X + col * 330;
+        o.push(`<circle cx="${x0 + 9}" cy="${ry - 9}" r="9" fill="${catColor(c)}"/>`);
+        text(x0 + 30, ry, (CATS[c] || {}).label || c, { size: 28 });
+        text(x0 + 294, ry, `${n} · ${Math.round(n / total * 100)}%`, { anchor: 'end', size: 26, fill: MUTED });
+      });
+      y += Math.ceil(Math.min(8, cats.length) / 2) * 46;
+    } else { text(X, y + 30, 'Nothing finished yet. The first one starts the picture.', { size: 26, fill: MUTED }); y += 60; }
+    y += 20; rule(y); y += 56;
+
+    // rhythm
+    label(y, 'When you get things done'); y += 30;
+    const hrs = []; for (let h = 5; h <= 21; h++) hrs.push(h);
+    const hMax = Math.max(1, ...hrs.map(h => d.byHour[h])), bw = IW / hrs.length, base = y + 150;
+    hrs.forEach((h, i) => {
+      const hh = Math.max(4, 140 * d.byHour[h] / hMax), peak = d.peakHour.h === h && d.byHour[h] > 0;
+      o.push(`<rect x="${(X + i * bw + 5).toFixed(1)}" y="${(base - hh).toFixed(1)}" width="${(bw - 10).toFixed(1)}" height="${hh.toFixed(1)}" rx="7" fill="${peak ? INK : SOFT}"/>`);
+    });
+    [[5, '5a'], [9, '9a'], [12, '12p'], [15, '3p'], [18, '6p'], [21, '9p']].forEach(([h, l]) => text(X + (h - 5 + .5) * bw, base + 34, l, { anchor: 'middle', size: 20, fill: MUTED }));
+    y = base + 84;
+    text(X, y, d.done ? `Most done around ${hLabel(d.peakHour.h)}. Best weekday: ${d.peakDow.i >= 0 ? DAY_NAMES[d.peakDow.i] : '–'}.` : 'Your rhythm shows up once you finish a few things.', { size: 26, fill: MUTED });
+    y += 44; rule(y); y += 40;
+
+    // three tiles
+    const tw = (IW - 40) / 3, th = 176;
+    const tile = (i, big, lab, sub) => {
+      const x = X + i * (tw + 20);
+      o.push(`<rect x="${x.toFixed(1)}" y="${y}" width="${tw.toFixed(1)}" height="${th}" rx="22" fill="#FFFFFF" stroke="${LINE}" stroke-width="2"/>`);
+      text(x + 22, y + 84, big, { serif: true, bold: true, size: 44 });
+      text(x + 22, y + 124, lab.toUpperCase(), { size: 20, fill: INK, ls: 2 });
+      text(x + 22, y + 154, sub, { size: 22, fill: MUTED });
+    };
+    const mins = Math.round(d.focusMs / 60000);
+    tile(0, mins ? (mins >= 60 ? `${(mins / 60).toFixed(1).replace(/\.0$/, '')}h` : `${mins}m`) : '–', 'Focus time', 'with the timer');
+    tile(1, String(d.streak), d.streak === 1 ? 'Day streak' : 'Day streak', 'longest run');
+    tile(2, d.best.i >= 0 ? `${MONTH_NAMES[d.month - 1].slice(0, 3)} ${d.best.i + 1}` : '–', 'Best day', d.best.n ? `${d.best.n} done` : 'not yet');
+    y += th + 40; rule(y); y += 56;
+
+    // worth remembering
+    label(y, 'Worth remembering'); y += 44;
+    if (d.projects.length) {
+      const list = d.projects.slice(0, 6), y0 = y;
+      if (list.length > 1) o.push(`<line x1="${X + 9}" y1="${y0 - 10}" x2="${X + 9}" y2="${y0 + (list.length - 1) * 96 - 10}" stroke="${LINE}" stroke-width="3"/>`);
+      list.forEach(p => {
+        const dt = new Date(p.completedAt), steps = p.stats && p.stats.steps ? ` · ${p.stats.done}/${p.stats.steps} steps` : '';
+        o.push(`<circle cx="${X + 9}" cy="${y - 10}" r="9" fill="${catColor(p.category || 'activity')}"/>`);
+        text(X + 38, y, cut(p.name, 30), { serif: true, bold: true, size: 36 });
+        text(X + 38, y + 34, cut(`${dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}${steps}${p.doneNote ? ' · ' + p.doneNote : ''}`, 54), { size: 24, fill: MUTED });
+        y += 96;
+      });
+      if (d.projects.length > 6) { text(X + 38, y - 24, `+ ${d.projects.length - 6} more`, { size: 24, fill: MUTED }); y += 30; }
+    } else {
+      text(X, y, 'Mark a project done, or log something you did,', { size: 26, fill: MUTED });
+      text(X, y + 36, 'and it lands here with its date.', { size: 26, fill: MUTED }); y += 70;
+    }
+    y += 10; rule(y); y += 56;
+
+    // routines ring + small stats
+    const rcx = X + 100, rcy = y + 96, R = 70, C = 2 * Math.PI * R, pct = d.routines ? d.routines.kept / d.routines.total : 0;
+    o.push(`<circle cx="${rcx}" cy="${rcy}" r="${R}" fill="none" stroke="${LINE}" stroke-width="22"/>`);
+    if (d.routines) o.push(`<circle cx="${rcx}" cy="${rcy}" r="${R}" fill="none" stroke="${INK}" stroke-width="22" stroke-linecap="round" stroke-dasharray="${(C * pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 ${rcx} ${rcy})"/>`);
+    text(rcx, rcy + 12, d.routines ? `${Math.round(pct * 100)}%` : '–', { anchor: 'middle', serif: true, bold: true, size: 32 });
+    text(rcx, rcy + R + 52, d.routines ? 'routines kept' : 'no routines yet', { anchor: 'middle', size: 24, fill: MUTED });
+    const stat = (i, n, str) => { const sy = y + 50 + i * 82; text(X + 250, sy, String(n), { serif: true, bold: true, size: 48 }); text(X + 250, sy + 30, str, { size: 22, fill: MUTED }); };
+    stat(0, d.email, 'school & email tasks handled'); stat(1, d.groceries, 'grocery items checked off'); stat(2, d.ideas, 'ideas & notes captured');
+    y += 96 + R + 120; rule(y); y += 64;
+
+    // footer
+    text(X, y, `Onward to ${d.nextName}.`, { serif: true, italic: true, size: 40 });
+    text(X, y + 46, `myday · ${d.monthName} ${d.year}`, { size: 22, fill: MUTED, ls: 2 });
+    const H = y + 100;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(`${d.monthName} ${d.year} recap: ${d.done} things done`)}"><rect width="${W}" height="${H}" fill="${BG}"/>${o.join('')}</svg>`;
+  }
+  function renderRecap() {
+    const el = $('recapView'); if (!el) return;
+    const months = recapMonths(), ym = months.includes(ui.recapMonth) ? ui.recapMonth : curYm(), i = months.indexOf(ym), d = recapData(ym);
+    const keepMsg = $('recapMsg') ? $('recapMsg').textContent : '';
+    el.innerHTML = `<div class="rc-nav"><button class="mini" data-act="recap-prev" ${i <= 0 ? 'disabled' : ''} aria-label="Previous month">‹</button>
+        <span class="rc-month">${esc(d.monthName)} ${d.year}</span>
+        <button class="mini" data-act="recap-next" ${i >= months.length - 1 ? 'disabled' : ''} aria-label="Next month">›</button></div>
+      <div class="rc-card" id="recapSvgWrap">${recapSvg(d)}</div>
+      <div class="rc-acts"><button class="btn-add" data-act="recap-save">Save or share image</button></div>
+      <p class="muted" id="recapMsg">${esc(keepMsg)}</p>`;
+  }
+  async function recapImage() {
+    const msg = $('recapMsg'), svg = document.querySelector('#recapSvgWrap svg');
+    if (!svg) return;
+    try {
+      const clone = svg.cloneNode(true), vb = svg.getAttribute('viewBox').split(' ').map(Number);
+      clone.setAttribute('width', vb[2]); clone.setAttribute('height', vb[3]);
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone)); });
+      const scale = 2, c = document.createElement('canvas'); c.width = vb[2] * scale; c.height = vb[3] * scale;
+      const ctx = c.getContext('2d'); ctx.fillStyle = '#F8F7F4'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+      const name = `myday-recap-${ui.recapMonth || curYm()}.png`, file = new File([blob], name, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'My month' }); msg.textContent = ''; return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      msg.textContent = 'Saved to your downloads.';
+    } catch (e) { if (!(e && e.name === 'AbortError')) msg.textContent = "Couldn't make the image. Try again in a moment."; }
+  }
+  function renderRecapBanner() {
+    const el = $('recapBanner'); if (!el) return;
+    const prev = shiftYm(curYm(), -1);
+    const show = new Date().getDate() <= 3 && ui.recapHidden !== prev && recapData(prev).done > 0;
+    el.innerHTML = show ? `<div class="card reset-banner"><span>Your ${esc(MONTH_NAMES[+prev.slice(5) - 1])} recap is ready</span>
+      <span style="display:flex;gap:6px"><button class="mini primary" data-act="recap-open" data-ym="${prev}">Open</button><button class="mini ghost" data-act="recap-hide" data-ym="${prev}" aria-label="Hide">✕</button></span></div>` : '';
+  }
+  function wireRecap() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const months = recapMonths(), ym = months.includes(ui.recapMonth) ? ui.recapMonth : curYm(), i = months.indexOf(ym);
+      switch (el.dataset.act) {
+        case 'recap-prev': if (i > 0) { ui.recapMonth = months[i - 1]; saveUi(); render(); } break;
+        case 'recap-next': if (i < months.length - 1) { ui.recapMonth = months[i + 1]; saveUi(); render(); } break;
+        case 'recap-save': recapImage(); break;
+        case 'recap-open': ui.tab = 'schedule'; ui.sub = 'recap'; ui.recapMonth = el.dataset.ym; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'recap-hide': ui.recapHidden = el.dataset.ym; saveUi(); renderRecapBanner(); break;
+      }
     });
   }
 
