@@ -8,10 +8,11 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --primary: #262624; --accent: #262624; --on-accent: #F8F7F4;
-  --kids: #B5654F; --home: #5E7186; --work: #A07A2C; --errands: #6F5A86; --self: #7F7393; --activity: #5C7F5A; --omar: #B0524F;
-  --border: #E3E1DC; --hair: #EEECE7; --bg: #F8F7F4; --card: #FFFFFF; --text: #262624; --body: #262624; --muted: #6B6A66; --faint: #74726D;
-  --soft: #F0EEE9; --carry: #FBF5E6; --carry-line: #E2D3AE; --carry-text: #7A5C14; --chip: #EEECE7;
+  --accent: #262624; --on-accent: #F8F7F4; --now: #262624; --cal: #8C8579;
+  --kids: #C4714A; --work: #B8893A; --home: #6E86A0; --errands: #8C6E9E; --self: #B47A86; --activity: #5E9690; --omar: #A68166;
+  --primary: #262624; --text: #262624; --body: #262624; --muted: #6B6A66; --faint: #74726D;
+  --border: #E3E1DC; --hair: #EEECE7; --bg: #F8F7F4; --card: #FFFFFF; --soft: #F0EEE9; --chip: #EEECE7;
+  --carry: #FBF5E6; --carry-line: #E2D3AE; --carry-ink: #7A5C14;
   --serif: Georgia, "Times New Roman", serif;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
@@ -19,15 +20,17 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --primary: #ECEAE4; --accent: #ECEAE4; --on-accent: #1A1A18; --border: #36352F; --hair: #2A2A27; --bg: #171715; --card: #1F1F1D;
-    --text: #ECEAE4; --body: #E0DED8; --muted: #A3A19A; --faint: #8C8A84; --soft: #242422; --carry: #2B2718; --carry-line: #6B5A25;
-    --carry-text: #E3C77A; --chip: #2A2A27;
+    --accent: #ECEAE4; --on-accent: #1A1A18; --now: #ECEAE4; --cal: #8F887C;
+    --primary: #ECEAE4; --text: #ECEAE4; --body: #E0DED8; --muted: #A3A19A; --faint: #8C8A84;
+    --border: #36352F; --hair: #2A2A27; --bg: #171715; --card: #1F1F1D; --soft: #242422; --chip: #2A2A27;
+    --carry: #2B2718; --carry-line: #6B5A25; --carry-ink: #E3C77A;
   }
 }
 :root[data-theme="dark"] {
-  --primary: #ECEAE4; --accent: #ECEAE4; --on-accent: #1A1A18; --border: #36352F; --hair: #2A2A27; --bg: #171715; --card: #1F1F1D;
-  --text: #ECEAE4; --body: #E0DED8; --muted: #A3A19A; --faint: #8C8A84; --soft: #242422; --carry: #2B2718; --carry-line: #6B5A25;
-  --carry-text: #E3C77A; --chip: #2A2A27;
+  --accent: #ECEAE4; --on-accent: #1A1A18; --now: #ECEAE4; --cal: #8F887C;
+  --primary: #ECEAE4; --text: #ECEAE4; --body: #E0DED8; --muted: #A3A19A; --faint: #8C8A84;
+  --border: #36352F; --hair: #2A2A27; --bg: #171715; --card: #1F1F1D; --soft: #242422; --chip: #2A2A27;
+  --carry: #2B2718; --carry-line: #6B5A25; --carry-ink: #E3C77A;
 }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg); }
 body {
@@ -38,44 +41,43 @@ body {
 }
 button { font-family: inherit; }
 input, select, textarea { font-family: inherit; font-size: 16px; color: var(--body); background: var(--card); }
-input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
+input[type="checkbox"] { width: 22px; height: 22px; margin: 11px 4px; accent-color: var(--accent); flex: 0 0 auto; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.muted { color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); font-size: 13px; }
 .hidden { display: none !important; }
 
 /* HEADER: date eyebrow, serif headline, one weather + outfits strip, day line */
 .header { margin-bottom: 8px; display: flex; flex-direction: column; gap: 18px; }
 .header-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.head-right { display: flex; gap: 14px; align-items: center; }
-.sync { font-size: 12px; color: var(--muted); background: none; border: 0; padding: 0; }
-.sync.warn { color: var(--carry-text); }
-a.sync { text-decoration: none; cursor: pointer; }
-a.sync:hover { color: var(--text); text-decoration: underline; }
+.eyebrow { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sync { font-size: 13px; color: var(--muted); background: none; border: 0; padding: 0; }
+.sync.warn { color: var(--carry-ink); }
 .headline { font-family: var(--serif); font-weight: 700; font-size: 34px; line-height: 1.1; letter-spacing: -.01em; color: var(--text); overflow-wrap: anywhere; }
 .headline .l1, .headline .l2 { display: block; }
-.info-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 0; display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 16px; }
+.info-strip { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 14px 0; display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; }
 .wx { display: flex; flex-direction: column; gap: 2px; border-right: 1px solid var(--border); padding-right: 12px; }
 .wx-temp { font-family: var(--serif); font-size: 30px; font-weight: 700; line-height: 1; min-height: 30px; }
-.wx-line { font-size: 13px; color: var(--muted); line-height: 1.35; }
-.dress { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.wx-line { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.dress { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .dc-grid { display: flex; flex-direction: column; gap: 8px; }
 .dc-box { min-width: 0; }
-.dc-box .who { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
+.dc-box .who { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
 .dc-box .what { font-size: 14px; color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
-.dc-box input { width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; color: var(--body); background: var(--card); }
-.link-btn { align-self: flex-start; background: none; border: 0; padding: 0; min-height: 32px; font-size: 12px; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.dc-box input { width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; min-height: 44px; font-size: 16px; color: var(--body); background: var(--card); }
+.link-btn { background: none; border: 0; padding: 0 2px; min-height: 44px; display: inline-flex; align-items: center; font-size: 13px; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .dayline { display: flex; flex-direction: column; gap: 6px; }
 .dl-track { position: relative; height: 24px; }
 .dl-track svg { width: 100%; height: 24px; display: block; overflow: visible; }
 .dl-track path { fill: none; stroke: var(--text); stroke-width: 1.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .dl-dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--text); transform: translate(-50%, -50%); left: 0; top: 12px; }
-.dl-axis { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .08em; color: var(--muted); }
+.dl-axis { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .08em; color: var(--muted); }
 .dl-periods { display: none; }
 .dl-p { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.dl-p b { font-size: 12px; letter-spacing: .08em; font-weight: 400; text-transform: uppercase; color: var(--text); }
+.dl-p b { font-size: 13px; letter-spacing: .08em; font-weight: 400; text-transform: uppercase; color: var(--text); }
 .dl-p span { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
 .dl-p.past { opacity: .55; }
+.page-foot { display: flex; justify-content: center; margin-top: 24px; }
+.page-foot a { font-size: 13px; color: var(--muted); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; }
 @media (min-width: 700px) {
   .headline { font-size: clamp(36px, 5vw, 58px); }
   .headline .l1, .headline .l2 { display: inline; }
@@ -91,87 +93,149 @@ a.sync:hover { color: var(--text); text-decoration: underline; }
 .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); overflow-x: auto; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
 .tab-btn { padding: 12px 12px 10px; background: none; border: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; }
 .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
-.tab-btn .count { display: inline-block; min-width: 16px; font-size: 10px; background: var(--chip); color: var(--accent); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
+.tab-btn .count { display: inline-block; min-width: 16px; font-size: 13px; background: var(--chip); color: var(--accent); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 .sub-tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
-.sub-tab-btn { flex: 1; padding: 10px; background: none; border: none; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.sub-tab-btn { flex: 1; padding: 10px; background: none; border: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
 .sub-tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
 
 /* CARD */
 .card { background: var(--card); border-radius: 8px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
 .card h2 { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.card h3 { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+.card h3 { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
 .card.carry { background: var(--carry); border-color: var(--carry-line); }
 
 /* BRAIN DUMP */
 .dump textarea { width: 100%; min-height: 96px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; resize: vertical; line-height: 1.5; }
 .dump .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-.dump .row .muted { flex: 1; font-size: 11px; }
+.dump .row .muted { flex: 1; font-size: 13px; }
 
 /* TASK ROWS */
 .task-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; min-height: 44px; }
 .task-item .text { flex: 1; color: var(--body); min-width: 0; overflow-wrap: anywhere; }
-.task-item .meta { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; }
+.task-item .meta { display: block; font-size: 13px; color: var(--faint); margin-top: 1px; }
 .task-item.done { opacity: .5; }
 .task-item.done .t { text-decoration: line-through; }
 .carry .task-item { background: var(--card); }
-.badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--carry); color: #9a6a00; border: 1px solid var(--carry-line); margin-right: 4px; }
+.badge { display: inline-block; font-size: 13px; font-weight: 600; padding: 0 6px; white-space: nowrap; line-height: 1.5; border-radius: 4px; background: var(--carry); color: var(--carry-ink); border: 1px solid var(--carry-line); margin-right: 4px; }
 .badge.proj { background: var(--chip); color: var(--accent); border-color: transparent; }
-.mini { flex: 0 0 auto; padding: 6px 8px; font-size: 11px; font-weight: 600; background: var(--card); color: var(--primary); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; min-height: 30px; }
-.mini.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mini { flex: 0 0 auto; padding: 6px 8px; font-size: 13px; font-weight: 600; background: var(--card); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; min-height: 44px; min-width: 44px; }
+.mini.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .mini.ghost { border-color: transparent; background: none; color: var(--faint); }
-.toggle-line { font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 0; font-weight: 600; }
-.empty { font-size: 12px; color: var(--faint); padding: 6px 2px; }
+.toggle-line { font-size: 13px; color: var(--accent); background: none; border: none; cursor: pointer; padding: 6px 0; font-weight: 600; }
+.empty { font-size: 13px; color: var(--faint); padding: 6px 2px; }
 
 /* KEY TIMES / SUGGESTIONS */
 .key-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--body); padding: 4px 0; border-bottom: 1px dashed var(--border); }
 .key-row:last-of-type { border-bottom: none; }
-.suggestions { background: linear-gradient(135deg, #f0f4ff 0%, #fff5f7 100%); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 13px; color: #2c3e50; line-height: 1.6; margin-bottom: 12px; }
+.suggestions { background: var(--soft); padding: 12px; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 14px; color: var(--body); line-height: 1.6; margin-bottom: 12px; }
 .suggestions strong { display: block; margin-bottom: 4px; }
 .suggestions div + div { margin-top: 6px; }
 
 /* INPUT ROWS */
 .add-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .add-row input[type="text"], .add-row select, .add-row input[type="time"] { flex: 1 1 140px; min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
-.btn-add { padding: 10px 14px; background: var(--accent); color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.btn-add { padding: 10px 14px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 44px; }
 .btn-add.full { width: 100%; margin-top: 12px; }
 .btn-add:disabled { opacity: .6; cursor: default; }
-.btn-secondary { padding: 10px 14px; background: var(--bg); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.btn-secondary { padding: 10px 14px; background: var(--bg); color: var(--primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 44px; }
 
 /* REVIEW */
 .review { border-color: var(--accent); }
-.rv-sec { font-size: 12px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
+.rv-sec { font-size: 13px; font-weight: 600; color: var(--muted); margin: 10px 0 6px; }
 .rv-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border-radius: 6px; background: var(--bg); margin-bottom: 6px; border-left: 3px solid var(--accent); }
 .rv-row.off { opacity: .45; }
 .rv-row input[type="text"] { flex: 1 1 160px; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; }
 .rv-row select { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
-.rv-note { flex-basis: 100%; font-size: 11px; color: var(--faint); padding-left: 26px; }
+.rv-note { flex-basis: 100%; font-size: 13px; color: var(--faint); padding-left: 26px; }
 .rv-actions { display: flex; gap: 8px; margin-top: 10px; }
 .rv-actions .btn-add { flex: 1; }
 
 /* DONUT + STATUS */
 .donut-container { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
 .donut-svg { flex: 0 0 120px; width: 120px; height: 120px; }
-.donut-legend { flex: 1; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+.donut-legend { flex: 1; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
 .legend-item { display: flex; align-items: center; gap: 6px; color: var(--body); }
 .legend-color { width: 12px; height: 12px; border-radius: 2px; }
 .legend-count { font-weight: 700; color: var(--primary); }
 .status-boxes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
 .status-box { text-align: center; padding: 12px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); }
-.status-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.status-label { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
 .status-count { font-size: 28px; font-weight: 700; color: var(--primary); margin: 6px 0 0; }
 
 /* KANBAN */
 .kanban { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 680px) { .kanban { grid-template-columns: repeat(3, 1fr); } }
 .kcol { background: var(--soft); border-radius: 8px; padding: 10px; }
-.kcol h3 { font-size: 12px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.kcol h3 { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; justify-content: space-between; }
 .kcard { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; color: var(--body); }
-.kcard .meta { font-size: 11px; color: var(--faint); margin-top: 2px; }
+.kcard .meta { font-size: 13px; color: var(--faint); margin-top: 2px; }
 .kcard .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .kcard.done { opacity: .55; }
 .kcard.done .t { text-decoration: line-through; }
+
+/* Touch targets: 44px minimum */
+.tab-btn, .sub-tab-btn { min-height: 44px; }
+.toggle-line, .h2-link { min-height: 44px; display: inline-flex; align-items: center; }
+.task-item .mini.ghost, .key-row .mini.ghost { min-width: 44px; }
+.task-item { min-height: 52px; }
+
+/* FOLDS: collapsible Home sections (Inbox, Key times, Suggestions) */
+details.fold { padding: 0; }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 52px; padding: 0 14px; font-size: 14px; font-weight: 700; color: var(--primary); }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: ''; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg); margin: -4px 4px 0 0; flex: 0 0 auto; }
+details.fold[open] > summary::after { transform: rotate(-135deg); margin-top: 4px; }
+details.fold > summary .count { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--accent); }
+details.fold > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+.fold-body { padding: 0 14px 14px; }
+.fold-body > div > .card { border: 0; padding: 0; margin: 0 0 8px; background: none; }
+.fold-body > div > .card > h2 { display: none; }
+
+/* CAPACITY: Full / Light / Survival */
+.cap { display: inline-flex; background: var(--soft); border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; }
+.cap button { min-height: 44px; min-width: 44px; padding: 0 12px; border: none; background: none; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.cap button[aria-pressed="true"] { background: var(--card); color: var(--primary); box-shadow: 0 0 0 1px var(--border); }
+body[data-cap="survival"] .cap button[aria-pressed="true"] { background: var(--carry); color: var(--carry-ink); }
+.cap-note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.paused { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 8px; }
+.paused .task-item { opacity: .6; }
+body[data-cap="survival"] .tab-btn[data-tab="projects"] { display: none; }
+
+/* DRESS: auto from weather */
+.dc-why { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.dc-acts { gap: 8px; }
+
+/* INBOX: one-tap "Make task" */
+.mail-row { display: flex; gap: 8px; align-items: stretch; margin-bottom: 6px; }
+.mail-row .mail-item { flex: 1; min-width: 0; margin-bottom: 0; }
+.mail-row .mini { align-self: center; white-space: nowrap; }
+.mail-row .mini.made { color: var(--accent); border-color: var(--chip); background: var(--chip); }
+
+/* WEEKLY RESET */
+.reset-banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: var(--chip); border-color: transparent; }
+.reset-banner span { font-size: 14px; color: var(--body); }
+.rs-stat { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.rs-stat div { flex: 1 1 90px; background: var(--soft); border-radius: 8px; padding: 10px; }
+.rs-stat b { display: block; font-size: 24px; color: var(--primary); }
+.rs-stat span { font-size: 13px; color: var(--muted); }
+.rs-bar { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin: 4px 0; }
+.rs-bar .lbl { flex: 0 0 72px; }
+.rs-bar .trk { flex: 1; height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+.rs-bar .trk i { display: block; height: 100%; border-radius: 4px; }
+.rs-stuck { padding: 10px; border: 1px solid var(--border); border-left: 3px solid var(--carry-line); border-radius: 8px; margin-bottom: 8px; background: var(--card); }
+.rs-stuck .t { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
+.rs-stuck .meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.rs-stuck .acts { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+.rs-stuck input[type="date"] { flex: 1 1 120px; min-width: 0; min-height: 44px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; }
+.rs-store { border-top: 1px solid var(--border); padding: 8px 0; }
+.rs-store:first-child { border-top: none; }
+.rs-store .hd { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--primary); }
+.rs-store .hd .n { flex: 1; }
+.rs-store ul { margin: 4px 0 0 22px; font-size: 14px; color: var(--body); }
 
 /* NOW: next-up card with a full-day expansion (Home, top) */
 .now-card { padding: 14px; }
@@ -191,20 +255,20 @@ a.sync:hover { color: var(--text); text-decoration: underline; }
 .now-row:last-child { border-bottom: none; }
 .now-row .when { flex: 0 0 72px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .now-row .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.now-row .rel { flex: 0 0 auto; font-size: 12px; color: var(--accent); font-weight: 600; }
+.now-row .rel { flex: 0 0 auto; font-size: 13px; color: var(--accent); font-weight: 600; }
 .now-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
-.now-dot.cal { border-radius: 2px; }
+.now-dot.cal { border-radius: 2px; background: transparent !important; border: 2px solid var(--cal); width: 10px; height: 10px; }
 .now-dot.key { background: transparent; border: 2px solid var(--faint); width: 9px; height: 9px; }
-.now-toggle { display: block; width: 100%; text-align: left; margin-top: 8px; min-height: 40px; }
+.now-toggle { display: flex; width: 100%; text-align: left; margin-top: 8px; min-height: 44px; }
 .now-day { margin-top: 4px; }
 .now-day .now-row.past { opacity: .5; }
 .now-day .now-row.done .what { text-decoration: line-through; }
 .now-allday { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
-.now-allday span { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--body); }
-.now-line { display: flex; align-items: center; gap: 8px; color: #d64545; font-size: 12px; font-weight: 600; margin: 4px 0; }
-.now-line i { flex: 1; height: 2px; background: #d64545; border-radius: 1px; }
+.now-allday span { font-size: 13px; padding: 2px 8px; border-radius: 999px; background: var(--soft); color: var(--body); }
+.now-line { display: flex; align-items: center; gap: 8px; color: var(--now); font-size: 13px; font-weight: 600; margin: 4px 0; }
+.now-line i { flex: 1; height: 2px; background: var(--now); border-radius: 1px; }
 .now-gap { border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; margin: 6px 0; }
-.now-gap .gh { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.now-gap .gh { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .now-gap .fit { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--body); margin-top: 6px; }
 .now-gap.current { border-color: var(--accent); }
 
@@ -212,7 +276,7 @@ a.sync:hover { color: var(--text); text-decoration: underline; }
 .kcol h3 { font-size: 13px; }
 .kcard { display: flex; gap: 6px; align-items: flex-start; padding-left: 4px; }
 .kcard .kbody { flex: 1; min-width: 0; padding-top: 2px; }
-.drag-handle { flex: 0 0 auto; width: 36px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+.drag-handle { flex: 0 0 auto; width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;
   background: none; border: none; border-radius: 6px; color: var(--faint); font-size: 16px; line-height: 1; letter-spacing: -2px;
   cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
 .drag-handle:hover { background: var(--soft); color: var(--muted); }
@@ -236,13 +300,14 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 .week-day-title { font-weight: 700; color: var(--primary); font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; }
 .week-line { font-size: 13px; color: var(--body); padding: 2px 0; display: flex; gap: 8px; align-items: baseline; }
 .week-line .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; transform: translateY(-1px); }
+.week-line .dot.cal { border-radius: 2px; background: transparent !important; border: 2px solid var(--cal); width: 10px; height: 10px; }
 .week-line.done { opacity: .5; text-decoration: line-through; }
 
 /* ACCORDION */
 .accordion-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 12px; cursor: pointer; background: var(--bg); border-radius: 6px; margin-bottom: 8px; font-weight: 600; color: var(--primary); font-size: 13px; border: 1px solid var(--border); min-height: 44px; }
-.accordion-header .right { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: var(--muted); }
-.accordion-header.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-.accordion-header.active .right { color: #fff; }
+.accordion-header .right { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.accordion-header.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.accordion-header.active .right { color: var(--on-accent); }
 .progress { width: 44px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
 .progress i { display: block; height: 100%; background: var(--activity); }
 .accordion-content { padding: 10px; background: var(--bg); border-radius: 6px; margin: -4px 0 10px; border: 1px solid var(--border); }
@@ -251,22 +316,25 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 .note-item span { flex: 1; overflow-wrap: anywhere; }
 
 /* GMAIL placeholder */
-.not-connected { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.not-connected { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .not-connected a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.head-right { display: flex; gap: 6px; align-items: center; }
+a.sync { text-decoration: none; cursor: pointer; }
 .mail-item { display: block; text-decoration: none; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); min-height: 44px; }
 .mail-item .subj { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
-.mail-item .from { display: block; font-size: 11px; color: var(--faint); margin-top: 1px; overflow-wrap: anywhere; }
-.cal-item { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; margin-bottom: 6px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); font-size: 14px; color: var(--body); }
-.cal-item .when { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--accent); min-width: 64px; }
+.mail-item .from { display: block; font-size: 13px; color: var(--faint); margin-top: 1px; overflow-wrap: anywhere; }
+.cal-item { display: flex; gap: 10px; align-items: baseline; padding: 10px; margin-bottom: 6px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); border-left: 3px solid var(--cal); min-height: 44px; font-size: 14px; color: var(--body); }
+.cal-item .when { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 64px; }
 .cal-item .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.h2-link { font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.cal-item .src { flex: 0 0 auto; font-size: 13px; color: var(--muted); white-space: nowrap; max-width: 40%; overflow: hidden; text-overflow: ellipsis; }
+.h2-link { font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
 
 /* SMART TIME TRACKER + SMART SUGGESTIONS */
 .st-window { font-size: 13px; color: var(--body); margin-bottom: 10px; }
 .st-pick { padding: 10px 12px; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); }
-.st-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+.st-label { font-size: 13px; font-weight: 600; color: var(--muted); }
 .st-title { font-size: 15px; font-weight: 600; color: var(--body); margin-top: 2px; overflow-wrap: anywhere; }
-.st-meta { font-size: 11px; color: var(--faint); margin-top: 1px; }
+.st-meta { font-size: 13px; color: var(--faint); margin-top: 1px; }
 .st-acts { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .st-acts .btn-add, .st-acts .btn-secondary { flex: 1 1 120px; }
 .st-acts .mini.ghost { flex: 0 0 auto; }
@@ -279,7 +347,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 .sg-item:last-child { margin-bottom: 0; }
 .sg-item .sg-text { overflow-wrap: anywhere; }
 .sg-item .st-acts { margin-top: 8px; }
-.sg-item .st-acts .mini { min-height: 34px; padding: 6px 12px; }
+.sg-item .st-acts .mini { min-height: 44px; padding: 6px 12px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .tab-btn, .sub-tab-btn, .accordion-header { transition: background-color .15s, color .15s, border-color .15s; }
@@ -287,43 +355,54 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 
 /* ===== Morning-brief look: open sections, hairlines, pill buttons, serif titles ===== */
 .tabs { gap: 22px; margin-bottom: 8px; }
-.tab-btn { padding: 12px 0 10px; min-height: 44px; font-size: 12px; font-weight: 400; letter-spacing: .08em; }
+.tab-btn { padding: 12px 0 10px; font-size: 13px; font-weight: 400; letter-spacing: .08em; }
 .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
-.sub-tab-btn { font-size: 12px; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; min-height: 44px; }
+.sub-tabs { overflow-x: auto; }
+.sub-tab-btn { font-size: 14px; font-weight: 500; white-space: nowrap; padding: 10px 12px; }
 .sub-tab-btn.active { border-bottom-color: var(--text); }
 .card { background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; padding: 22px 0; margin: 0; }
-.card h2 { font-size: 11px; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.card h2 { font-size: 13px; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .card h3 { font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .card.carry { border: 1px solid var(--carry-line); background: var(--carry); border-radius: 12px; padding: 12px 14px; margin-top: 18px; }
 .card.review { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 14px; margin-top: 18px; }
-.h2-link { font-size: 12px; font-weight: 400; color: var(--text); letter-spacing: 0; text-transform: none; }
-.btn-add { border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 500; padding: 0 22px; min-height: 44px; }
-.btn-secondary { border-radius: 999px; background: none; color: var(--text); border: 1px solid var(--text); font-weight: 500; padding: 0 22px; min-height: 44px; }
-.mini { border-radius: 999px; min-height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500; background: none; color: var(--text); border: 1px solid var(--border); }
+.card.reset-banner { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 12px 14px; margin-top: 18px; }
+.h2-link { font-size: 13px; font-weight: 400; color: var(--text); letter-spacing: 0; text-transform: none; }
+.btn-add { border-radius: 999px; background: var(--accent); color: var(--on-accent); font-weight: 500; padding: 0 22px; }
+.btn-secondary { border-radius: 999px; background: none; color: var(--text); border: 1px solid var(--text); font-weight: 500; padding: 0 22px; }
+.mini { border-radius: 999px; padding: 0 14px; font-weight: 500; background: none; color: var(--text); border: 1px solid var(--border); }
 .mini.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .mini.ghost { border-color: transparent; color: var(--muted); }
-.toggle-line { font-size: 13px; font-weight: 400; color: var(--text); text-decoration: underline; text-underline-offset: 3px; min-height: 40px; }
+.mini.made { background: none; color: var(--muted); border-color: var(--border); }
+.toggle-line { font-weight: 400; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 .dump textarea, .add-row input[type="text"], .add-row select, .add-row input[type="time"], .rv-row input[type="text"], .rv-row select { border-radius: 10px; background: var(--card); }
-.badge { font-size: 11px; font-weight: 400; line-height: 1; padding: 4px 7px; border-radius: 999px; background: var(--carry); color: var(--carry-text); border: 1px solid var(--carry-line); margin-right: 6px; vertical-align: 2px; }
+.badge { font-size: 13px; font-weight: 400; line-height: 1.3; padding: 2px 8px; border-radius: 999px; background: var(--carry); color: var(--carry-ink); border: 1px solid var(--carry-line); margin-right: 6px; }
 .badge.proj { background: var(--chip); color: var(--muted); border-color: var(--border); }
 .task-item { background: none; border: 0; border-bottom: 1px solid var(--hair); border-radius: 0; padding: 4px 0; margin: 0; min-height: 56px; gap: 6px; }
 .carry .task-item, .accordion-content .task-item { background: none; }
 .task-item .text { font-size: 15px; line-height: 1.4; padding: 6px 0; }
-.task-item .meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.task-item .meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; color: var(--muted); }
 .cdot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
-.task-item input[type="checkbox"] { margin: 0 6px 0 0; }
-.task-item .drag-handle { margin-left: 0; width: 28px; color: var(--faint); }
+.task-item .drag-handle { margin-left: 0; color: var(--faint); }
 .grp-h { font-weight: 400; margin: 14px 0 6px; }
 .drop .empty { border-radius: 10px; }
-.mail-item { background: none; border: 0; border-bottom: 1px solid var(--hair); border-radius: 0; margin: 0; padding: 10px 0; }
-.mail-item:last-child { border-bottom: 0; }
+.mail-row { gap: 8px; align-items: center; margin: 0; border-bottom: 1px solid var(--hair); }
+.mail-row:last-child { border-bottom: 0; }
+.mail-item { background: none; border: 0; border-radius: 0; margin: 0; padding: 10px 0; }
 .mail-item .subj { font-size: 15px; color: var(--text); }
-.mail-item .from { font-size: 12px; color: var(--muted); }
-.cal-item { background: none; border-radius: 0; padding: 8px 0 8px 12px; margin: 0; font-size: 15px; }
-.cal-item .when { font-size: 13px; font-weight: 400; color: var(--muted); min-width: 72px; }
+.mail-item .from { color: var(--muted); }
+.cal-item { background: none; border: 0; border-left: 3px solid var(--cal); border-radius: 0; padding: 8px 0 8px 12px; margin: 0 0 6px; font-size: 15px; }
+.cal-item .when { font-weight: 400; min-width: 72px; }
 .key-row { font-size: 14px; padding: 8px 0; border-bottom: 1px solid var(--hair); }
 .key-row:last-of-type { border-bottom: 0; }
-.now-head { margin-bottom: 12px; }
+details.card.fold { padding: 6px 0; }
+details.fold > summary { padding: 0; min-height: 44px; font-size: 13px; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 400; color: var(--muted); margin-right: 8px; }
+.fold-body { padding: 0 0 8px; }
+.now-head { align-items: center; margin-bottom: 12px; gap: 8px; }
+.now-head h2 { display: flex; align-items: baseline; gap: 10px; }
+.now-clock { text-transform: none; letter-spacing: 0; font-size: 14px; }
+.cap { background: none; }
+.cap button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: none; }
 .now-hero { background: none; border: 0; border-radius: 0; padding: 0; }
 .now-hero .lbl { font-size: 13px; }
 .now-hero .ttl { font-family: var(--serif); font-size: 22px; font-weight: 700; line-height: 1.25; margin: 4px 0; }
@@ -334,8 +413,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 .now-then .h { font-weight: 400; }
 .now-row { border-bottom: 0; border-top: 1px solid var(--hair); }
 .now-row .rel { color: var(--text); font-weight: 500; }
-.now-line { color: var(--text); }
-.now-line i { background: var(--text); height: 1.5px; }
+.now-line i { height: 1.5px; }
 .now-gap { border-radius: 10px; }
 .now-gap.current { border-color: var(--text); }
 .now-allday span { background: var(--chip); }
@@ -344,17 +422,16 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 .sg-item { background: none; border: 0; border-bottom: 1px solid var(--hair); border-radius: 0; padding: 12px 0; margin: 0; font-size: 14px; }
 .sg-item:last-child { border-bottom: 0; }
 .suggestions { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 18px 0 0; font-size: 14px; line-height: 1.5; color: var(--text); }
-.suggestions strong { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11px; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.suggestions strong .mini { min-height: 32px; padding: 0 10px; }
+.suggestions strong { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 13px; font-weight: 400; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .suggestions div + div { color: var(--muted); }
-.accordion-header.active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.accordion-header.active .right { color: var(--on-accent); }
+.dc-why { margin: 0; }
+.dc-acts { display: flex; justify-content: flex-start; margin-top: 0; gap: 14px; flex-wrap: wrap; }
 
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-mail { order: 2; } .h-dump { order: 3; } .h-review { order: 4; } .h-waiting { order: 5; }
-.h-carry { order: 6; } .h-cal { order: 7; } .h-today { order: 8; } .h-any { order: 9; } .h-keys { order: 10; } .h-tracker { order: 11; } .h-heads { order: 12; }
+.h-smart { order: 0; } .h-now { order: 1; } .h-reset { order: 2; } .h-mail { order: 3; } .h-dump { order: 4; } .h-review { order: 5; } .h-waiting { order: 6; }
+.h-cal { order: 7; } .h-today { order: 8; } .h-carry { order: 9; } .h-any { order: 10; } .h-keys { order: 11; } .h-tracker { order: 12; } .h-heads { order: 13; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -371,7 +448,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 <header class="header">
   <div class="header-top">
     <span class="eyebrow" id="dateEyebrow"></span>
-    <span class="head-right"><span id="sync" class="sync">Loading…</span><a class="sync" href="/api/auth/signout?callbackUrl=/">Sign out</a></span>
+    <span id="sync" class="sync" role="status" title="Sync status">Loading…</span>
   </div>
   <h1 class="headline" id="headline">Farah</h1>
   <section class="info-strip" aria-label="Weather and what the boys wear">
@@ -400,17 +477,22 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
   <div id="smartBox" class="h-smart"></div>
   <div class="home-main">
     <div id="nowBox" class="h-now"></div>
+    <div id="resetBanner" class="h-reset"></div>
     <div class="card h-today">
       <h2>Today</h2>
       <div id="todayList"></div>
     </div>
+    <div id="carryBox" class="h-carry"></div>
     <div id="anytimeBox" class="h-any"></div>
   </div>
   <div class="home-side">
-    <div class="card h-mail">
-      <h2><span>Action items</span><a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail</a></h2>
-      <div id="gmailList"><div class="empty">Loading unread email…</div></div>
-    </div>
+    <details class="card fold h-mail" data-fold="inbox">
+      <summary><span>Action items</span><span class="count" id="mailCount"></span></summary>
+      <div class="fold-body">
+        <div id="gmailList"><div class="empty">Loading unread email…</div></div>
+        <a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail</a>
+      </div>
+    </details>
     <div class="card dump h-dump">
       <h2>Brain dump</h2>
       <textarea id="dumpText" placeholder="Everything on your mind: tasks, groceries, kid things, ideas. Messy is fine."></textarea>
@@ -421,15 +503,16 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     </div>
     <div id="reviewBox" class="h-review"></div>
     <div id="waitingBox" class="h-waiting"></div>
-    <div id="carryBox" class="h-carry"></div>
     <div id="calTodayBox" class="h-cal"></div>
-    <div class="card h-keys">
-      <h2>Key times</h2>
-      <div id="keyTimes"></div>
-      <div class="add-row">
-        <input type="text" id="ktAdd" data-enter="kt-add" placeholder="Add a key time, e.g. 3:00 PM pickup">
+    <details class="card fold h-keys" data-fold="keytimes">
+      <summary><span>Key times</span></summary>
+      <div class="fold-body">
+        <div id="keyTimes"></div>
+        <div class="add-row">
+          <input type="text" id="ktAdd" data-enter="kt-add" placeholder="3:00 PM pickup">
+        </div>
       </div>
-    </div>
+    </details>
     <div id="trackerBox" class="h-tracker"></div>
     <div id="suggestBox" class="h-heads"></div>
   </div>
@@ -440,6 +523,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
   <div class="sub-tabs">
     <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="reset">Weekly reset</button>
   </div>
   <div id="sub-today">
     <div class="donut-container">
@@ -473,6 +557,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     <p class="muted" style="margin-bottom:10px">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
     <div id="weekList"></div>
   </div>
+  <div id="sub-reset" class="hidden"><div id="resetView"></div></div>
 </section>
 
 <!-- ======== PROJECTS ======== -->
@@ -513,16 +598,18 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
   </div>
 </section>
 
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a></footer>
+
 <script>
 (() => {
   'use strict';
 
   // ---------- constants ----------
   const CATS = {
-    kids: { label: 'Kids', color: '#B5654F' }, work: { label: 'Work', color: '#A07A2C' },
-    home: { label: 'Home', color: '#5E7186' }, errands: { label: 'Errands', color: '#6F5A86' },
-    self: { label: 'Self', color: '#7F7393' }, activity: { label: 'Activity', color: '#5C7F5A' },
-    omar: { label: 'Omar', color: '#B0524F' }
+    kids: { label: 'Kids', color: '#C4714A' }, work: { label: 'Work', color: '#B8893A' },
+    home: { label: 'Home', color: '#6E86A0' }, errands: { label: 'Errands', color: '#8C6E9E' },
+    self: { label: 'Self', color: '#B47A86' }, activity: { label: 'Activity', color: '#5E9690' },
+    omar: { label: 'Omar', color: '#A68166' }
   };
   const CAT_KEYS = Object.keys(CATS);
   const DEFAULT_STORES = ['Costco', "Trader Joe's", 'Target', 'Walmart', 'Amazon', 'Aldi', 'Other'];
@@ -680,6 +767,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     render();
   }
   const evDate = ev => ev.allDay ? String(ev.start).slice(0, 10) : ymd(new Date(ev.start));
+  const srcIcon = ev => ev.source === 'icloud' ? '☁️' : '📅';
   const evTime = ev => ev.allDay ? 'All day' : new Date(ev.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const evMin = ev => { if (ev.allDay) return -1; const d = new Date(ev.start); return d.getHours() * 60 + d.getMinutes(); };
   const eventsOn = d => (live.cal || []).filter(ev => evDate(ev) === d).sort((a, b) => evMin(a) - evMin(b));
@@ -687,19 +775,20 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
   function renderLive() {
     const w = live.weather;
     $('weatherTemp').textContent = w ? `${w.temperature}°` : '';
-    $('weatherLine').innerHTML = w ? `${esc(w.condition)}<br>Feels like ${esc(w.feelsLike)}°` : 'Loading weather…';
+    $('weatherLine').innerHTML = w ? `${esc(w.condition || '')}<br>Feels like ${esc(w.feelsLike)}°F${w.lowFeels != null && w.highFeels != null ? `<br>${esc(w.lowFeels)}–${esc(w.highFeels)}° today` : ''}` : 'Loading weather…';
+    const mc = $('mailCount'); if (mc) mc.textContent = live.authed && live.mail && live.mail.length ? `${live.mail.length} unread` : '';
     let mh;
     if (!live.authed) mh = signInHtml('Gmail');
     else if (live.mailErr) mh = `<div class="empty">${esc(live.mailErr)}</div>`;
     else if (!live.mail) mh = '<div class="empty">Loading unread email…</div>';
     else if (!live.mail.length) mh = '<div class="empty">Inbox zero. No unread email.</div>';
-    else mh = live.mail.map(m => `<a class="mail-item" href="https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}" target="_blank" rel="noopener"><span class="subj">${esc(m.subject)}</span>${m.from ? `<span class="from">${esc(m.from)}</span>` : ''}</a>`).join('');
+    else mh = live.mail.map(m => `<div class="mail-row">${mailTaskBtn(m)}<a class="mail-item" href="https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}" target="_blank" rel="noopener"><span class="subj">${esc(m.subject)}</span>${m.from ? `<span class="from">${esc(m.from)}</span>` : ''}</a></div>`).join('');
     $('gmailList').innerHTML = mh;
     const evs = eventsOn(today());
     let ch = '';
     if (!live.authed) ch = signInHtml('your calendar');
     else if (live.calErr) ch = `<div class="empty">${esc(live.calErr)}</div>`;
-    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item"${ev.color ? ` style="border-left-color:${esc(ev.color)}"` : ''} title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span></div>`).join('');
+    else if (live.cal && evs.length) ch = evs.map(ev => `<div class="cal-item" title="${esc(ev.calendar || '')}"><span class="when">${esc(evTime(ev))}</span><span class="what">${esc(ev.title || '(No title)')}</span><span class="src">${srcIcon(ev)} ${esc(ev.calendar || (ev.source === 'icloud' ? 'iCloud' : 'Google'))}</span></div>`).join('');
     else if (live.cal) ch = '<div class="empty">Nothing on your calendar today.</div>';
     $('calTodayBox').innerHTML = ch ? `<div class="card"><h2><span>Calendar today</span><a class="h2-link" href="https://calendar.google.com" target="_blank" rel="noopener">Open</a></h2>${ch}</div>` : '';
   }
@@ -708,6 +797,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     wireEvents();
     wireSmart();
     wireNow();
+    wireFolds();
+    wireExtras();
     render();
     loadLive();
     setInterval(loadLive, 10 * 60000);
@@ -883,9 +974,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     setTask(id, { date, originalDate: t.originalDate || t.date || null, status: t.status === 'dropped' ? 'todo' : t.status });
   }
   function views() {
-    const td = today(); const all = Object.values(S.tasks);
+    const td = today(); const everything = Object.values(S.tasks);
+    const all = everything.filter(capVisible);
     return {
       td,
+      paused: everything.filter(t => isOpen(t) && !capVisible(t) && t.date && t.date <= td).sort(byTime),
       carry: all.filter(t => isOpen(t) && t.date && t.date < td).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : byTime(a, b)),
       todayOpen: all.filter(t => isOpen(t) && t.date === td).sort(byTime),
       anytime: all.filter(t => isOpen(t) && !t.date && !t.projectId).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
@@ -901,7 +994,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow();
+    renderTracker(); renderSmart(); renderNow(); renderResetBanner(); renderReset();
     restoreFocus(keep);
   }
   function rememberFocus() {
@@ -925,17 +1018,48 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     else if (n || flushing) el.textContent = 'Saving…';
     else el.textContent = '✓ Synced';
   }
+  // Dress code. Rules: the big boys get as few layers as the weather allows (sensory comfort);
+  // Yousef gets the full bundle. Edit these rows to tune; `max` is the feels-like °F ceiling for that row.
+  const DRESS_RULES = [
+    { max: 20,  big: 'Winter coat + hat + mittens', baby: 'Thermal onesie + fleece + snowsuit + hat & mittens' },
+    { max: 32,  big: 'Sweatshirt + warm jacket + hat', baby: 'Thermal onesie + fleece + puffer + hat & mittens' },
+    { max: 45,  big: 'Sweatshirt + light jacket', baby: 'Thermal onesie + fleece + jacket + hat' },
+    { max: 55,  big: 'Sweatshirt', baby: 'Long-sleeve onesie + pants + fleece + socks' },
+    { max: 65,  big: 'Long sleeves', baby: 'Long-sleeve onesie + pants + socks' },
+    { max: 75,  big: 'T-shirt + pants', baby: 'Onesie + light pants' },
+    { max: 999, big: 'T-shirt + shorts', baby: 'Short-sleeve onesie + sun hat' }
+  ];
+  function autoDress(w) {
+    if (!w || w.feelsLike == null) return null;
+    const feel = Math.min(w.feelsLike, w.lowFeels != null ? w.lowFeels + 6 : w.feelsLike);   // dress for the cold end of the outing
+    const row = DRESS_RULES.find(r => feel <= r.max) || DRESS_RULES[DRESS_RULES.length - 1];
+    const cond = String(w.condition || '');
+    const wet = /rain|drizzle|shower|thunder/i.test(cond) || (w.precipChance || 0) >= 50;
+    const snow = /snow/i.test(cond);
+    let big = row.big, baby = row.baby;
+    if (snow) { big += ' + snow boots'; baby += ' + snow boots'; }
+    else if (wet) { big = big.replace(/light jacket|warm jacket/, 'rain jacket'); if (!/rain jacket/.test(big)) big += ' + rain jacket'; baby += ' + stroller rain cover'; }
+    const why = `Feels like ${Math.round(feel)}°F${cond ? ', ' + cond.toLowerCase() : ''}${w.precipChance >= 30 ? `, ${w.precipChance}% chance of rain` : ''}`;
+    return { big, baby, why };
+  }
+  function dressToday() {
+    const dc = meta().dress || {};
+    if (dc.date === today() && (dc.big || dc.baby)) return { big: dc.big || '', baby: dc.baby || '', manual: true };
+    const a = autoDress(live.weather);
+    return a ? Object.assign(a, { manual: false }) : { big: '', baby: '', manual: false, why: 'Waiting for the weather…' };
+  }
   function renderHeader() {
     const d = new Date();
     $('dateEyebrow').textContent = `${d.toLocaleDateString('en-US', { weekday: 'long' })} · ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
-    const dc = meta().dress || {};
-    const big = dc.big || ''; const baby = dc.baby || '';
+    const dr = dressToday();
+    const big = dr.big, baby = dr.baby;
     $('dress').innerHTML = `
       <div class="dc-grid">
-        <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="e.g. sweatshirt + light jacket">` : `<div class="what">${esc(big || 'Tap Edit outfits to set')}</div>`}</div>
-        <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="e.g. onesie + fleece + hat">` : `<div class="what">${esc(baby || 'Tap Edit outfits to set')}</div>`}</div>
+        <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="sweatshirt + light jacket" aria-label="Hamad and Talal outfit">` : `<div class="what">${esc(big || 'Not set')}</div>`}</div>
+        <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="onesie + fleece + hat" aria-label="Yousef outfit">` : `<div class="what">${esc(baby || 'Not set')}</div>`}</div>
       </div>
-      <button class="link-btn" data-act="dress-edit">${editDress ? 'Done' : 'Edit outfits'}</button>`;
+      <div class="dc-why">${dr.manual ? 'Your choice for today. It goes back to automatic tomorrow.' : esc(dr.why || '') + ' · set automatically'}</div>
+      <div class="dc-acts">${dr.manual && !editDress ? '<button class="link-btn" data-act="dress-auto">Use automatic</button>' : ''}<button class="link-btn" data-act="dress-edit">${editDress ? 'Save for today' : 'Edit outfits'}</button></div>`;
     renderHeadline(); renderDayline();
   }
   // Calendar titles often end with their own time range ("Bike Lesson 6-7pm"); drop it where the time is shown separately.
@@ -977,6 +1101,9 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
     $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
+    $('sub-reset').classList.toggle('hidden', ui.sub !== 'reset');
+    document.body.dataset.cap = capMode();
+    if (capMode() === 'survival' && ui.tab === 'projects') { ui.tab = 'home'; saveUi(); return renderTabs(); }
     const gc = Object.values(S.grocery).filter(g => !g.archived && !g.checked).length;
     const c = $('groceryCount'); c.textContent = gc; c.classList.toggle('hidden', !gc);
   }
@@ -1011,8 +1138,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
 
   function renderWaiting() {
     const waiting = Object.values(S.dumps).filter(d => !d.processed && (!review || review.dumpId !== d.id)).sort((a, b) => a.createdAt - b.createdAt);
-    $('waitingBox').innerHTML = waiting.length ? `<div class="card"><h2>Saved brain dumps to sort (${waiting.length})</h2>
-      ${waiting.map(d => `<div class="note-item"><span>${esc(d.text.length > 140 ? d.text.slice(0, 140) + '…' : d.text)}</span>
+    $('waitingBox').innerHTML = waiting.length ? `<div class="card"><h2>Brain dumps to sort (${waiting.length})</h2>
+      ${waiting.map(d => `<div class="note-item"><span>${d.source === 'shortcut' ? '📱 ' : ''}${esc(d.text.length > 140 ? d.text.slice(0, 140) + '…' : d.text)}</span>
         <button class="mini primary" data-act="dump-retry" data-id="${esc(d.id)}">Sort</button>
         <button class="mini ghost" data-act="dump-dismiss" data-id="${esc(d.id)}" aria-label="Dismiss">${confirmKey === 'dd-' + d.id ? 'Sure?' : '✕'}</button></div>`).join('')}
     </div>` : '';
@@ -1022,20 +1149,26 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     const { carry } = views();
     if (!carry.length) { $('carryBox').innerHTML = ''; return; }
     $('carryBox').innerHTML = `<div class="card carry carry-bar">
-      <span>${carry.length} carried over. ${carry.length === 1 ? 'It\'s' : 'They\'re'} in Today with a “from” tag.</span>
+      <span>${carry.length} carried over. ${carry.length === 1 ? 'It\'s' : 'They\'re'} in Today with a “from” tag.${capMode() === 'survival' ? ' No pressure today.' : ''}</span>
       <span style="display:flex;gap:6px"><button class="mini" data-act="carry-all-today">All to today</button><button class="mini" data-act="carry-drop-all">${confirmKey === 'carry-drop' ? 'Tap again' : 'Drop all'}</button></span></div>`;
   }
 
   function renderToday() {
     const b = board();
     if (!b.todo.length && !b.doing.length && !b.done.length) {
-      $('todayList').innerHTML = '<div class="empty">Nothing scheduled for today yet. Brain dump above or add one in Schedule.</div>';
+      $('todayList').innerHTML = (capMode() === 'survival' ? '<div class="empty">Nothing essential left today. Rest counts.</div>' : '<div class="empty">Nothing scheduled for today yet. Brain dump below or add one in Schedule.</div>') + pausedHtml();
       return;
     }
     const rowOpts = t => ({ board: 'home', drop: t.date && t.date < today(), tomorrow: t.status !== 'done' });
     const group = (col, emptyText) => `<div class="grp-h"><span>${COL_LABEL[col]}</span><span>${b[col].length}</span></div>
       <div class="drop" data-drop="${col}" data-board="home">${b[col].map(t => taskRow(t, rowOpts(t))).join('') || `<div class="empty">${emptyText}</div>`}</div>`;
-    $('todayList').innerHTML = group('doing', 'Drag a task here to start it.') + group('todo', 'All clear.') + group('done', 'Finished tasks stay here, grayed out.');
+    $('todayList').innerHTML = group('doing', 'Drag a task here to start it.') + group('todo', 'All clear.') + group('done', 'Finished tasks stay here, grayed out.') + pausedHtml();
+  }
+  function pausedHtml() {
+    const { paused } = views(); if (!paused.length) return '';
+    const open = !!ui.open.paused;
+    return `<div class="paused"><button class="toggle-line" data-act="paused-toggle" aria-expanded="${open}">${open ? 'Hide' : 'Show'} ${paused.length} paused in Survival mode</button>
+      ${open ? paused.map(t => taskRow(t, { tomorrow: true })).join('') : ''}</div>`;
   }
 
   function renderAnytime() {
@@ -1050,6 +1183,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
     const next = todayOpen.find(t => t.time && timeMin(t.time) < 9000 && timeMin(t.time) >= nowMin);
     if (next) out.push(`Next up: ${esc(next.title)} at ${esc(next.time)}.`);
+    if (capMode() === 'survival') {
+      out.push('Survival mode is on. Only kids, self-care, and timed items are showing. Everything else is safe and waiting.');
+      setHeads(out);
+      return;
+    }
     if (carry.length) out.push(`${carry.length} ${carry.length === 1 ? 'item is' : 'items are'} carried over. Pick what still matters today and drop the rest.`);
     const byStore = {};
     Object.values(S.grocery).forEach(g => { if (!g.archived && !g.checked) byStore[g.store] = (byStore[g.store] || 0) + 1; });
@@ -1059,6 +1197,9 @@ body.dragging, body.dragging * { cursor: grabbing !important; -webkit-user-selec
     const errands = todayOpen.filter(t => t.category === 'errands');
     if (errands.length >= 2) out.push(`${errands.length} errands today could go in one outing.`);
     if (!todayOpen.length && anytime.length) out.push(`Nothing is scheduled, and ${anytime.length} anytime ${anytime.length === 1 ? 'task is' : 'tasks are'} ready if you get a window.`);
+    setHeads(out);
+  }
+  function setHeads(out) {
     const sig = out.join('|'); const hh = ui.headsHide;
     const hidden = hh && hh.day === today() && hh.sig === sig;
     $('suggestBox').innerHTML = out.length && !hidden ? `<div class="suggestions" role="status"><strong>Heads up<button class="mini ghost" data-act="heads-dismiss" data-sig="${esc(sig)}" aria-label="Dismiss heads up">✕</button></strong>${out.map(s => `<div>${s}</div>`).join('')}</div>` : '';
@@ -1278,7 +1419,7 @@ Rules:
       off += len;
     });
     const pct = total ? Math.round(doneToday.length / total * 100) : 0;
-    svg += `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${pct}%</text><text x="60" y="74" text-anchor="middle" font-size="9" style="fill:var(--muted)">done</text>`;
+    svg += `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${pct}%</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">done</text>`;
     $('donut').innerHTML = svg;
     $('donutLegend').innerHTML = Object.keys(counts).length
       ? Object.entries(counts).map(([c, n]) => `<div class="legend-item"><div class="legend-color" style="background:${catColor(c)}"></div><span><span class="legend-count">${n}</span> ${esc((CATS[c] || {}).label || c)}</span></div>`).join('')
@@ -1310,7 +1451,7 @@ Rules:
       const d = addDays(td, i);
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
-      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot" style="background:${esc(ev.color || 'var(--accent)')}"></span><span>📅 ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${items.filter(isOpen).length || ''}</span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
@@ -1455,7 +1596,7 @@ Rules:
   // Everything the two sections reason about, gathered in one place.
   function smartContext() {
     const td = today(), nowMin = nowMinutes(), now = Date.now();
-    const all = Object.values(S.tasks);
+    const all = Object.values(S.tasks).filter(capVisible);
     const commitments = [];
     all.forEach(t => {
       if (!isOpen(t) || t.date !== td || !t.time) return;
@@ -1509,7 +1650,7 @@ Rules:
       else if (t.date === td) score += 15;
       else if (!t.projectId) score += 5;
       if (t.originalDate && t.originalDate < td) score += Math.min(12, 4 + daysBetween(t.originalDate, td) * 2);
-      const fits = mins <= minutes;
+      const fits = mins <= minutes && mins <= CAP[capMode()].maxTask;
       if (fits && minutes > 0) score += Math.round((mins / minutes) * 12);
       return { t, mins, fits, score };
     }).sort((a, b) => (b.fits - a.fits) || (b.score - a.score) || (a.mins - b.mins));
@@ -1669,14 +1810,15 @@ Rules:
     const out = [];
     SMART_RULES.forEach(rule => { try { const s = rule(c); if (s && smartDismissed[s.key] !== td) out.push(s); } catch (e) { console.warn('suggestion', e); } });
     const seen = new Set();
-    const list = out.sort((a, b) => b.w - a.w).filter(s => { const k = s.task ? s.task.id : s.key; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 3);
+    const list = out.sort((a, b) => b.w - a.w).filter(s => { const k = s.task ? s.task.id : s.key; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, CAP[capMode()].suggestions);
     const items = list.map(s => `<div class="sg-item" ${s.task || s.cat ? `style="border-left-color:${catColor(s.task ? s.task.category : s.cat)}"` : ''}>
         <div class="sg-text">${s.text}</div>
         <div class="st-acts">
           ${s.task && s.task !== c.pick && !(c.active && c.active.id === s.task.id) ? `<button class="mini primary" data-act="sg-start" data-id="${esc(s.task.id)}">${esc(s.label || 'Start this')}</button>` : ''}
           <button class="mini" data-act="sg-dismiss" data-key="${esc(s.key)}">Dismiss</button>
         </div></div>`).join('');
-    box.innerHTML = `<div class="card"><h2>Smart Suggestions</h2>${items || '<div class="empty">Nothing needs a nudge right now. Suggestions appear as your day and list change.</div>'}</div>`;
+    const gentle = capMode() === 'survival' ? '<div class="cap-note" style="margin:0 0 8px">Survival mode: essentials only. Rest counts as getting something done.</div>' : '';
+    box.innerHTML = `<div class="card"><h2>Smart Suggestions</h2>${gentle}${items || '<div class="empty">Nothing needs a nudge right now. Suggestions appear as your day and list change.</div>'}</div>`;
   }
 
   function tickClock() {
@@ -1724,7 +1866,7 @@ Rules:
       if (ev.allDay) return;
       const st = evMin(ev);
       const en = ev.end ? (d => d.getHours() * 60 + d.getMinutes())(new Date(ev.end)) : st;
-      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: ev.color || 'var(--home)' });
+      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: 'var(--cal)' });
     });
     Object.values(S.tasks).forEach(t => {
       if (t.date !== td || !t.time || !(isOpen(t) || t.status === 'done')) return;
@@ -1780,7 +1922,7 @@ Rules:
           <button class="btn-secondary" data-act="${run ? 'now-pause' : 'now-resume'}" data-id="${esc(t.id)}">${run ? 'Pause' : 'Resume'}</button>
         </div></div>`;
     } else if (c.busy) {
-      hero = `<div class="now-hero" style="border-left-color:var(--home)"><div class="lbl">Now</div>
+      hero = `<div class="now-hero" style="border-left-color:var(--cal)"><div class="lbl">Now</div>
         <div class="ttl">${esc(c.busy.title)}</div><div class="sub">Until ${esc(clockLabel(c.busy.until))}. Your next pick shows up when it ends.</div></div>`;
     } else if (c.minutes < 10 && c.next) {
       hero = `<div class="now-hero"><div class="lbl">Coming up</div>
@@ -1792,7 +1934,7 @@ Rules:
       hero = `<div class="now-hero" style="border-left-color:${catColor(t.category)}">
         <div class="lbl">${esc(win)}</div>
         <div class="ttl">${esc(t.title)}</div>
-        <div class="sub">~${mins} min${from}${t.projectId ? ` · ${esc(projName(t.projectId))}` : ''}</div>
+        <div class="sub">~${mins} min${from}${t.projectId ? ` · ${esc(projName(t.projectId))}` : ''}${capMode() === 'survival' ? ' · or rest, that counts too' : ''}</div>
         <div class="acts">
           <button class="btn-add" data-act="now-start" data-id="${esc(t.id)}">Start</button>
           ${fitting.length > 1 ? `<button class="btn-secondary" data-act="now-skip" data-id="${esc(t.id)}">Something else</button>` : ''}
@@ -1801,7 +1943,7 @@ Rules:
       stSkip = []; return renderNow();
     } else if (c.candidates.length) {
       hero = `<div class="now-hero"><div class="lbl">${c.open ? `Free for about ${esc(minLabel(c.minutes))}` : `Free until ${esc(clockLabel(c.next.min))}`}</div>
-        <div class="ttl">Nothing on your list fits this window</div><div class="sub">A quick reset or a break works here.</div></div>`;
+        <div class="ttl">${capMode() === 'survival' ? 'Nothing essential right now' : 'Nothing on your list fits this window'}</div><div class="sub">${capMode() === 'survival' ? 'Rest counts. Sit down if you can.' : 'A quick reset or a break works here.'}</div></div>`;
     } else {
       hero = `<div class="now-hero"><div class="lbl">Now</div><div class="ttl">Your list is clear</div>
         <div class="sub">Add tasks in Brain dump below and they'll show up here.</div></div>`;
@@ -1834,10 +1976,145 @@ Rules:
     }
     const hasDay = items.length || gaps.length;
     box.innerHTML = `<div class="card now-card">
-      <div class="now-head"><h2>Now</h2><span class="now-clock">${esc(clockLabel(nowMin))}</span></div>
+      <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capToggle()}</div>
       ${hero}${full ? '' : then}
       ${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}
       ${day}</div>`;
+  }
+  // ---------- capacity modes ----------
+  const CAP = {
+    full:     { label: 'Full',     maxTask: 999, suggestions: 3 },
+    light:    { label: 'Light',    maxTask: 30,  suggestions: 2 },
+    survival: { label: 'Survival', maxTask: 20,  suggestions: 1 }
+  };
+  const capMode = () => { const m = (meta().capacity || {}).mode; return CAP[m] ? m : 'full'; };
+  // Survival keeps the essentials: kids, self-care, anything timed for today, and high priority. Projects pause.
+  function isEssential(t) {
+    if (t.date === today() && t.time) return true;
+    if (priorityScore(t.priority) >= 30) return true;
+    if (t.projectId) return false;
+    return t.category === 'kids' || t.category === 'self';
+  }
+  const capVisible = t => !isOpen(t) || capMode() !== 'survival' || isEssential(t);
+  const capToggle = () => `<div class="cap" role="group" aria-label="Capacity today">${Object.keys(CAP).map(k =>
+    `<button data-act="cap-set" data-mode="${k}" aria-pressed="${capMode() === k}">${CAP[k].label}</button>`).join('')}</div>`;
+
+  // ---------- inbox -> task ----------
+  const mailTask = m => Object.values(S.tasks).find(t => t.mailId === m.id && t.status !== 'dropped');
+  const mailTaskBtn = m => mailTask(m)
+    ? `<button class="mini made" data-act="tab" data-tab="home" aria-label="Already a task">✓ Task</button>`
+    : `<button class="mini" data-act="mail-task" data-id="${esc(m.id)}">Make task</button>`;
+  function makeMailTask(id) {
+    const m = (live.mail || []).find(x => x.id === id); if (!m || mailTask(m)) return;
+    const t = makeTask({ title: m.subject, category: guessCategory(`${m.subject} ${m.from || ''}`), date: today(), source: 'gmail' });
+    t.mailId = m.id; t.notes = `From ${m.from || 'email'} · https://mail.google.com/mail/u/0/#inbox/${m.threadId || m.id}`;
+    put('tasks', t);
+  }
+
+  // ---------- weekly reset ----------
+  const weekStart = () => { const d = parseYmd(today()); const back = (d.getDay() + 6) % 7; return addDays(today(), -back); };   // Monday
+  function stuckTasks() {
+    const td = today();
+    const wk = weekStart();
+    return Object.values(S.tasks).filter(t => isOpen(t) && t.reviewedOn !== wk && !(t.date && t.date > td)
+        && (t.originalDate || t.date) && daysBetween(t.originalDate || t.date, td) >= 3)
+      .map(t => ({ t, days: daysBetween(t.originalDate || t.date, td) })).sort((a, b) => b.days - a.days);
+  }
+  function renderResetBanner() {
+    const el = $('resetBanner'); if (!el) return;
+    const d = new Date().getDay(), key = weekStart();
+    const show = (d === 0 || (d === 1 && new Date().getHours() < 12)) && meta().resetDone !== key && ui.resetHidden !== key;
+    const stuck = stuckTasks().length;
+    el.innerHTML = show ? `<div class="card reset-banner"><span>Weekly reset is ready${stuck ? ` · ${stuck} stuck task${stuck === 1 ? '' : 's'}` : ''}</span>
+      <span style="display:flex;gap:6px"><button class="mini primary" data-act="reset-open">Open</button><button class="mini ghost" data-act="reset-hide" aria-label="Hide for this week">✕</button></span></div>` : '';
+  }
+  function renderReset() {
+    const el = $('resetView'); if (!el) return;
+    const td = today(), from = addDays(td, -6);
+    const done = Object.values(S.tasks).filter(t => t.status === 'done' && t.completedAt && ymd(new Date(t.completedAt)) >= from);
+    const byCat = {}; done.forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + 1; });
+    const maxN = Math.max(1, ...Object.values(byCat));
+    const dropped = Object.values(S.tasks).filter(t => t.status === 'dropped' && t.droppedAt && ymd(new Date(t.droppedAt)) >= from).length;
+    const stuck = stuckTasks();
+    const list = stores();
+    const items = Object.values(S.grocery).filter(g => !g.archived && !g.checked);
+    const route = list.filter(st => items.some(g => g.store === st));
+    const stuckHtml = stuck.length ? stuck.map(({ t, days }) => `<div class="rs-stuck">
+        <div class="t">${esc(t.title)}</div>
+        <div class="meta">Waiting ${days} days · ${esc((CATS[t.category] || {}).label || '')}${t.projectId ? ' · ' + esc(projName(t.projectId)) : ''}</div>
+        <div class="acts">
+          <button class="mini primary" data-act="rs-commit" data-id="${esc(t.id)}">Commit today</button>
+          <input type="date" aria-label="Schedule ${esc(t.title)}" data-act="rs-date" data-id="${esc(t.id)}" min="${td}" value="">
+          <button class="mini" data-act="drop" data-id="${esc(t.id)}">Drop</button>
+        </div></div>`).join('') : '<div class="empty">Nothing has been waiting 3 days or more.</div>';
+    const routeHtml = route.length ? route.map((st, i) => `<div class="rs-store">
+        <div class="hd"><span class="n">${i + 1}. ${STORE_ICON[st] || '🏪'} ${esc(st)}</span>
+          <button class="mini ghost" data-act="rs-up" data-store="${esc(st)}" aria-label="Move ${esc(st)} earlier" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="mini ghost" data-act="rs-down" data-store="${esc(st)}" aria-label="Move ${esc(st)} later" ${i === route.length - 1 ? 'disabled' : ''}>↓</button></div>
+        <ul>${items.filter(g => g.store === st).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).map(g => `<li>${esc(g.item)}</li>`).join('')}</ul></div>`).join('')
+      : '<div class="empty">Your grocery lists are empty.</div>';
+    el.innerHTML = `
+      <div class="card"><h2>This week</h2>
+        <div class="rs-stat"><div><b>${done.length}</b><span>done</span></div><div><b>${stuck.length}</b><span>stuck 3+ days</span></div><div><b>${dropped}</b><span>let go</span></div></div>
+        ${Object.keys(byCat).length ? Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<div class="rs-bar"><span class="lbl">${esc((CATS[c] || {}).label || c)}</span><span class="trk"><i style="width:${Math.round(n / maxN * 100)}%;background:${catColor(c)}"></i></span><span>${n}</span></div>`).join('') : '<div class="empty">Finished tasks from the last 7 days show up here.</div>'}
+      </div>
+      <div class="card"><h2>Stuck for 3+ days</h2><p class="cap-note" style="margin:0 0 8px">For each one: commit to today, pick a day, or drop it.</p>${stuckHtml}</div>
+      <div class="card"><h2><span>Next week's groceries</span>${route.length ? '<button class="mini" data-act="rs-copy">Copy list</button>' : ''}</h2>
+        <p class="cap-note" style="margin:0 0 8px">In route order. Use the arrows to match how you drive.</p>${routeHtml}</div>
+      <button class="btn-add full" data-act="reset-done">Finish weekly reset</button>`;
+  }
+  function moveStore(st, dir) {
+    const list = stores(); const i = list.indexOf(st), j = i + dir;
+    const items = Object.values(S.grocery).filter(g => !g.archived && !g.checked);
+    // step over stores with nothing on their list so the arrows move past what's visible
+    let k = j; while (k >= 0 && k < list.length && !items.some(g => g.store === list[k])) k += dir;
+    if (i < 0 || k < 0 || k >= list.length) return;
+    list.splice(i, 1); list.splice(k, 0, st); setMeta({ stores: list });
+  }
+  function groceryText() {
+    const items = Object.values(S.grocery).filter(g => !g.archived && !g.checked);
+    return stores().filter(st => items.some(g => g.store === st))
+      .map(st => `${st}\n${items.filter(g => g.store === st).map(g => '- ' + g.item).join('\n')}`).join('\n\n');
+  }
+  function wireExtras() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'cap-set': setMeta({ capacity: { mode: el.dataset.mode, setOn: today() } }); break;
+        case 'paused-toggle': ui.open.paused = !ui.open.paused; saveUi(); renderToday(); break;
+        case 'dress-auto': { const dc = Object.assign({}, meta().dress || {}); delete dc.date; editDress = false; setMeta({ dress: dc }); break; }
+        case 'mail-task': makeMailTask(id); break;
+        case 'reset-open': ui.tab = 'schedule'; ui.sub = 'reset'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'reset-hide': ui.resetHidden = weekStart(); saveUi(); renderResetBanner(); break;
+        case 'reset-done': setMeta({ resetDone: weekStart() }); ui.tab = 'home'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'rs-commit': { const t = S.tasks[id]; if (t) { moveTo(id, today()); setTask(id, { priority: 'high', reviewedOn: weekStart() }); } break; }
+        case 'rs-up': moveStore(el.dataset.store, -1); break;
+        case 'rs-down': moveStore(el.dataset.store, 1); break;
+        case 'rs-copy': {
+          const txt = groceryText();
+          (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { el.textContent = 'Copied'; setTimeout(() => { el.textContent = 'Copy list'; }, 1500); })
+            .catch(() => { window.prompt('Copy your list:', txt); });
+          break;
+        }
+      }
+    });
+    document.addEventListener('change', e => {
+      const el = e.target; if (!el.matches || !el.matches('[data-act="rs-date"]') || !el.value) return;
+      moveTo(el.dataset.id, el.value); setTask(el.dataset.id, { reviewedOn: weekStart() });
+    });
+  }
+  function wireFolds() {
+    document.querySelectorAll('details.fold').forEach(el => { el.open = !!ui.open['fold-' + el.dataset.fold]; });
+    document.addEventListener('toggle', e => {
+      const el = e.target; if (!el.matches || !el.matches('details.fold')) return;
+      ui.open['fold-' + el.dataset.fold] = el.open; saveUi();
+    }, true);
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act="dress-toggle"]'); if (!el) return;
+      if (editDress) return;                     // finish editing with Save first
+      ui.open.dress = !ui.open.dress; saveUi(); renderHeader();
+    });
   }
   function wireNow() {
     document.addEventListener('click', e => {
@@ -2043,7 +2320,7 @@ Rules:
         case 'dress-edit': {
           if (editDress) {
             const big = ($('dcBig') || {}).value || ''; const baby = ($('dcBaby') || {}).value || '';
-            editDress = false; setMeta({ dress: { big: big.trim(), baby: baby.trim() } });
+            editDress = false; setMeta({ dress: { big: big.trim(), baby: baby.trim(), date: today() } });
           } else { editDress = true; render(); }
           break;
         }
