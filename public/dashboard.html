@@ -70,7 +70,11 @@ input[type="checkbox"] { width: 22px; height: 22px; margin: 11px 4px; accent-col
 .dl-track svg { width: 100%; height: 24px; display: block; overflow: visible; }
 .dl-track path { fill: none; stroke: var(--text); stroke-width: 1.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .dl-dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--text); transform: translate(-50%, -50%); left: 0; top: 12px; }
-.dl-axis { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+.dl-axis { position: relative; height: 16px; font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+.dl-axis span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.dl-axis .a0 { transform: none; } .dl-axis .a3 { transform: translateX(-100%); }
+.wx-toggle { background: none; border: 0; padding: 0; text-align: left; color: var(--text); cursor: pointer; min-height: 44px; display: flex; align-items: center; text-decoration: underline dotted; text-decoration-color: var(--faint); text-underline-offset: 6px; }
+.wx-toggle[hidden] { display: none; }
 .dl-periods { display: none; }
 .dl-p { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .dl-p b { font-size: 13px; letter-spacing: .08em; font-weight: 400; text-transform: uppercase; color: var(--text); }
@@ -452,15 +456,15 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   </div>
   <h1 class="headline" id="headline">Farah</h1>
   <section class="info-strip" aria-label="Weather and what the boys wear">
-    <div class="wx"><div class="wx-temp" id="weatherTemp"></div><div class="wx-line" id="weatherLine">Loading weather…</div></div>
+    <div class="wx"><button type="button" class="wx-temp wx-toggle" id="weatherTemp" data-act="unit-toggle" title="Switch between °F and °C" hidden></button><div class="wx-line" id="weatherLine">Loading weather…</div></div>
     <div class="dress" id="dress"></div>
   </section>
   <div class="dayline" id="dayline">
-    <div class="dl-track" aria-hidden="true">
+    <div class="dl-track" role="img" aria-label="Your day from 6 AM to bedtime at 9 PM. The dot marks where you are now.">
       <svg viewBox="0 0 1000 24" preserveAspectRatio="none"><path id="dlPath" d="M2 17 C 250 9, 500 8, 750 9 S 950 13, 998 17"></path></svg>
       <span class="dl-dot" id="dlDot"></span>
     </div>
-    <div class="dl-axis" aria-hidden="true"><span>6 AM</span><span>NOON</span><span>6 PM</span><span>MIDNIGHT</span></div>
+    <div class="dl-axis" aria-hidden="true"><span class="a0" style="left:0">6 AM</span><span style="left:40%">NOON</span><span style="left:80%">6 PM</span><span class="a3" style="left:100%">BED</span></div>
     <div class="dl-periods" id="dlPeriods"></div>
   </div>
 </header>
@@ -650,6 +654,10 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   const byTime = (a, b) => timeMin(a.time) - timeMin(b.time) || (a.createdAt || 0) - (b.createdAt || 0);
   const isOpen = t => t.status === 'todo' || t.status === 'doing';
   const catColor = c => (CATS[c] || {}).color || '#999';
+  // Temperature units: the weather comes in °F; Celsius is a display choice saved in her settings.
+  const useC = () => meta().units === 'c';
+  const deg = f => Math.round(useC() ? (f - 32) * 5 / 9 : f);
+  const unitLetter = () => (useC() ? 'C' : 'F');
 
   // ---------- state ----------
   // S is the one canonical in-memory copy. Every tab renders from it.
@@ -774,8 +782,12 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   const signInHtml = what => `<div class="not-connected"><span>Sign in again to load ${what}.</span><a href="/">Sign in ↗</a></div>`;
   function renderLive() {
     const w = live.weather;
-    $('weatherTemp').textContent = w ? `${w.temperature}°` : '';
-    $('weatherLine').innerHTML = w ? `${esc(w.condition || '')}<br>Feels like ${esc(w.feelsLike)}°F${w.lowFeels != null && w.highFeels != null ? `<br>${esc(w.lowFeels)}–${esc(w.highFeels)}° today` : ''}` : 'Loading weather…';
+    const wt = $('weatherTemp'); wt.hidden = !w;
+    if (w) {
+      wt.textContent = `${deg(w.temperature)}°${unitLetter()}`;
+      wt.setAttribute('aria-label', `${deg(w.temperature)} degrees ${useC() ? 'Celsius' : 'Fahrenheit'}. Tap to switch to ${useC() ? 'Fahrenheit' : 'Celsius'}.`);
+    }
+    $('weatherLine').innerHTML = w ? `${esc(w.condition || '')}<br>Feels like ${deg(w.feelsLike)}°${unitLetter()}${w.lowFeels != null && w.highFeels != null ? `<br>${deg(w.lowFeels)}–${deg(w.highFeels)}° today` : ''}` : 'Loading weather…';
     const mc = $('mailCount'); if (mc) mc.textContent = live.authed && live.mail && live.mail.length ? `${live.mail.length} unread` : '';
     let mh;
     if (!live.authed) mh = signInHtml('Gmail');
@@ -1039,7 +1051,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     let big = row.big, baby = row.baby;
     if (snow) { big += ' + snow boots'; baby += ' + snow boots'; }
     else if (wet) { big = big.replace(/light jacket|warm jacket/, 'rain jacket'); if (!/rain jacket/.test(big)) big += ' + rain jacket'; baby += ' + stroller rain cover'; }
-    const why = `Feels like ${Math.round(feel)}°F${cond ? ', ' + cond.toLowerCase() : ''}${w.precipChance >= 30 ? `, ${w.precipChance}% chance of rain` : ''}`;
+    const why = `Feels like ${deg(feel)}°${unitLetter()}${cond ? ', ' + cond.toLowerCase() : ''}${w.precipChance >= 30 ? `, ${w.precipChance}% chance of rain` : ''}`;
     return { big, baby, why };
   }
   function dressToday() {
@@ -1064,23 +1076,26 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   }
   // Calendar titles often end with their own time range ("Bike Lesson 6-7pm"); drop it where the time is shown separately.
   const tidyTitle = x => String(x).replace(/\s+/g, ' ').trim().replace(/\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*[-–]\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i, '');
-  // Headline: greeting plus what's next on the clock (calendar, timed tasks, key times).
+  // Headline: greeting plus what's next on the clock (calendar, timed tasks, key times). After 9 PM it says goodnight.
   function renderHeadline() {
     const d = new Date(); const nowMin = d.getHours() * 60 + d.getMinutes();
-    const greet = d.getHours() < 12 ? 'Morning' : d.getHours() < 17 ? 'Afternoon' : 'Evening';
-    const next = dayItems(today(), nowMin).find(i => !i.done && i.start > nowMin);
-    let l2;
-    if (next) {
-      let t = tidyTitle(next.title);
-      if (t.length > 40) t = t.slice(0, 39).trimEnd() + '…';
-      l2 = `${t} at ${clockLabel(next.start).replace(':00', '')}.`;
-    } else l2 = nowMin < 12 * 60 ? 'The morning is open.' : 'The rest of the day is yours.';
-    $('headline').innerHTML = `<span class="l1">${greet}, Farah.</span> <span class="l2">${esc(l2)}</span>`;
+    let l1, l2;
+    if (isResting(nowMin)) { l1 = 'Good night, Farah.'; l2 = 'Rest counts. Tomorrow starts fresh.'; }
+    else {
+      l1 = `${d.getHours() < 12 ? 'Morning' : d.getHours() < 17 ? 'Afternoon' : 'Evening'}, Farah.`;
+      const next = dayItems(today(), nowMin).find(i => !i.done && i.start > nowMin && i.start < BED_MIN);
+      if (next) {
+        let t = tidyTitle(next.title);
+        if (t.length > 40) t = t.slice(0, 39).trimEnd() + '…';
+        l2 = `${t} at ${clockLabel(next.start).replace(':00', '')}.`;
+      } else l2 = nowMin < 12 * 60 ? 'The morning is open.' : nowMin < 17 * 60 ? 'The rest of the day is yours.' : 'Nothing else tonight. Wind down.';
+    }
+    $('headline').innerHTML = `<span class="l1">${esc(l1)}</span> <span class="l2">${esc(l2)}</span>`;
   }
-  // Day line: a curve from 6 AM to midnight with a dot for now; on wide screens, three columns say what is in each stretch.
+  // Day line: your waking day, 6 AM to bedtime. The dot is now; on wide screens three columns say what is in each stretch.
   function renderDayline() {
     const d = new Date(); const nowMin = d.getHours() * 60 + d.getMinutes();
-    const f = Math.min(1, Math.max(0, (nowMin - 360) / 1080));
+    const f = Math.min(1, Math.max(0, (nowMin - 360) / (BED_MIN - 360)));
     let y = 12;
     try {
       const p = $('dlPath'); const len = p.getTotalLength(); const tx = f * 1000;
@@ -1088,7 +1103,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     } catch (e) {}
     const dot = $('dlDot'); dot.style.left = (f * 100) + '%'; dot.style.top = y + 'px';
     const items = dayItems(today(), nowMin).filter(i => !i.done);
-    const spans = [['6 AM – Noon', 360, 720], ['Noon – 6 PM', 720, 1080], ['6 PM onward', 1080, 1440]];
+    const spans = [['6 AM – Noon', 360, 720], ['Noon – 6 PM', 720, 1080], ['6 PM – bed', 1080, BED_MIN]];
     $('dlPeriods').innerHTML = spans.map(([label, a, b]) => {
       const its = items.filter(i => i.start >= a && i.start < b);
       const text = its.length ? its.slice(0, 2).map(i => `${clockLabel(i.start).replace(':00', '')} ${tidyTitle(i.title)}`).join(' · ') + (its.length > 2 ? ` · +${its.length - 2} more` : '') : 'Open.';
@@ -1179,6 +1194,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 
   function renderSuggest() {
     const { carry, todayOpen, anytime } = views();
+    if (isResting()) { setHeads([]); return; }
     const out = [];
     const now = new Date(); const nowMin = now.getHours() * 60 + now.getMinutes();
     const next = todayOpen.find(t => t.time && timeMin(t.time) < 9000 && timeMin(t.time) >= nowMin);
@@ -1558,6 +1574,9 @@ Rules:
   // and into SMART_RULES as new rules. Nothing else needs to change.
   const SMART_LS = 'fmd4-smart-dismissed';
   const DAY_END_MIN = 21 * 60;      // treat 9 PM as the end of a planning day when nothing else is scheduled
+  // Bedtime: Farah is in bed by 9 PM. From then until 5 AM nothing productive is suggested. Omar's tasks are the exception (night shifts).
+  const BED_MIN = DAY_END_MIN, WAKE_MIN = 5 * 60;
+  const isResting = (m = nowMinutes()) => m >= BED_MIN || m < WAKE_MIN;
   const OPEN_WINDOW_MIN = 60;       // a sensible focus block when there is no next commitment
   const BUFFER_MIN = 5;             // transition time before the next commitment
   let stSkip = [];                  // task ids skipped with "Another option" (this session only)
@@ -1701,6 +1720,8 @@ Rules:
             <button class="btn-add" data-act="st-complete" data-id="${esc(t.id)}">Complete</button>
             <button class="mini ghost" data-act="st-aside" data-id="${esc(t.id)}">Set aside</button>
           </div></div>`;
+    } else if (isResting()) {
+      body = `<div class="empty">It's bedtime. Nothing to start tonight.</div>`;
     } else if (c.busy) {
       body = `<div class="empty">You're in ${esc(c.busy.title)} until ${esc(clockLabel(c.busy.until))}. A pick shows up here when you're free.</div>`;
     } else if (!c.candidates.length) {
@@ -1805,6 +1826,7 @@ Rules:
 
   function renderSmart() {
     const box = $('smartBox'); if (!box) return;
+    if (isResting()) { box.innerHTML = `<div class="card"><h2>Smart Suggestions</h2><div class="empty">Nothing needs you tonight. Rest counts.</div></div>`; return; }
     const c = smartContext();
     const td = today();
     const out = [];
@@ -1900,10 +1922,21 @@ Rules:
     });
     return gaps;
   }
+  // After bedtime the Now card rests. Omar's open tasks still show, because his hours differ.
+  function restHero(td, nowMin) {
+    const nextDay = nowMin >= BED_MIN ? addDays(td, 1) : td;
+    const first = dayItems(nextDay, nextDay === td ? nowMin : -1).find(i => i.kind !== 'key' && !i.done && i.start > (nextDay === td ? nowMin : -1));
+    const tomorrow = first ? `${nextDay === td ? 'Today' : 'Tomorrow'} starts with ${esc(tidyTitle(first.title))} at ${esc(clockLabel(first.start))}.` : 'Tomorrow starts fresh.';
+    const omar = Object.values(S.tasks).filter(t => isOpen(t) && t.category === 'omar' && (!t.date || t.date <= td)).sort(byTime);
+    return `<div class="now-hero"><div class="lbl">Bedtime</div><div class="ttl">You're done for today</div>
+      <div class="sub">Rest counts. ${tomorrow}</div></div>
+      ${omar.length ? `<div class="now-then"><div class="h">Omar's, still open</div>${omar.map(t => taskRow(t, { tomorrow: false })).join('')}</div>` : ''}`;
+  }
   function renderNow() {
     const box = $('nowBox'); if (!box) return;
     const c = smartContext();
     const td = c.td, nowMin = c.nowMin;
+    const resting = isResting(nowMin) && !c.active;
     const items = dayItems(td, nowMin);
     const upcoming = items.filter(i => !i.done && i.start > nowMin).slice(0, 3);
     const gaps = freeGaps(items, td, nowMin);
@@ -1921,6 +1954,8 @@ Rules:
           <button class="btn-add" data-act="now-done" data-id="${esc(t.id)}">Mark done</button>
           <button class="btn-secondary" data-act="${run ? 'now-pause' : 'now-resume'}" data-id="${esc(t.id)}">${run ? 'Pause' : 'Resume'}</button>
         </div></div>`;
+    } else if (resting) {
+      hero = restHero(td, nowMin);
     } else if (c.busy) {
       hero = `<div class="now-hero" style="border-left-color:var(--cal)"><div class="lbl">Now</div>
         <div class="ttl">${esc(c.busy.title)}</div><div class="sub">Until ${esc(clockLabel(c.busy.until))}. Your next pick shows up when it ends.</div></div>`;
@@ -1960,7 +1995,7 @@ Rules:
 
     const full = !!ui.open.nowFull;
     let day = '';
-    if (full) {
+    if (full && !resting) {
       const allDay = eventsOn(td).filter(ev => ev.allDay);
       const seq = [];
       items.forEach(i => seq.push({ at: i.start, html: row(Object.assign({}, i, { past: i.end <= nowMin && i.start < nowMin })) }));
@@ -1974,10 +2009,10 @@ Rules:
       day = `<div class="now-day">${allDay.length ? `<div class="now-allday">${allDay.map(ev => `<span>${esc(ev.title || 'All day')}</span>`).join('')}</div>` : ''}
         ${seq.map(x => x.html).join('')}</div>`;
     }
-    const hasDay = items.length || gaps.length;
+    const hasDay = !resting && (items.length || gaps.length);
     box.innerHTML = `<div class="card now-card">
       <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capToggle()}</div>
-      ${hero}${full ? '' : then}
+      ${hero}${full || resting ? '' : then}
       ${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}
       ${day}</div>`;
   }
@@ -2129,7 +2164,7 @@ Rules:
       }
     });
     setInterval(() => { const el = $('nowClock'); if (!el) return; const t = Object.values(S.tasks).find(x => x.status === 'doing' && x.timer && x.timer.startedAt); if (t) el.textContent = fmtElapsed(elapsedMs(t)); }, 1000);
-    setInterval(() => { if (!document.hidden && !drag) { renderNow(); renderHeadline(); renderDayline(); } }, 60000);
+    setInterval(() => { if (!document.hidden && !drag) { renderNow(); renderHeadline(); renderDayline(); renderSuggest(); } }, 60000);
   }
 
   // ---------- board: one ordered view of today's tasks, shared by Home and the Kanban ----------
@@ -2290,6 +2325,7 @@ Rules:
       switch (act) {
         case 'tab': ui.tab = el.dataset.tab; saveUi(); render(); window.scrollTo({ top: 0 }); break;
         case 'sub': ui.sub = el.dataset.sub; saveUi(); render(); break;
+        case 'unit-toggle': setMeta({ units: useC() ? 'f' : 'c' }); break;
         case 'heads-dismiss': ui.headsHide = { day: today(), sig: el.dataset.sig || '' }; saveUi(); renderSuggest(); break;
         case 'toggle': { const t = S.tasks[id]; if (t) setTask(id, { status: t.status === 'done' ? 'todo' : 'done' }); break; }
         case 'status': setTask(id, { status: el.dataset.to }); break;
