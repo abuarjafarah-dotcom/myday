@@ -496,6 +496,32 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 .rc-card svg { display: block; width: 100%; height: auto; }
 .rc-acts { margin-top: 14px; display: flex; }
 .rc-acts .btn-add { width: 100%; }
+
+/* Weekly sync */
+.sy-day { padding: 14px 0; }
+.sy-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.sy-dow { font-family: var(--serif); font-size: 20px; font-weight: 700; }
+.sy-date { font-family: var(--sans, inherit); font-size: 13px; font-weight: 400; margin-left: 6px; }
+.sy-day.is-today .sy-dow { text-decoration: underline; text-underline-offset: 5px; }
+.sy-pill { min-height: 44px; min-width: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; flex: 0 0 auto; }
+.sy-pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.sy-item { display: flex; align-items: center; gap: 10px; min-height: 48px; border-bottom: 1px solid var(--hair); }
+.sy-item.done { opacity: .5; text-decoration: line-through; }
+.sy-time { flex: 0 0 76px; font-size: 13px; color: var(--muted); }
+.sy-title { flex: 1; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.sy-allday { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 6px; }
+.sy-chip { font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+.sy-empty { padding: 8px 0; font-size: 14px; }
+.sy-meal { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.sy-meal input, .sy-top { flex: 1; min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; }
+.sy-top { width: 100%; margin-bottom: 8px; }
+.sy-note { width: 100%; min-height: 88px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; font-family: inherit; resize: vertical; }
+.sy-flag { font-size: 15px; padding: 10px 0; border-bottom: 1px solid var(--hair); }
+.sy-sub { margin-top: 14px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sy-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+.sy-stat b { display: block; font-family: var(--serif); font-size: 36px; line-height: 1.1; }
+.sy-actions { display: flex; flex-direction: column; gap: 10px; border-bottom: 0; }
+.shift-tag { font-size: 13px; color: var(--muted); margin-right: 8px; }
 </style>
 </head>
 <body>
@@ -586,6 +612,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="reset">Weekly reset</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="sync">Weekly sync</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="recap">Monthly recap</button>
   </div>
   <div id="sub-today">
@@ -626,6 +653,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <div id="weekList"></div>
   </div>
   <div id="sub-reset" class="hidden"><div id="resetView"></div></div>
+  <div id="sub-sync" class="hidden"><div id="syncView"></div></div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
 
@@ -1084,6 +1112,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
     renderTracker(); renderSmart(); renderNow(); renderPlan(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner();
+    if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
     restoreFocus(keep);
   }
@@ -1202,6 +1231,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
     $('sub-reset').classList.toggle('hidden', ui.sub !== 'reset');
+    $('sub-sync').classList.toggle('hidden', ui.sub !== 'sync');
     $('sub-recap').classList.toggle('hidden', ui.sub !== 'recap');
     document.body.dataset.cap = capMode();
     if (capMode() === 'survival' && ui.tab === 'projects') { ui.tab = 'home'; saveUi(); return renderTabs(); }
@@ -1564,7 +1594,7 @@ Rules:
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
       const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
-      html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${items.filter(isOpen).length || ''}</span></div>
+      html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${shiftTag(d)}${items.filter(isOpen).length || ''}</span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
       </div>`;
@@ -2422,6 +2452,7 @@ Rules:
     wireProjectsDone();
     wireFeatures();
     wireRecap();
+    wireSync();
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-act]'); if (!el) return;
       const act = el.dataset.act, id = el.dataset.id;
@@ -3086,6 +3117,159 @@ Rules:
         case 'recap-open': ui.tab = 'schedule'; ui.sub = 'recap'; ui.recapMonth = el.dataset.ym; saveUi(); render(); window.scrollTo({ top: 0 }); break;
         case 'recap-hide': ui.recapHidden = el.dataset.ym; saveUi(); renderRecapBanner(); break;
       }
+    });
+  }
+
+  // ---------- weekly sync: a 10-minute check-in for the whole household ----------
+  // Stored with your settings: meta.shifts[date] = 'day' | 'night' | 'off' (Omar), meta.sync[monday] = { meals, assign, top, note, doneAt }.
+  const SHIFT_NEXT = { '': 'day', day: 'night', night: 'off', off: '' };
+  const SHIFT_LABEL = { day: 'Omar: days', night: 'Omar: nights', off: 'Omar: off', '': 'Omar: shift?' };
+  const WHO_NEXT = { me: 'omar', omar: 'other', other: 'me' };
+  const WHO_LABEL = { me: 'Farah', omar: 'Omar', other: 'Other' };
+  const PICKUP = /pick ?up|drop ?off|\bbus\b|school/i;
+  const mondayOf = d => addDays(d, -((parseYmd(d).getDay() + 6) % 7));
+  const shiftsMap = () => meta().shifts || {};
+  const shiftTag = d => shiftsMap()[d] ? `<span class="shift-tag">${SHIFT_LABEL[shiftsMap()[d]]}</span>` : '';
+  const syncAll = () => meta().sync || {};
+  const syncWeekOf = mon => Object.assign({ meals: {}, assign: {}, top: ['', '', ''], note: '', doneAt: null }, syncAll()[mon] || {});
+  function saveSync(mon, patch) {
+    const all = Object.assign({}, syncAll()); all[mon] = Object.assign(syncWeekOf(mon), patch);
+    Object.keys(all).sort().slice(0, -10).forEach(k => delete all[k]);          // keep the last 10 weeks
+    setMeta({ sync: all });
+  }
+  function syncWeekStart() {
+    const td = today();
+    if (ui.syncWeek && ui.syncAt === td) return ui.syncWeek;
+    const dow = parseYmd(td).getDay();
+    return mondayOf(dow === 6 ? addDays(td, 2) : dow === 0 ? addDays(td, 1) : td);      // weekends plan the coming week
+  }
+  const NO_SCHOOL = /no school|school closed|holiday|\bbreak\b|in-?service|snow day|day off/i;
+  function syncItems(d, wk, allDay = []) {
+    const noSchool = allDay.some(a => NO_SCHOOL.test(a));
+    return dayItems(d, 0).filter(i => i.kind === 'cal' || i.kind === 'task' || (i.kind === 'key' && PICKUP.test(i.title) && !/^leave\b/i.test(i.title) && !(noSchool && /school/i.test(i.title)))).map(i => {
+      const t = i.id ? S.tasks[i.id] : null;
+      const assignable = i.kind !== 'task' || !!(t && (t.category === 'kids' || t.category === 'omar'));
+      const key = `${d}|${i.kind}|${i.id || i.start}|${norm(i.title).slice(0, 40)}`;
+      const dflt = t && t.category === 'omar' ? 'omar' : 'me';
+      return Object.assign({}, i, { key, dflt, assignable, who: wk.assign[key] || dflt });
+    });
+  }
+  function syncFlags(days) {
+    const flags = [], dn = d => parseYmd(d).toLocaleDateString('en-US', { weekday: 'short' });
+    days.forEach(({ d, items }) => {
+      const shift = shiftsMap()[d] || '', live = items.filter(i => !i.done);
+      live.filter(i => i.who === 'omar' && shift === 'night').forEach(i => flags.push(`${dn(d)}: ${i.title} (${clockLabel(i.start)}) is on Omar, but he works nights.`));
+      ['me', 'omar', 'other'].forEach(who => {
+        const mine = live.filter(i => i.who === who && i.kind !== 'key' && i.end > i.start).sort((a, b) => a.start - b.start);
+        for (let k = 1; k < mine.length; k++) if (mine[k].start < mine[k - 1].end) flags.push(`${dn(d)}: ${mine[k].title} (${clockLabel(mine[k].start)}) overlaps ${mine[k - 1].title}, both on ${WHO_LABEL[who]}.`);
+      });
+      const wh = workHours(d);
+      if (wh) live.filter(i => i.kind === 'cal' && i.who === 'me' && i.start >= wh.start && i.start < wh.end).forEach(i => flags.push(`${dn(d)}: ${i.title} (${clockLabel(i.start)}) falls in your work hours.`));
+      const onMe = live.filter(i => i.who === 'me' && i.assignable).length;
+      if (shift === 'night' && onMe >= 3) flags.push(`${dn(d)}: Omar works nights and ${onMe} things are on you.`);
+      else if (onMe >= 5) flags.push(`${dn(d)} is packed: ${onMe} things are on you.`);
+    });
+    return flags;
+  }
+  function syncText(days, wk, mon) {
+    const f = d => parseYmd(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), sh = shiftsMap();
+    const lines = [`Week of ${f(mon)} to ${f(addDays(mon, 6))}`];
+    const top = wk.top.filter(Boolean); if (top.length) lines.push(`Focus: ${top.join(', ')}`);
+    days.forEach(({ d, items, allDay }) => {
+      lines.push('', `${f(d)}${sh[d] ? ` · ${SHIFT_LABEL[sh[d]]}` : ''}${wk.meals[d] ? ` · Dinner: ${wk.meals[d]}` : ''}`);
+      allDay.forEach(a => lines.push(`  All day: ${a}`));
+      items.filter(i => !i.done).forEach(i => lines.push(`  ${clockLabel(i.start)} ${i.title}${i.assignable ? ` — ${WHO_LABEL[i.who]}` : ''}`));
+    });
+    const flags = syncFlags(days); if (flags.length) lines.push('', 'Needs a plan:', ...flags.map(x => `  - ${x}`));
+    if (wk.note.trim()) lines.push('', wk.note.trim());
+    return lines.join('\n');
+  }
+  function renderSync() {
+    const el = $('syncView'); if (!el) return;
+    const td = today(), mon = syncWeekStart(), wk = syncWeekOf(mon), sun = addDays(mon, 6), thisMon = mondayOf(td);
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(mon, i), allDay = eventsOn(d).filter(ev => ev.allDay).map(ev => ev.title || 'All day');
+      return { d, items: syncItems(d, wk, allDay), allDay, due: Object.values(S.tasks).filter(t => isOpen(t) && t.due === d) };
+    });
+    const short = d => parseYmd(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const label = mon === thisMon ? 'This week' : mon === addDays(thisMon, 7) ? 'Next week' : mon < thisMon ? 'Past week' : 'Week of';
+    const prev = addDays(mon, -7), tsDay = t => ymd(new Date(t.completedAt));
+    const doneLast = Object.values(S.tasks).filter(t => t.status === 'done' && t.completedAt && tsDay(t) >= prev && tsDay(t) < mon).length;
+    const carried = Object.values(S.tasks).filter(t => isOpen(t) && t.date && t.date < mon).length;
+    const flags = syncFlags(days), dueAll = days.flatMap(x => x.due.map(t => ({ t, d: x.d })));
+    const habit = routinesList().some(r => /weekly sync/i.test(r.title));
+    const through = addDays(td, 8);
+    const dayHtml = days.map(({ d, items, allDay }) => {
+      const sh = shiftsMap()[d] || '';
+      return `<div class="card sy-day ${d === td ? 'is-today' : ''}">
+        <div class="sy-head"><span class="sy-dow">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'long' }))} <span class="muted sy-date">${esc(short(d))}</span></span>
+          <button class="sy-pill ${sh ? 'on' : ''}" data-act="sy-shift" data-d="${d}" aria-label="Omar's shift on ${esc(short(d))}: ${esc(SHIFT_LABEL[sh])}. Tap to change.">${esc(SHIFT_LABEL[sh])}</button></div>
+        ${allDay.length ? `<div class="sy-allday">${allDay.map(a => `<span class="sy-chip">${esc(a)}</span>`).join('')}</div>` : ''}
+        ${items.map(i => `<div class="sy-item ${i.done ? 'done' : ''}"><span class="sy-time">${esc(clockLabel(i.start))}</span><span class="sy-title">${esc(i.title)}</span>${i.assignable ? `<button class="sy-pill ${i.who !== 'me' ? 'on' : ''}" data-act="sy-who" data-k="${esc(i.key)}" data-dflt="${i.dflt}" aria-label="Who covers ${esc(i.title)}: ${WHO_LABEL[i.who]}. Tap to change.">${WHO_LABEL[i.who]}</button>` : ''}</div>`).join('') || (allDay.length ? '' : `<div class="sy-empty muted">${d > through ? 'Calendar not loaded yet for this day.' : d < addDays(td, -1) ? "Calendar history isn't kept here." : 'Nothing scheduled.'}</div>`)}
+        <label class="sy-meal"><span>Dinner</span><input type="text" data-sy="meal" data-d="${d}" value="${esc(wk.meals[d] || '')}" placeholder="What's for dinner?"></label>
+      </div>`;
+    }).join('');
+    el.innerHTML = `<div class="card">
+        <div class="rc-nav"><button class="mini" data-act="sy-prev" aria-label="Previous week">‹</button><span class="rc-month">${esc(label)} · ${esc(short(mon))} – ${esc(short(sun))}</span><button class="mini" data-act="sy-next" aria-label="Next week">›</button></div>
+        <p class="muted">A 10-minute check-in: where everyone is, what's for dinner, and what needs a plan.</p>
+        ${sun > through ? `<p class="muted">Your calendar is loaded through ${esc(short(through))}. Later days fill in as the week gets closer.</p>` : ''}
+        ${wk.doneAt ? `<p class="muted">Synced ${esc(new Date(wk.doneAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}.</p>` : ''}
+      </div>
+      <div class="card"><h2>Last week</h2>
+        <div class="sy-stats"><div class="sy-stat"><b>${doneLast}</b><span class="muted">done</span></div><div class="sy-stat"><b>${carried}</b><span class="muted">still open from before</span></div></div>
+        ${carried ? '<button class="toggle-line" data-act="sub" data-sub="reset">Sort them in Weekly reset</button>' : ''}
+      </div>
+      <div class="card"><h2>Needs a plan</h2>
+        ${flags.length ? flags.map(x => `<div class="sy-flag">${esc(x)}</div>`).join('') : '<div class="sy-empty muted">Nothing needs a plan. Nice.</div>'}
+        ${dueAll.length ? `<div class="sy-sub">Due this week</div>${dueAll.map(({ t, d }) => `<div class="sy-flag">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'short' }))}: ${esc(t.title)}</div>`).join('')}` : ''}
+      </div>
+      ${dayHtml}
+      <div class="card"><h2>This week's focus</h2>
+        ${[0, 1, 2].map(i => `<input type="text" class="sy-top" data-sy="top" data-i="${i}" value="${esc(wk.top[i] || '')}" placeholder="${i + 1}. What matters most" aria-label="Focus ${i + 1}">`).join('')}
+        <textarea class="sy-note" data-sy="note" placeholder="Anything Omar needs to know, or you need from him" aria-label="Notes">${esc(wk.note)}</textarea>
+      </div>
+      <div class="card sy-actions">
+        <button class="btn-add" data-act="sy-share">Send summary to Omar</button>
+        <button class="btn-secondary" data-act="sy-done">${wk.doneAt ? 'Undo "synced"' : 'Mark this week synced'}</button>
+        ${habit ? '<p class="muted">A Sunday 7 PM reminder is set up.</p>' : '<button class="toggle-line" data-act="sy-habit">Remind me every Sunday at 7 PM</button>'}
+        <p class="muted" id="syMsg"></p>
+      </div>`;
+  }
+  function wireSync() {
+    document.addEventListener('click', async e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const act = el.dataset.act; if (!act.startsWith('sy-')) return;
+      const mon = syncWeekStart(), wk = syncWeekOf(mon);
+      switch (act) {
+        case 'sy-prev': case 'sy-next': ui.syncWeek = addDays(mon, act === 'sy-next' ? 7 : -7); ui.syncAt = today(); saveUi(); render(); break;
+        case 'sy-shift': { const d = el.dataset.d, sh = Object.assign({}, shiftsMap()), nxt = SHIFT_NEXT[sh[d] || '']; if (nxt) sh[d] = nxt; else delete sh[d]; setMeta({ shifts: sh }); break; }
+        case 'sy-who': {
+          const k = el.dataset.k, dflt = el.dataset.dflt, nxt = WHO_NEXT[wk.assign[k] || dflt], assign = Object.assign({}, wk.assign);
+          if (nxt === dflt) delete assign[k]; else assign[k] = nxt;
+          saveSync(mon, { assign }); break;
+        }
+        case 'sy-done': saveSync(mon, { doneAt: wk.doneAt ? null : Date.now() }); break;
+        case 'sy-habit': {
+          const td = today(), dow = parseYmd(td).getDay();
+          addRoutine({ title: 'Weekly sync (10 min)', category: 'home', freq: 'weekly', time: '7:00 PM', startDate: addDays(td, dow === 0 ? 7 : 7 - dow) }); break;
+        }
+        case 'sy-share': {
+          const days = Array.from({ length: 7 }, (_, i) => { const d = addDays(mon, i), allDay = eventsOn(d).filter(ev => ev.allDay).map(ev => ev.title || 'All day'); return { d, items: syncItems(d, wk, allDay), allDay }; });
+          const text = syncText(days, wk, mon), msg = $('syMsg');
+          try {
+            if (navigator.share) await navigator.share({ text });
+            else { await navigator.clipboard.writeText(text); if (msg) msg.textContent = 'Copied. Paste it into a message to Omar.'; }
+          } catch (err) { if (!(err && err.name === 'AbortError') && msg) msg.textContent = "Couldn't share. Try again in a moment."; }
+          break;
+        }
+      }
+    });
+    document.addEventListener('change', e => {
+      const el = e.target; if (!el.dataset || !el.dataset.sy) return;
+      const mon = syncWeekStart(), wk = syncWeekOf(mon);
+      if (el.dataset.sy === 'meal') saveSync(mon, { meals: Object.assign({}, wk.meals, { [el.dataset.d]: el.value.trim() }) });
+      else if (el.dataset.sy === 'top') { const top = wk.top.slice(); top[+el.dataset.i] = el.value.trim(); saveSync(mon, { top }); }
+      else if (el.dataset.sy === 'note') saveSync(mon, { note: el.value });
     });
   }
 
