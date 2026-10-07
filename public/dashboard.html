@@ -526,6 +526,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 .week-tools { display: flex; align-items: center; gap: 8px; }
 .week-status { font-size: 14px; padding: 2px 0 12px; }
 .week-day .sy-meal { margin-top: 10px; }
+.sy-reset { margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -615,7 +616,6 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   <div class="sub-tabs">
     <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
-    <button class="sub-tab-btn" data-act="sub" data-sub="reset">Weekly reset</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="sync">Weekly sync</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="recap">Monthly recap</button>
   </div>
@@ -656,8 +656,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <p class="muted" style="margin-bottom:10px">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
     <div id="weekList"></div>
   </div>
-  <div id="sub-reset" class="hidden"><div id="resetView"></div></div>
-  <div id="sub-sync" class="hidden"><div id="syncView"></div></div>
+  <div id="sub-sync" class="hidden"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
 
@@ -708,7 +707,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   </div>
 </section>
 
-<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 7, week view</span></footer>
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 7, one weekly tab</span></footer>
 
 <script>
 (() => {
@@ -775,6 +774,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   KINDS.forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   let pending = lsGet(LS.pending, {});           // "kind/id" -> object | null (delete), survives reloads until synced
   let ui = Object.assign({ tab: 'home', sub: 'today', open: {}, showDone: false }, lsGet(LS.ui, {}));
+  if (ui.sub === 'reset') ui.sub = 'sync';
   let db = null, base = null, sample = null;
   let mode = 'starting';                          // 'cloud' | 'local'
   const srv = { tasksOpen: {}, tasksClosed: {}, projects: {}, grocery: {}, notes: {}, dumps: {}, meta: {} };
@@ -1229,12 +1229,12 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     }).join('');
   }
   function renderTabs() {
+    if (ui.sub === 'reset') ui.sub = 'sync';                      // Weekly reset now lives under Weekly sync
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === ui.tab));
     document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
     $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
-    $('sub-reset').classList.toggle('hidden', ui.sub !== 'reset');
     $('sub-sync').classList.toggle('hidden', ui.sub !== 'sync');
     $('sub-recap').classList.toggle('hidden', ui.sub !== 'recap');
     document.body.dataset.cap = capMode();
@@ -2266,7 +2266,7 @@ Rules:
         case 'paused-toggle': ui.open.paused = !ui.open.paused; saveUi(); renderToday(); break;
         case 'dress-auto': { const dc = Object.assign({}, meta().dress || {}); delete dc.date; editDress = false; setMeta({ dress: dc }); break; }
         case 'mail-task': makeMailTask(id); break;
-        case 'reset-open': ui.tab = 'schedule'; ui.sub = 'reset'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'reset-open': ui.tab = 'schedule'; ui.sub = 'sync'; saveUi(); render(); { const r = $('resetView'); if (r && r.scrollIntoView) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break;
         case 'reset-hide': ui.resetHidden = weekStart(); saveUi(); renderResetBanner(); break;
         case 'reset-done': setMeta({ resetDone: weekStart() }); ui.tab = 'home'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
         case 'rs-commit': { const t = S.tasks[id]; if (t) { moveTo(id, today()); setTask(id, { priority: 'high', reviewedOn: weekStart() }); } break; }
@@ -3233,7 +3233,7 @@ Rules:
       </div>
       <div class="card"><h2>Last week</h2>
         <div class="sy-stats"><div class="sy-stat"><b>${doneLast}</b><span class="muted">done</span></div><div class="sy-stat"><b>${carried}</b><span class="muted">still open from before</span></div></div>
-        ${carried ? '<button class="toggle-line" data-act="sub" data-sub="reset">Sort them in Weekly reset</button>' : ''}
+        ${carried ? '<button class="toggle-line" data-act="sy-to-reset">Sort them in the weekly reset below</button>' : ''}
       </div>
       <div class="card"><h2>Needs a plan</h2>
         ${flags.length ? flags.map(x => `<div class="sy-flag">${esc(x)}</div>`).join('') : '<div class="sy-empty muted">Nothing needs a plan. Nice.</div>'}
@@ -3265,6 +3265,7 @@ Rules:
           saveSync(mon, { assign }); break;
         }
         case 'sy-done': saveSync(mon, { doneAt: wk.doneAt ? null : Date.now() }); break;
+        case 'sy-to-reset': { const r = $('resetView'); if (r && r.scrollIntoView) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
         case 'sy-habit': {
           const td = today(), dow = parseYmd(td).getDay();
           addRoutine({ title: 'Weekly sync (10 min)', category: 'home', freq: 'weekly', time: '7:00 PM', startDate: addDays(td, dow === 0 ? 7 : 7 - dow) }); break;
