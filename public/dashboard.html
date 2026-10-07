@@ -446,6 +446,18 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   .now-hero .ttl { font-size: 28px; }
   #schedule, #projects, #grocery { max-width: 760px; }
 }
+
+/* Email scan + finished projects */
+.mail-scan { width: 100%; margin-bottom: 8px; }
+.pf { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--card); }
+.pf label { font-size: 13px; color: var(--muted); }
+.pf input, .pf select { width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; }
+.pf .rv-actions { margin-top: 8px; }
+.add-row input[type="date"] { flex: 1 1 140px; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.done-proj { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--hair); }
+.dp-main { flex: 1; min-width: 0; }
+.dp-name { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.dp-meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -493,6 +505,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <details class="card fold h-mail" data-fold="inbox">
       <summary><span>Action items</span><span class="count" id="mailCount"></span></summary>
       <div class="fold-body">
+        <button class="btn-secondary mail-scan" data-act="mail-scan">Find tasks in my email</button>
         <div id="gmailList"><div class="empty">Loading unread email…</div></div>
         <a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail</a>
       </div>
@@ -572,6 +585,15 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <div class="add-row">
       <input type="text" id="npName" data-enter="add-project" placeholder="New project name">
       <button class="btn-add" data-act="add-project">Add</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Completed</h2>
+    <div id="doneProjectsList"></div>
+    <div class="add-row">
+      <input type="text" id="plName" data-enter="proj-log" placeholder="Log something you did, e.g. Apple picking">
+      <input type="date" id="plDate" aria-label="Date it happened">
+      <button class="btn-add" data-act="proj-log">Add</button>
     </div>
   </div>
   <div class="card">
@@ -1005,7 +1027,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     const keep = rememberFocus();
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
-    renderSchedule(); renderWeek(); renderProjects(); renderIdeas(); renderGrocery(); renderLive();
+    renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
     renderTracker(); renderSmart(); renderNow(); renderResetBanner(); renderReset();
     restoreFocus(keep);
   }
@@ -1132,6 +1154,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     const metaBits = [];
     if (t.time) metaBits.push(esc(t.time));
     if (opts.showDate && t.date) metaBits.push(esc(dayLabel(t.date)));
+    if (t.due && t.status !== 'done') metaBits.push('due ' + esc(dayLabel(t.due)));
     if (t.status === 'doing' && !opts.board) metaBits.push('in progress');
     const catLabel = (CATS[t.category] || {}).label;
     if (catLabel) metaBits.push(esc(catLabel));
@@ -1232,11 +1255,13 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     const el = $('reviewBox');
     if (!review) { el.innerHTML = ''; return; }
     if (review.loading) {
-      el.innerHTML = `<div class="card review"><h2>Organizing…</h2><p class="muted">Your words are already saved, so nothing is lost if this takes a moment.</p></div>`;
+      el.innerHTML = review.source === 'email'
+        ? `<div class="card review"><h2>Reading your email…</h2><p class="muted">Looking at the last 7 days. Nothing is added until you approve it.</p></div>`
+        : `<div class="card review"><h2>Organizing…</h2><p class="muted">Your words are already saved, so nothing is lost if this takes a moment.</p></div>`;
       return;
     }
     const td = today(), tm = addDays(td, 1);
-    const projOpts = sel => `<option value="">No project</option>${Object.values(S.projects).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).map(p => `<option value="${esc(p.id)}" ${sel === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}`;
+    const projOpts = sel => `<option value="">No project</option>${Object.values(S.projects).filter(p => p.status !== 'done').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).map(p => `<option value="${esc(p.id)}" ${sel === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}`;
     const dateOpts = d => {
       const opts = [['', 'No date'], [td, 'Today'], [tm, 'Tomorrow']];
       if (d && d !== td && d !== tm) opts.push([d, dayLabel(d)]);
@@ -1249,6 +1274,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
         <select data-rv="date" data-kind="tasks" data-i="${i}" aria-label="Day">${dateOpts(it.date)}</select>
         ${it.time ? `<span class="muted">${esc(it.time)}</span>` : ''}
         <select data-rv="projectId" data-kind="tasks" data-i="${i}" aria-label="Project">${it.newProject ? `<option value="__new" selected>New: ${esc(it.newProject)}</option>` : ''}${projOpts(it.projectId)}</select>
+        ${it.why || it.due ? `<div class="rv-note">${esc(it.why || '')}${it.due ? `${it.why ? ' · ' : ''}due ${esc(dayLabel(it.due))}` : ''}</div>` : ''}
         ${it.dupOf ? `<div class="rv-note">Already on your list as "${esc(it.dupOf)}", so it's skipped. Tick it to add anyway.</div>` : ''}
       </div>`).join('');
     const storeList = stores();
@@ -1264,12 +1290,13 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
         <select data-rv="projectId" data-kind="ideas" data-i="${i}" aria-label="Project">${projOpts(it.projectId)}</select>
       </div>`).join('');
     const n = review.tasks.filter(x => x.include).length + review.grocery.filter(x => x.include).length + review.ideas.filter(x => x.include).length;
-    el.innerHTML = `<div class="card review"><h2>Here's how I sorted it</h2>
-      <p class="muted">${review.how === 'claude' ? 'Sorted by Claude.' : 'Sorted with simple rules.'} Adjust anything, then add.</p>
+    const isMail = review.source === 'email';
+    el.innerHTML = `<div class="card review"><h2>${isMail ? 'From your email' : "Here's how I sorted it"}</h2>
+      <p class="muted">${isMail ? `${review.how === 'claude' ? 'Read by Claude.' : 'Found with simple rules.'} Looked at ${review.scanned || 0} recent email${review.scanned === 1 ? '' : 's'}.` : (review.how === 'claude' ? 'Sorted by Claude.' : 'Sorted with simple rules.')} Adjust anything, then add.</p>
       ${review.tasks.length ? `<div class="rv-sec">Tasks</div>${tasks}` : ''}
       ${review.grocery.length ? `<div class="rv-sec">Grocery</div>${groc}` : ''}
       ${review.ideas.length ? `<div class="rv-sec">Ideas</div>${ideas}` : ''}
-      ${!n && !review.tasks.length && !review.grocery.length && !review.ideas.length ? '<div class="empty">I couldn\'t find separate items. Your note is saved below.</div>' : ''}
+      ${!n && !review.tasks.length && !review.grocery.length && !review.ideas.length ? (isMail ? `<div class="empty">${esc(review.error || 'No new tasks found in the last 7 days of email.')}</div>` : '<div class="empty">I couldn\'t find separate items. Your note is saved below.</div>') : ''}
       <div class="rv-actions">
         <button class="btn-add" data-act="rv-commit" ${n ? '' : 'disabled'}>Add ${n} to dashboard</button>
         <button class="btn-secondary" data-act="rv-cancel">Not now</button>
@@ -1278,7 +1305,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 
   function buildPrompt(text) {
     const td = today();
-    const projects = Object.values(S.projects).map(p => `${p.id}: ${p.name}`).join('\n') || '(none)';
+    const projects = Object.values(S.projects).filter(p => p.status !== 'done').map(p => `${p.id}: ${p.name}`).join('\n') || '(none)';
     const open = Object.values(S.tasks).filter(isOpen).slice(0, 120).map(t => `${t.id}: ${t.title}`).join('\n') || '(none)';
     return `You organize a busy mom's brain dump into structured items for her personal dashboard.
 Today is ${parseYmd(td).toLocaleDateString('en-US', { weekday: 'long' })} ${td}.
@@ -1348,7 +1375,7 @@ Rules:
         return;
       }
       if (/^(idea|maybe|someday|remember)\b[:\s]/i.test(p)) { out.ideas.push({ text: p.replace(/^(idea|maybe|someday|remember)\b[:\s]*/i, ''), projectId: null }); return; }
-      const proj = Object.values(S.projects).find(pr => {
+      const proj = Object.values(S.projects).filter(pr => pr.status !== 'done').find(pr => {
         const words = norm(pr.name).split(' ').filter(w => w.length > 3 && !['game', 'project', 'with', 'outing'].includes(w));
         return words.some(w => norm(p).includes(w));
       });
@@ -1366,7 +1393,7 @@ Rules:
       return { title: String(t.title).trim(), category: CATS[t.category] ? t.category : guessCategory(t.title),
         projectId: t.projectId && S.projects[t.projectId] ? t.projectId : null,
         newProject: !t.projectId && t.newProject ? String(t.newProject).trim() : null,
-        date: dateOk(t.date), time: t.time ? String(t.time) : null, dupOf: dup ? dup.title : null, include: !dup };
+        date: dateOk(t.date), time: t.time ? String(t.time) : null, mailId: t.mailId ? String(t.mailId) : null, due: dateOk(t.due), why: t.why ? String(t.why) : '', dupOf: dup ? dup.title : null, include: !dup };
     });
     const grocery = (Array.isArray(raw.grocery) ? raw.grocery : []).filter(g => g && g.item).map(g => {
       const store = storeList.find(s => s.toLowerCase() === String(g.store || '').toLowerCase()) || 'Other';
@@ -1396,12 +1423,15 @@ Rules:
       let pid = t.projectId;
       if (!pid && t.newProject) {
         const key = norm(t.newProject);
-        const existing = Object.values(S.projects).find(p => norm(p.name) === key);
+        const existing = Object.values(S.projects).find(p => p.status !== 'done' && norm(p.name) === key);
         if (existing) pid = existing.id;
         else if (madeProjects[key]) pid = madeProjects[key];
         else { const p = { id: newId('p'), name: t.newProject, category: t.category, status: 'active', notes: '', createdAt: Date.now() }; stage('projects', p); pid = madeProjects[key] = p.id; }
       }
-      stage('tasks', makeTask({ title: t.title, category: t.category, projectId: pid, date: t.date, time: t.time, source: 'brain-dump' }));
+      const nt = makeTask({ title: t.title, category: t.category, projectId: pid, date: t.date, time: t.time, source: review.source === 'email' ? 'gmail' : 'brain-dump' });
+      if (t.mailId) { nt.mailId = t.mailId; nt.notes = `From email · https://mail.google.com/mail/u/0/#inbox/${t.mailId}`; }
+      if (t.due) nt.due = t.due;
+      stage('tasks', nt);
     });
     review.grocery.filter(g => g.include && g.item).forEach(g => {
       stage('grocery', { id: newId('g'), item: g.item, store: g.store, checked: false, archived: false, quantity: null, notes: '', createdAt: Date.now() });
@@ -1411,6 +1441,7 @@ Rules:
     });
     const d = S.dumps[review.dumpId];
     if (d) stage('dumps', Object.assign({}, d, { processed: true, processedAt: Date.now() }));
+    if (review.source === 'email') { ui.mailSeen = (ui.mailSeen || []).concat(review.scannedIds || []).slice(-300); saveUi(); }
     review = null;
     commit();
   }
@@ -1478,7 +1509,7 @@ Rules:
 
   // ---------- projects ----------
   function renderProjects() {
-    const projects = Object.values(S.projects).filter(p => p.status !== 'archived').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.name).localeCompare(b.name));
+    const projects = Object.values(S.projects).filter(p => p.status !== 'archived' && p.status !== 'done').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.name).localeCompare(b.name));
     if (!projects.length) { $('projectsList').innerHTML = '<div class="empty">No projects yet.</div>'; return; }
     $('projectsList').innerHTML = projects.map(p => {
       const tasks = Object.values(S.tasks).filter(t => t.projectId === p.id && t.status !== 'dropped');
@@ -1496,6 +1527,7 @@ Rules:
           ${!tasks.length ? '<div class="empty">No steps yet.</div>' : ''}
           ${notes.map(n => `<div class="note-item"><span>💡 ${esc(n.text)}</span><button class="mini ghost" data-act="note-del" data-id="${esc(n.id)}" aria-label="Remove idea">${confirmKey === 'nd-' + n.id ? 'Sure?' : '✕'}</button></div>`).join('')}
           <div class="add-row"><input type="text" id="pa-${esc(p.id)}" data-enter="proj-add" data-id="${esc(p.id)}" placeholder="Add a step…"></div>
+          ${finish && finish.id === p.id ? finishFormHtml(p, open.length) : `<div class="add-row"><button class="btn-secondary" data-act="proj-finish" data-id="${esc(p.id)}">Mark project done</button></div>`}
         </div>` : ''}`;
     }).join('');
   }
@@ -1812,7 +1844,7 @@ Rules:
     },
     // A project that hasn't moved in two weeks.
     c => {
-      const stuck = Object.values(S.projects).filter(p => p.status !== 'archived').map(p => {
+      const stuck = Object.values(S.projects).filter(p => p.status !== 'archived' && p.status !== 'done').map(p => {
         const steps = c.all.filter(t => t.projectId === p.id);
         const last = Math.max(p.createdAt || 0, ...steps.map(t => t.completedAt || 0));
         const nextStep = c.candidates.filter(x => x.t.projectId === p.id).sort((a, b) => a.mins - b.mins)[0];
@@ -2319,6 +2351,7 @@ Rules:
 
   function wireEvents() {
     wireDrag();
+    wireProjectsDone();
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-act]'); if (!el) return;
       const act = el.dataset.act, id = el.dataset.id;
@@ -2417,9 +2450,110 @@ Rules:
     $('ntTitle').value = ''; const time = fmt24($('ntTime').value); $('ntTime').value = '';
     put('tasks', makeTask({ title, category: $('ntCat').value, date, time }));
   }
+  // ---------- email -> tasks: scan the last 7 days, review, then add (nothing is added until approved) ----------
+  let scanning = false;
+  const planDate = due => { if (!due) return null; const d = addDays(due, -1); return d < today() ? today() : d; };   // plan it the day before it's due
+  async function scanEmail() {
+    if (scanning) return;
+    if (review && !review.loading && review.source !== 'email') { const rb = $('reviewBox'); if (rb && rb.scrollIntoView) rb.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
+    scanning = true;
+    review = { source: 'email', loading: true }; render();
+    try {
+      const seen = (ui.mailSeen || []).slice(-150).join(',');
+      const d = await getJson(`/api/gmail?mode=tasks&today=${today()}&seen=${encodeURIComponent(seen)}`);
+      const have = new Set(Object.values(S.tasks).map(t => t.mailId).filter(Boolean));
+      const raw = { tasks: (d.suggestions || []).filter(x => x && !have.has(x.mailId)).map(x => Object.assign({}, x, { date: planDate(x.due) })) };
+      review = Object.assign(normalizeReview(raw, null, d.how === 'claude' ? 'claude' : 'rules'), { source: 'email', scanned: d.scanned || 0, scannedIds: d.scannedIds || [] });
+      if (!review.tasks.length) { ui.mailSeen = (ui.mailSeen || []).concat(review.scannedIds).slice(-300); saveUi(); }
+    } catch (e) {
+      review = { source: 'email', loading: false, error: e && e.auth ? 'Sign in again to read your email.' : "Couldn't read your email right now. Try again in a moment.",
+        tasks: [], grocery: [], ideas: [], how: 'rules', scanned: 0, scannedIds: [] };
+    }
+    scanning = false; render();
+    const rb = $('reviewBox'); if (rb && rb.scrollIntoView) rb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ---------- finished projects: kept with their date and note, grouped by month, for the monthly recap ----------
+  let finish = null;   // { id, date, note, open } while the "Mark project done" form is open
+  const stampFor = ymdStr => ymdStr === today() ? Date.now() : parseYmd(ymdStr).getTime() + 12 * 3600000;
+  function finishFormHtml(p, openCount) {
+    const f = finish;
+    return `<div class="pf" role="group" aria-label="Finish ${esc(p.name)}">
+      <label for="pf-date">When did you finish?</label>
+      <input type="date" id="pf-date" data-pf="date" value="${esc(f.date)}" max="${today()}">
+      <label for="pf-note">What did you do? (optional)</label>
+      <input type="text" id="pf-note" data-pf="note" value="${esc(f.note)}" placeholder="e.g. Apple picking at the orchard">
+      ${openCount ? `<label for="pf-open">${openCount} open step${openCount === 1 ? '' : 's'}</label>
+      <select id="pf-open" data-pf="open"><option value="done" ${f.open === 'done' ? 'selected' : ''}>Mark them done</option><option value="drop" ${f.open === 'drop' ? 'selected' : ''}>Let them go</option><option value="keep" ${f.open === 'keep' ? 'selected' : ''}>Keep them open</option></select>` : ''}
+      <div class="rv-actions"><button class="btn-add" data-act="proj-finish-save" data-id="${esc(p.id)}">Save as done</button><button class="btn-secondary" data-act="proj-finish-cancel">Cancel</button></div>
+    </div>`;
+  }
+  function finishProject(id) {
+    const p = S.projects[id]; if (!p || !finish || finish.id !== id) return;
+    const when = /^\d{4}-\d{2}-\d{2}$/.test(finish.date) ? finish.date : today();
+    const at = stampFor(when);
+    const tasks = Object.values(S.tasks).filter(t => t.projectId === id && t.status !== 'dropped');
+    const open = tasks.filter(isOpen);
+    open.forEach(t => {
+      if (finish.open === 'done') stage('tasks', Object.assign({}, t, { status: 'done', completedAt: at }));
+      else if (finish.open === 'drop') stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: at }));
+    });
+    const doneCount = tasks.filter(t => t.status === 'done').length + (finish.open === 'done' ? open.length : 0);
+    const kept = tasks.length - (finish.open === 'drop' ? open.length : 0);
+    stage('projects', Object.assign({}, p, { status: 'done', completedAt: at, doneOn: when, doneNote: finish.note.trim(), stats: { steps: kept, done: doneCount } }));
+    finish = null; commit();
+  }
+  function reopenProject(id) {
+    const p = S.projects[id]; if (!p) return;
+    ui.open['p-' + id] = true; saveUi();
+    put('projects', Object.assign({}, p, { status: 'active', completedAt: null, doneOn: null, reopenedAt: Date.now() }));
+  }
+  function logDone() {
+    const n = $('plName'), dt = $('plDate'); const name = n.value.trim(); if (!name) { n.focus(); return; }
+    const when = /^\d{4}-\d{2}-\d{2}$/.test(dt.value) ? dt.value : today();
+    const at = stampFor(when);
+    n.value = '';
+    put('projects', { id: newId('p'), name, category: 'activity', status: 'done', notes: '', createdAt: at, completedAt: at, doneOn: when, doneNote: '', stats: { steps: 0, done: 0 }, logged: true });
+  }
+  function renderDoneProjects() {
+    const el = $('doneProjectsList'); if (!el) return;
+    const dt = $('plDate'); if (dt && !dt.value) dt.value = today();
+    const list = Object.values(S.projects).filter(p => p.status === 'done').sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+    if (!list.length) { el.innerHTML = '<div class="empty">Nothing here yet. Finished projects, and things you did together, are saved by month.</div>'; return; }
+    let last = '';
+    el.innerHTML = list.map(p => {
+      const d = new Date(p.completedAt || p.createdAt || Date.now());
+      const month = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const head = month !== last ? `<div class="grp-h"><span>${esc(month)}</span><span></span></div>` : ''; last = month;
+      const steps = p.stats && p.stats.steps ? ` · ${p.stats.done}/${p.stats.steps} steps` : '';
+      return `${head}<div class="done-proj"><div class="dp-main"><div class="dp-name">${esc(p.name)}</div>
+        <div class="dp-meta">${esc(d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))}${steps}${p.doneNote ? ' · ' + esc(p.doneNote) : ''}</div></div>
+        <button class="mini ghost" data-act="proj-reopen" data-id="${esc(p.id)}">Reopen</button></div>`;
+    }).join('');
+  }
+  function wireProjectsDone() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'mail-scan': scanEmail(); break;
+        case 'proj-finish': finish = { id, date: today(), note: '', open: 'done' }; ui.open['p-' + id] = true; saveUi(); render(); break;
+        case 'proj-finish-cancel': finish = null; render(); break;
+        case 'proj-finish-save': finishProject(id); break;
+        case 'proj-reopen': reopenProject(id); break;
+        case 'proj-log': logDone(); break;
+      }
+    });
+    const upd = e => { const el = e.target; if (el && el.dataset && el.dataset.pf && finish) finish[el.dataset.pf] = el.value; };
+    document.addEventListener('input', upd); document.addEventListener('change', upd);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.dataset && e.target.dataset.enter === 'proj-log') { e.preventDefault(); logDone(); }
+    });
+  }
+
   function addProject() {
     const name = $('npName').value.trim(); if (!name) return;
-    if (Object.values(S.projects).some(p => norm(p.name) === norm(name))) { $('npName').value = ''; return; }
+    if (Object.values(S.projects).some(p => p.status !== 'done' && norm(p.name) === norm(name))) { $('npName').value = ''; return; }
     const p = { id: newId('p'), name, category: 'self', status: 'active', notes: '', createdAt: Date.now() };
     $('npName').value = ''; ui.open['p-' + p.id] = true; saveUi(); put('projects', p);
   }
