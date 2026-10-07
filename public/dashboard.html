@@ -84,7 +84,8 @@ input[type="checkbox"] { width: 22px; height: 22px; margin: 11px 4px; accent-col
 .dl-p b { font-size: 13px; letter-spacing: .08em; font-weight: 400; text-transform: uppercase; color: var(--text); }
 .dl-p span { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
 .dl-p.past { opacity: .55; }
-.page-foot { display: flex; justify-content: center; margin-top: 24px; }
+.page-foot { display: flex; flex-direction: column; align-items: center; margin-top: 24px; }
+.build { font-size: 13px; color: var(--faint); }
 .page-foot a { font-size: 13px; color: var(--muted); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; }
 @media (min-width: 700px) {
   .headline { font-size: clamp(36px, 5vw, 58px); }
@@ -365,7 +366,7 @@ a.sync { text-decoration: none; cursor: pointer; }
 .tabs { gap: 22px; margin-bottom: 8px; }
 .tab-btn { padding: 12px 0 10px; font-size: 13px; font-weight: 400; letter-spacing: .08em; }
 .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
-.sub-tabs { overflow-x: auto; }
+.sub-tabs { flex-wrap: wrap; row-gap: 0; }
 .sub-tab-btn { font-size: 14px; font-weight: 500; white-space: nowrap; padding: 10px 12px; }
 .sub-tab-btn.active { border-bottom-color: var(--text); }
 .card { background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; padding: 22px 0; margin: 0; }
@@ -522,6 +523,9 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 .sy-stat b { display: block; font-family: var(--serif); font-size: 36px; line-height: 1.1; }
 .sy-actions { display: flex; flex-direction: column; gap: 10px; border-bottom: 0; }
 .shift-tag { font-size: 13px; color: var(--muted); margin-right: 8px; }
+.week-tools { display: flex; align-items: center; gap: 8px; }
+.week-status { font-size: 14px; padding: 2px 0 12px; }
+.week-day .sy-meal { margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -704,7 +708,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   </div>
 </section>
 
-<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a></footer>
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 7, week view</span></footer>
 
 <script>
 (() => {
@@ -870,7 +874,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
       getJson('/api/weather').then(d => { if (!d.error) live.weather = d; }).catch(() => {}),
       getJson('/api/gmail').then(d => { live.mail = d.emails || []; live.mailErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.mailErr = 'Couldn\'t load Gmail right now.'; }),
-      getJson('/api/calendar').then(d => { live.cal = d.events || []; live.calErr = ''; })
+      getJson('/api/calendar').then(d => { live.cal = d.events || []; live.calInfo = d.info || null; live.calErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.calErr = 'Couldn\'t load your calendar right now.'; })
     ];
     await Promise.all(jobs);
@@ -1588,15 +1592,27 @@ Rules:
 
   function renderWeek() {
     const td = today(); const all = Object.values(S.tasks); const { carry } = views();
-    let html = '';
+    const shortD = d => parseYmd(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const info = live.calInfo, n = (live.cal || []).length;
+    let status;
+    if (live.cal === null) status = live.calErr ? "Your calendar didn't load. Try again in a moment, or sign in again." : 'Loading your calendar…';
+    else if (info) {
+      status = `${n} event${n === 1 ? '' : 's'} from ${info.calendars.length} calendar${info.calendars.length === 1 ? '' : 's'}${info.icloud ? `, ${info.icloud} from iCloud` : ''}, through ${shortD(ymd(new Date(info.to)))}.`;
+      if ((info.failed || []).length) status += ` Couldn't load: ${info.failed.map(f => `${f.name} (error ${f.status || 'offline'})`).join(', ')}.`;
+      if (info.icloudFailed) status += " An iCloud feed didn't load.";
+    } else status = `${n} event${n === 1 ? '' : 's'} loaded.`;
+    let html = `<div class="week-status muted" role="status">${esc(status)}</div>`;
     for (let i = 0; i < 7; i++) {
-      const d = addDays(td, i);
+      const d = addDays(td, i), sh = shiftsMap()[d] || '';
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
       const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
-      html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span><span class="muted">${shiftTag(d)}${items.filter(isOpen).length || ''}</span></div>
+      const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
+      html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span>
+          <span class="week-tools"><button class="sy-pill ${sh ? 'on' : ''}" data-act="sy-shift" data-d="${d}" aria-label="Omar's shift on ${esc(shortD(d))}: ${esc(SHIFT_LABEL[sh])}. Tap to change.">${esc(SHIFT_LABEL[sh])}</button><span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
+        <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
       </div>`;
     }
     $('weekList').innerHTML = html;
@@ -3198,7 +3214,7 @@ Rules:
     const carried = Object.values(S.tasks).filter(t => isOpen(t) && t.date && t.date < mon).length;
     const flags = syncFlags(days), dueAll = days.flatMap(x => x.due.map(t => ({ t, d: x.d })));
     const habit = routinesList().some(r => /weekly sync/i.test(r.title));
-    const through = addDays(td, 8);
+    const through = live.calInfo && live.calInfo.to ? ymd(new Date(live.calInfo.to)) : addDays(td, 8);
     const dayHtml = days.map(({ d, items, allDay }) => {
       const sh = shiftsMap()[d] || '';
       return `<div class="card sy-day ${d === td ? 'is-today' : ''}">
@@ -3266,7 +3282,7 @@ Rules:
     });
     document.addEventListener('change', e => {
       const el = e.target; if (!el.dataset || !el.dataset.sy) return;
-      const mon = syncWeekStart(), wk = syncWeekOf(mon);
+      const mon = el.dataset.sy === 'meal' ? mondayOf(el.dataset.d) : syncWeekStart(), wk = syncWeekOf(mon);
       if (el.dataset.sy === 'meal') saveSync(mon, { meals: Object.assign({}, wk.meals, { [el.dataset.d]: el.value.trim() }) });
       else if (el.dataset.sy === 'top') { const top = wk.top.slice(); top[+el.dataset.i] = el.value.trim(); saveSync(mon, { top }); }
       else if (el.dataset.sy === 'note') saveSync(mon, { note: el.value });
