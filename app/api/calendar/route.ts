@@ -23,15 +23,17 @@ export async function GET() {
     const calendars: GCal[] = (list.items || []).filter((c: GCal) => c.selected && !c.hidden);
     if (!calendars.length) calendars.push({ id: "primary", summary: "Calendar" });
 
-    // From a day and a half ago (covers "today" in any US time zone) through 8 days out.
+    // From a day and a half ago (covers "today" in any US time zone) through 15 days out, so next week is always complete.
     const now = Date.now();
-    const from = now - 36 * 3600 * 1000, to = now + 8 * 24 * 3600 * 1000;
+    const from = now - 36 * 3600 * 1000, to = now + 15 * 24 * 3600 * 1000;
     // iCloud feeds (ICLOUD_CALENDAR_URLS in Vercel) load alongside Google; a failed feed is skipped, never fatal.
-    const icloudPromise = fetchIcloudEvents(from, to).catch(() => []);
+    let icloudFailed = false;
+    const failed: { name: string; status: number }[] = [];
+    const icloudPromise = fetchIcloudEvents(from, to).catch(() => { icloudFailed = true; return []; });
     const params = new URLSearchParams({
       timeMin: new Date(from).toISOString(),
       timeMax: new Date(to).toISOString(),
-      maxResults: "100",
+      maxResults: "250",
       singleEvents: "true",
       orderBy: "startTime",
     });
@@ -43,7 +45,7 @@ export async function GET() {
             `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`,
             { headers, cache: "no-store" }
           );
-          if (!r.ok) return [];
+          if (!r.ok) { failed.push({ name: cal.summary || cal.id, status: r.status }); return []; }
           const data = await r.json();
           const color = /^#[0-9a-fA-F]{3,8}$/.test(cal.backgroundColor || "") ? cal.backgroundColor : null;
           return (data.items || [])
@@ -59,6 +61,7 @@ export async function GET() {
               source: "google" as const,
             }));
         } catch {
+          failed.push({ name: cal.summary || cal.id, status: 0 });
           return [];
         }
       })
@@ -78,7 +81,14 @@ export async function GET() {
       })
       .sort((a, b) => String(a.start).localeCompare(String(b.start)));
 
-    return Response.json({ events });
+    // `info` tells the dashboard exactly what came back, so a missing day is easy to diagnose.
+    const info = {
+      from: new Date(from).toISOString(), to: new Date(to).toISOString(),
+      calendars: calendars.map((c) => c.summary || c.id),
+      google: events.filter((e) => e.source === "google").length, icloud: events.filter((e) => e.source === "icloud").length,
+      failed, icloudFailed,
+    };
+    return Response.json({ events, info });
   } catch (error) {
     console.error("Calendar API error:", error);
     return Response.json({ error: "Failed to fetch events" }, { status: 500 });
