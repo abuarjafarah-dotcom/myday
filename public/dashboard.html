@@ -439,8 +439,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-reset { order: 3; } .h-mail { order: 4; } .h-dump { order: 5; } .h-review { order: 6; } .h-waiting { order: 7; }
-.h-cal { order: 8; } .h-today { order: 9; } .h-carry { order: 10; } .h-any { order: 11; } .h-keys { order: 12; } .h-tracker { order: 13; } .h-heads { order: 14; } .h-remind { order: 15; }
+.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-reset { order: 3; } .h-today { order: 4; } .h-carry { order: 5; } .h-dump { order: 6; } .h-review { order: 7; } .h-waiting { order: 8; } .h-time { order: 9; } .h-more { order: 10; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -527,6 +526,77 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 .week-status { font-size: 14px; padding: 2px 0 12px; }
 .week-day .sy-meal { margin-top: 10px; }
 .sy-reset { margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* ===== Calm Home: three button styles (filled, outlined, text), quiet rows, collapsed extras ===== */
+.mini { border: 0; background: none; color: var(--text); border-radius: 8px; padding: 0 10px; min-height: 44px; min-width: 44px; font-size: 14px; font-weight: 500; }
+.mini.primary { background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 0 18px; min-height: 40px; }
+.mini.ghost, .mini.made { color: var(--muted); }
+.icon-btn { flex: 0 0 auto; width: 44px; height: 44px; border: 0; background: none; color: var(--muted); padding: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; }
+.icon-btn.hot { color: var(--text); }
+.icon-btn[aria-expanded="true"] { color: var(--text); background: var(--soft); }
+/* header */
+.wx-feel { color: var(--text); }
+.dl-axis { display: none !important; }
+.dc-row { display: flex; align-items: center; gap: 4px; }
+.dc-grid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dc-box { border: 0 !important; padding-left: 0 !important; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.dc-box .who { color: var(--text); text-transform: none; letter-spacing: 0; margin-right: 6px; font-size: 13px; }
+.dc-box .what { font-size: 13px; }
+.dc-panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.dc-panel label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.dc-panel input { min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; }
+.dc-panel .dc-acts { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+@media (min-width: 700px) { .dc-grid { flex-direction: row; gap: 24px; } }
+/* smart suggestion banner: boxed, quiet */
+.h-smart .card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 12px 14px; margin-top: 16px; }
+.h-smart .card h2 { margin-bottom: 2px; }
+/* Now */
+.cap-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--text); font-size: 13px; cursor: pointer; }
+.next-line { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: none; padding: 0; color: var(--muted); font-size: 14px; text-align: left; cursor: pointer; }
+.next-line[aria-expanded="true"] svg { transform: rotate(180deg); }
+.now-links { justify-content: space-between; align-items: center; gap: 12px; }
+/* task rows */
+.task-item { display: block; padding: 0; min-height: 0; }
+.ti-main { display: flex; align-items: center; gap: 4px; min-height: 52px; }
+.ti-main .text { flex: 1; min-width: 0; padding: 6px 0; }
+.ti-main input[type="checkbox"] { margin: 0 8px 0 0; }
+.ti-main .mini { font-size: 13px; padding: 0 6px; color: var(--text); }
+.ti-info { margin: 0 0 10px 34px; padding: 10px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+.ti-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ti-acts { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+.ti-acts .toggle-line { font-size: 14px; }
+.ti-reorder { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; color: var(--text); }
+.ti-reorder .drag-handle { opacity: 1; min-width: 44px; }
+.task-item.open { background: none; }
+.zone-hint { display: none; }
+body.dragging .zone-hint { display: flex; align-items: center; justify-content: center; min-height: 44px; margin: 6px 0; border: 1px dashed var(--border); border-radius: 10px; font-size: 13px; color: var(--muted); }
+.drop.zone-only { min-height: 0; padding: 0; border: 0; }
+/* capture line: one line until you tap it */
+.h-dump { border-bottom: 0; padding: 14px 0 6px; }
+.dump-field { position: relative; }
+.dump textarea { min-height: 48px; height: 48px; padding: 12px 52px 12px 18px; border-radius: 24px; resize: none; overflow: hidden; }
+.dump:focus-within textarea, .dump.has-text textarea { height: auto; min-height: 112px; border-radius: 14px; overflow: auto; }
+.dump-mic { position: absolute; right: 2px; top: 2px; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 50%; }
+.dump .dump-row { display: none; }
+.dump:focus-within .dump-row, .dump.has-text .dump-row { display: flex; }
+/* collapsed extras */
+details.card.h-more, details.card.h-time { padding: 2px 0; }
+details.fold.sub { border-top: 1px solid var(--hair); padding: 0; }
+details.fold.sub > summary { min-height: 48px; }
+.more-list { padding: 0; }
+.more-list .fold-body { padding: 0 0 10px; }
+.more-list .card { padding: 0; border: 0; border-bottom: 0; background: none; margin: 0; }
+.more-list .card > h2 { display: none; }
+#calTodayBox .card > h2 { display: flex; justify-content: flex-end; margin: 0 0 4px; }
+#calTodayBox .card > h2 > span:first-child { display: none; }
+#trackerBox .card, #suggestBox .suggestions { margin-top: 0; }
+#trackerBox .card { padding: 0; border: 0; }
+#trackerBox .card > h2 { display: none; }
+#moreCount { max-width: 62%; text-align: right; }
+/* Omar's shift: a quiet icon */
+.shift-btn { flex: 0 0 auto; width: 44px; height: 44px; border: 0; background: none; color: var(--text); opacity: .3; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; }
+.shift-btn.on { opacity: 1; }
+.sy-head .shift-btn, .week-tools .shift-btn { margin-right: -6px; }
 </style>
 </head>
 <body>
@@ -540,6 +610,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     <div class="wx"><button type="button" class="wx-temp wx-toggle" id="weatherTemp" data-act="unit-toggle" title="Switch between °F and °C" hidden></button><div class="wx-line" id="weatherLine">Loading weather…</div></div>
     <div class="dress" id="dress"></div>
   </section>
+  <div id="dressPanel"></div>
   <div class="dayline" id="dayline">
     <div class="dl-track" role="img" aria-label="Your day from 6 AM to bedtime at 9 PM. The dot marks where you are now.">
       <svg viewBox="0 0 1000 24" preserveAspectRatio="none"><path id="dlPath" d="M2 17 C 250 9, 500 8, 750 9 S 950 13, 998 17"></path></svg>
@@ -571,42 +642,62 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
       <div id="todayList"></div>
     </div>
     <div id="carryBox" class="h-carry"></div>
-    <div id="anytimeBox" class="h-any"></div>
-  </div>
-  <div class="home-side">
-    <details class="card fold h-mail" data-fold="inbox">
-      <summary><span>Action items</span><span class="count" id="mailCount"></span></summary>
-      <div class="fold-body">
-        <button class="btn-secondary mail-scan" data-act="mail-scan">Find tasks in my email</button>
-        <div id="gmailList"><div class="empty">Loading unread email…</div></div>
-        <a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail</a>
-      </div>
-    </details>
     <div class="card dump h-dump">
-      <h2>Brain dump</h2>
-      <textarea id="dumpText" placeholder="Everything on your mind: tasks, groceries, kid things, ideas. Messy is fine."></textarea>
-      <div class="row">
+      <h2 class="sr-only">Brain dump</h2>
+      <div class="dump-field">
+        <textarea id="dumpText" rows="1" placeholder="Dump anything on your mind" aria-label="Brain dump"></textarea>
+        <a class="dump-mic" href="/capture.html" aria-label="Open the voice capture page"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></a>
+      </div>
+      <div class="row dump-row">
         <span class="muted" id="dumpHint"></span>
         <button class="btn-add" data-act="organize">Organize it</button>
       </div>
     </div>
     <div id="reviewBox" class="h-review"></div>
     <div id="waitingBox" class="h-waiting"></div>
-    <div id="calTodayBox" class="h-cal"></div>
-    <details class="card fold h-keys" data-fold="keytimes">
-      <summary><span>Key times</span></summary>
-      <div class="fold-body">
-        <div id="keyTimes"></div>
-        <div class="add-row">
-          <input type="text" id="ktAdd" data-enter="kt-add" placeholder="3:00 PM pickup">
-        </div>
-      </div>
+  </div>
+  <div class="home-side">
+    <details class="card fold h-time" data-fold="timer">
+      <summary><span>Time a task</span></summary>
+      <div class="fold-body"><div id="trackerBox"></div></div>
     </details>
-    <div id="trackerBox" class="h-tracker"></div>
-    <div id="suggestBox" class="h-heads"></div>
-    <details class="card fold h-remind" data-fold="reminders">
-      <summary><span>Reminders &amp; work day</span></summary>
-      <div class="fold-body" id="settingsBody"></div>
+    <details class="card fold h-more" data-fold="more">
+      <summary><span>More</span><span class="count" id="moreCount"></span></summary>
+      <div class="fold-body more-list">
+        <details class="fold sub" data-fold="inbox">
+          <summary><span>Action items</span><span class="count" id="mailCount"></span></summary>
+          <div class="fold-body">
+            <button class="btn-secondary mail-scan" data-act="mail-scan">Find tasks in my email</button>
+            <div id="gmailList"><div class="empty">Loading unread email…</div></div>
+            <a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail</a>
+          </div>
+        </details>
+        <details class="fold sub" data-fold="cal">
+          <summary><span>Calendar today</span><span class="count" id="calCount"></span></summary>
+          <div class="fold-body"><div id="calTodayBox"></div></div>
+        </details>
+        <details class="fold sub" data-fold="anytime">
+          <summary><span>Anytime</span><span class="count" id="anyCount"></span></summary>
+          <div class="fold-body"><div id="anytimeBox"></div></div>
+        </details>
+        <details class="fold sub" data-fold="keytimes">
+          <summary><span>Key times</span></summary>
+          <div class="fold-body">
+            <div id="keyTimes"></div>
+            <div class="add-row">
+              <input type="text" id="ktAdd" data-enter="kt-add" placeholder="3:00 PM pickup">
+            </div>
+          </div>
+        </details>
+        <details class="fold sub" data-fold="heads">
+          <summary><span>Heads up</span></summary>
+          <div class="fold-body"><div id="suggestBox"></div></div>
+        </details>
+        <details class="fold sub" data-fold="reminders">
+          <summary><span>Reminders &amp; work day</span></summary>
+          <div class="fold-body" id="settingsBody"></div>
+        </details>
+      </div>
     </details>
   </div>
 </section>
@@ -707,7 +798,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   </div>
 </section>
 
-<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 7, one weekly tab</span></footer>
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 7, calm home</span></footer>
 
 <script>
 (() => {
@@ -893,7 +984,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
       wt.textContent = `${deg(w.temperature)}°${unitLetter()}`;
       wt.setAttribute('aria-label', `${deg(w.temperature)} degrees ${useC() ? 'Celsius' : 'Fahrenheit'}. Tap to switch to ${useC() ? 'Fahrenheit' : 'Celsius'}.`);
     }
-    $('weatherLine').innerHTML = w ? `${esc(w.condition || '')}<br>Feels like ${deg(w.feelsLike)}°${unitLetter()}${w.lowFeels != null && w.highFeels != null ? `<br>${deg(w.lowFeels)}–${deg(w.highFeels)}° today` : ''}` : 'Loading weather…';
+    $('weatherLine').innerHTML = w ? `<span class="wx-feel">Feels like ${deg(w.feelsLike)}°${unitLetter()}</span><br>${esc(w.condition || '')}` : 'Loading weather…';
     const mc = $('mailCount'); if (mc) mc.textContent = live.authed && live.mail && live.mail.length ? `${live.mail.length} unread` : '';
     let mh;
     if (!live.authed) mh = signInHtml('Gmail');
@@ -1115,7 +1206,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
     renderTracker(); renderSmart(); renderNow(); renderPlan(); renderResetBanner(); renderReset();
-    renderRoutines(); renderSettings(); renderRecapBanner();
+    renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
     restoreFocus(keep);
@@ -1176,13 +1267,15 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     $('dateEyebrow').textContent = `${d.toLocaleDateString('en-US', { weekday: 'long' })} · ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
     const dr = dressToday();
     const big = dr.big, baby = dr.baby;
-    $('dress').innerHTML = `
-      <div class="dc-grid">
-        <div class="dc-box"><div class="who">Hamad & Talal</div>${editDress ? `<input id="dcBig" value="${esc(big)}" placeholder="sweatshirt + light jacket" aria-label="Hamad and Talal outfit">` : `<div class="what">${esc(big || 'Not set')}</div>`}</div>
-        <div class="dc-box"><div class="who">Yousef</div>${editDress ? `<input id="dcBaby" value="${esc(baby)}" placeholder="onesie + fleece + hat" aria-label="Yousef outfit">` : `<div class="what">${esc(baby || 'Not set')}</div>`}</div>
-      </div>
-      <div class="dc-why">${dr.manual ? 'Your choice for today. It goes back to automatic tomorrow.' : esc(dr.why || '') + ' · set automatically'}</div>
-      <div class="dc-acts">${dr.manual && !editDress ? '<button class="link-btn" data-act="dress-auto">Use automatic</button>' : ''}<button class="link-btn" data-act="dress-edit">${editDress ? 'Save for today' : 'Edit outfits'}</button></div>`;
+    $('dress').innerHTML = `<div class="dc-row"><div class="dc-grid">
+        <div class="dc-box"><span class="who">Boys</span> <span class="what">${esc(big || 'Not set')}</span></div>
+        <div class="dc-box"><span class="who">Yousef</span> <span class="what">${esc(baby || 'Not set')}</span></div></div>
+      <button type="button" class="icon-btn" data-act="dress-pencil" aria-label="${editDress ? 'Close outfit editor' : 'Edit outfits'}" aria-expanded="${editDress}">${ICON.pencil}</button></div>`;
+    const wx = live.weather, range = wx && wx.lowFeels != null && wx.highFeels != null ? `Today feels like ${deg(wx.lowFeels)} to ${deg(wx.highFeels)}°${unitLetter()}. ` : '';
+    $('dressPanel').innerHTML = editDress ? `<div class="dc-panel"><p class="muted">${esc(range)}${dr.manual ? 'Your choice for today. It goes back to automatic tomorrow.' : 'Outfits are picked from the forecast.'}</p>
+        <label>Hamad &amp; Talal<input id="dcBig" value="${esc(big)}" placeholder="sweatshirt + light jacket"></label>
+        <label>Yousef<input id="dcBaby" value="${esc(baby)}" placeholder="onesie + fleece + hat"></label>
+        <div class="dc-acts"><button class="btn-add" data-act="dress-edit">Save for today</button>${dr.manual ? '<button class="toggle-line" data-act="dress-auto">Use automatic</button>' : ''}</div></div>` : '';
     renderHeadline(); renderDayline();
   }
   // Calendar titles often end with their own time range ("Bike Lesson 6-7pm"); drop it where the time is shown separately.
@@ -1243,33 +1336,42 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
     const c = $('groceryCount'); c.textContent = gc; c.classList.toggle('hidden', !gc);
   }
   function renderHint() {
+    const dt = $('dumpText'); if (dt) dt.closest('.dump').classList.toggle('has-text', !!dt.value.trim());
     $('dumpHint').textContent = sample ? 'Claude sorts it into tasks, groceries and ideas. You review before anything is added.'
       : 'Sorted with simple rules here. You review before anything is added.';
   }
 
+  const infoOpen = new Set();     // tasks whose (i) panel is open (not saved)
   function taskRow(t, opts = {}) {
-    const done = t.status === 'done';
-    const metaBits = [];
-    if (t.time) metaBits.push(esc(t.time));
-    if (opts.showDate && t.date) metaBits.push(esc(dayLabel(t.date)));
-    if (t.due && t.status !== 'done') metaBits.push('due ' + esc(dayLabel(t.due)));
-    if (t.routineId) metaBits.push('repeats');
-    if (t.status === 'doing' && !opts.board) metaBits.push('in progress');
-    const catLabel = (CATS[t.category] || {}).label;
-    if (catLabel) metaBits.push(esc(catLabel));
-    const badges = [];
+    const done = t.status === 'done', id = esc(t.id), open = infoOpen.has(t.id);
     const from = t.date && t.date < today() ? t.date : (t.originalDate && t.date && t.originalDate < t.date ? t.originalDate : null);
-    if (from && !done) badges.push(`<span class="badge">from ${esc(dayLabel(from))}</span>`);
-    if (t.projectId && opts.showProject !== false && S.projects[t.projectId]) badges.push(`<span class="badge proj">${esc(projName(t.projectId))}</span>`);
+    const catLabel = (CATS[t.category] || {}).label;
+    const hot = !done && (t.due || t.time || from);
+    const facts = [];
+    if (t.time) facts.push(esc(t.time));
+    if (opts.showDate && t.date) facts.push(esc(dayLabel(t.date)));
+    if (from && !done) facts.push(`from ${esc(dayLabel(from))}`);
+    if (t.due && !done) facts.push(`due ${esc(dayLabel(t.due))}`);
+    if (t.routineId) facts.push('repeats');
+    if (t.status === 'doing') facts.push('in progress');
+    if (t.projectId && S.projects[t.projectId]) facts.push(esc(projName(t.projectId)));
+    if (t.source === 'gmail') facts.push('from an email'); else if (t.source === 'brain-dump') facts.push('from a brain dump');
     const acts = [];
-    if (!done && opts.today) acts.push(`<button class="mini" data-act="to-today" data-id="${esc(t.id)}">Today</button>`);
-    if (!done && opts.tomorrow !== false) acts.push(`<button class="mini" data-act="to-tomorrow" data-id="${esc(t.id)}" aria-label="Move to tomorrow">Tmrw</button>`);
-    if (!done && opts.drop) acts.push(`<button class="mini ghost" data-act="drop" data-id="${esc(t.id)}" aria-label="Drop task">✕</button>`);
-    const handle = opts.board ? dragHandle(t, opts.board) : '';
-    return `<div class="task-item ${done ? 'done' : ''}" ${opts.board ? `data-drag-id="${esc(t.id)}"` : ''} style="border-left-color:${catColor(t.category)}">
-      ${handle}<input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${done ? 'checked' : ''} aria-label="Done">
-      <span class="text"><span class="t">${badges.join('')}${esc(t.title)}</span>${metaBits.length ? `<span class="meta"><i class="cdot" style="background:${catColor(t.category)}"></i>${metaBits.join(' · ')}</span>` : ''}</span>
-      ${acts.join('')}
+    if (!done && opts.today) acts.push(`<button class="mini" data-act="to-today" data-id="${id}">Today</button>`);
+    if (!done && opts.tomorrow !== false) acts.push(`<button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move to tomorrow">Tmrw</button>`);
+    const panel = open ? `<div class="ti-info" id="ti-${id}">
+        <div class="ti-line"><i class="cdot" style="background:${catColor(t.category)}"></i>${esc(catLabel || 'No category')}${facts.length ? ' · ' + facts.join(' · ') : ''}</div>
+        <div class="ti-acts">
+          ${!done && t.status !== 'doing' ? `<button class="toggle-line" data-act="now-start" data-id="${id}">Start timer</button>` : ''}
+          ${t.status === 'doing' ? `<button class="toggle-line" data-act="task-todo" data-id="${id}">Move back to To do</button>` : ''}
+          ${!done ? `<button class="toggle-line" data-act="drop" data-id="${id}">Let this go</button>` : ''}
+          ${opts.board ? `<span class="ti-reorder">${dragHandle(t, opts.board)}<span>Drag to reorder</span></span>` : ''}
+        </div></div>` : '';
+    return `<div class="task-item ${done ? 'done' : ''} ${open ? 'open' : ''}" ${opts.board ? `data-drag-id="${id}"` : ''}>
+      <div class="ti-main"><input type="checkbox" data-act="toggle" data-id="${id}" ${done ? 'checked' : ''} aria-label="Done">
+        <span class="text"><span class="t">${esc(t.title)}</span></span>
+        ${acts.join('')}<button class="icon-btn ti-i ${hot ? 'hot' : ''}" data-act="task-info" data-id="${id}" aria-expanded="${open}" aria-controls="ti-${id}" aria-label="Details for ${esc(t.title)}">${ICON.info}</button></div>
+      ${panel}
     </div>`;
   }
 
@@ -1293,13 +1395,22 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
   function renderToday() {
     const b = board();
     if (!b.todo.length && !b.doing.length && !b.done.length) {
-      $('todayList').innerHTML = (capMode() === 'survival' ? '<div class="empty">Nothing essential left today. Rest counts.</div>' : '<div class="empty">Nothing scheduled for today yet. Brain dump below or add one in Schedule.</div>') + pausedHtml();
+      $('todayList').innerHTML = (capMode() === 'survival' ? '<div class="empty">Nothing essential left today. Rest counts.</div>' : '<div class="empty">Nothing scheduled for today yet. Dump a thought below or add one in Schedule.</div>') + pausedHtml();
       return;
     }
-    const rowOpts = t => ({ board: 'home', drop: t.date && t.date < today(), tomorrow: t.status !== 'done' });
-    const group = (col, emptyText) => `<div class="grp-h"><span>${COL_LABEL[col]}</span><span>${b[col].length}</span></div>
-      <div class="drop" data-drop="${col}" data-board="home">${b[col].map(t => taskRow(t, rowOpts(t))).join('') || `<div class="empty">${emptyText}</div>`}</div>`;
-    $('todayList').innerHTML = group('doing', 'Drag a task here to start it.') + group('todo', 'All clear.') + group('done', 'Finished tasks stay here, grayed out.') + pausedHtml();
+    const rowOpts = t => ({ board: 'home', tomorrow: t.status !== 'done' });
+    const rows = list => list.map(t => taskRow(t, rowOpts(t))).join('');
+    const LIMIT = 3, showAll = !!ui.todayAll, shown = showAll ? b.todo : b.todo.slice(0, LIMIT), hidden = b.todo.length - shown.length;
+    const hint = txt => `<div class="zone-hint">${txt}</div>`;
+    const doing = b.doing.length
+      ? `<div class="grp-h"><span>${COL_LABEL.doing}</span><span>${b.doing.length}</span></div><div class="drop" data-drop="doing" data-board="home">${rows(b.doing)}${hint('Drop here to start')}</div>`
+      : `<div class="drop zone-only" data-drop="doing" data-board="home">${hint('Drop here to start')}</div>`;
+    const todo = `<div class="grp-h"><span>${COL_LABEL.todo}</span><span>${b.todo.length}</span></div><div class="drop" data-drop="todo" data-board="home">${rows(shown) || '<div class="empty">All clear.</div>'}${hint('Drop here')}</div>`
+      + (hidden > 0 ? `<button class="toggle-line" data-act="today-all">Show ${hidden} more</button>` : (showAll && b.todo.length > LIMIT ? '<button class="toggle-line" data-act="today-all">Show fewer</button>' : ''));
+    const doneOpen = !!ui.open.doneToday;
+    const done = (b.done.length ? `<button class="toggle-line" data-act="done-toggle" aria-expanded="${doneOpen}">${doneOpen ? 'Hide' : 'Show'} ${b.done.length} done today</button>` : '')
+      + `<div class="drop ${doneOpen && b.done.length ? '' : 'zone-only'}" data-drop="done" data-board="home">${doneOpen ? rows(b.done) : ''}${hint('Drop here to finish')}</div>`;
+    $('todayList').innerHTML = doing + todo + done + pausedHtml();
   }
   function pausedHtml() {
     const { paused } = views(); if (!paused.length) return '';
@@ -1601,7 +1712,7 @@ Rules:
       if ((info.failed || []).length) status += ` Couldn't load: ${info.failed.map(f => `${f.name} (error ${f.status || 'offline'})`).join(', ')}.`;
       if (info.icloudFailed) status += " An iCloud feed didn't load.";
     } else status = `${n} event${n === 1 ? '' : 's'} loaded.`;
-    let html = `<div class="week-status muted" role="status">${esc(status)}</div>`;
+    let html = `<div class="week-status muted" role="status">${esc(status)}<br>Omar's shift: moon is nights, sun is days, house is off. Tap a day's icon to set it.</div>`;
     for (let i = 0; i < 7; i++) {
       const d = addDays(td, i), sh = shiftsMap()[d] || '';
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
@@ -1609,7 +1720,7 @@ Rules:
       const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span>
-          <span class="week-tools"><button class="sy-pill ${sh ? 'on' : ''}" data-act="sy-shift" data-d="${d}" aria-label="Omar's shift on ${esc(shortD(d))}: ${esc(SHIFT_LABEL[sh])}. Tap to change.">${esc(SHIFT_LABEL[sh])}</button><span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
+          <span class="week-tools">${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
         <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
@@ -2115,7 +2226,7 @@ Rules:
         <div class="sub">~${mins} min${from}${t.projectId ? ` · ${esc(projName(t.projectId))}` : ''}${capMode() === 'survival' ? ' · or rest, that counts too' : ''}</div>
         <div class="acts">
           <button class="btn-add" data-act="now-start" data-id="${esc(t.id)}">Start</button>
-          ${fitting.length > 1 ? `<button class="btn-secondary" data-act="now-skip" data-id="${esc(t.id)}">Something else</button>` : ''}
+          ${fitting.length > 1 ? `<button class="btn-secondary" data-act="now-skip" data-id="${esc(t.id)}">Another</button>` : ''}
         </div></div>`;
     } else if (stSkip.length && c.candidates.some(x => x.fits)) {
       stSkip = []; return renderNow();
@@ -2156,10 +2267,12 @@ Rules:
     const waiting = wh ? Object.values(S.tasks).filter(t => isOpen(t) && t.category !== 'work' && (!t.date || t.date <= td)).length : 0;
     const workNote = wh && !resting ? `<div class="work-note">Work day until ${esc(clockLabel(wh.end))}. ${waiting ? `${waiting} personal task${waiting === 1 ? '' : 's'} wait${waiting === 1 ? 's' : ''} until then.` : 'Personal tasks wait until then.'}</div>` : '';
     const hasDay = !resting && (items.length || gaps.length);
+    const nextItem = upcoming[0];
+    const nextBtn = !resting && (nextItem || hasDay) ? `<button class="next-line" data-act="now-full" aria-expanded="${full}"><span>${full ? 'Hide the full day' : nextItem ? `Next · ${esc(tidyTitle(nextItem.title))}, ${esc(clockLabel(nextItem.start))}` : 'Full day'}</span>${ICON.chev}</button>` : '';
     box.innerHTML = `<div class="card now-card">
-      <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capToggle()}</div>
-      ${hero}${workNote}${full || resting ? '' : then}
-      <div class="now-links">${hasDay ? `<button class="toggle-line now-toggle" data-act="now-full" aria-expanded="${full}">${full ? 'Show less' : 'Full day'}</button>` : ''}${resting ? '' : '<button class="toggle-line now-toggle" data-act="plan-open">Plan my day</button>'}</div>
+      <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capChip()}</div>${ui.capOpen ? capToggle() : ''}
+      ${hero}${workNote}
+      <div class="now-links">${nextBtn}${resting ? '' : '<button class="toggle-line now-toggle" data-act="plan-open">Plan my day</button>'}</div>
       ${day}</div>`;
   }
   // ---------- capacity modes ----------
@@ -2177,6 +2290,7 @@ Rules:
     return t.category === 'kids' || t.category === 'self';
   }
   const capVisible = t => !isOpen(t) || capMode() !== 'survival' || isEssential(t);
+  const capChip = () => `<button class="cap-chip" data-act="cap-menu" aria-expanded="${!!ui.capOpen}" aria-label="Energy today: ${CAP[capMode()].label}. Tap to change.">Energy: ${CAP[capMode()].label}${ICON.chev}</button>`;
   const capToggle = () => `<div class="cap" role="group" aria-label="Capacity today">${Object.keys(CAP).map(k =>
     `<button data-act="cap-set" data-mode="${k}" aria-pressed="${capMode() === k}">${CAP[k].label}</button>`).join('')}</div>`;
 
@@ -2467,6 +2581,7 @@ Rules:
     wireDrag();
     wireProjectsDone();
     wireFeatures();
+    wireCalm();
     wireRecap();
     wireSync();
     document.addEventListener('click', e => {
@@ -3138,8 +3253,9 @@ Rules:
 
   // ---------- weekly sync: a 10-minute check-in for the whole household ----------
   // Stored with your settings: meta.shifts[date] = 'day' | 'night' | 'off' (Omar), meta.sync[monday] = { meals, assign, top, note, doneAt }.
-  const SHIFT_NEXT = { '': 'day', day: 'night', night: 'off', off: '' };
+  const SHIFT_NEXT = { '': 'night', night: 'day', day: 'off', off: '' };
   const SHIFT_LABEL = { day: 'Omar: days', night: 'Omar: nights', off: 'Omar: off', '': 'Omar: shift?' };
+  const shiftBtn = (d, sh, label) => `<button class="shift-btn ${sh ? 'on' : ''}" data-act="sy-shift" data-d="${d}" aria-label="Omar's shift on ${esc(label)}: ${esc(SHIFT_LABEL[sh])}. Tap to change.">${sh === 'day' ? ICON.sun : sh === 'off' ? ICON.home : ICON.moon}</button>`;
   const WHO_NEXT = { me: 'omar', omar: 'other', other: 'me' };
   const WHO_LABEL = { me: 'Farah', omar: 'Omar', other: 'Other' };
   const PICKUP = /pick ?up|drop ?off|\bbus\b|school/i;
@@ -3219,7 +3335,7 @@ Rules:
       const sh = shiftsMap()[d] || '';
       return `<div class="card sy-day ${d === td ? 'is-today' : ''}">
         <div class="sy-head"><span class="sy-dow">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'long' }))} <span class="muted sy-date">${esc(short(d))}</span></span>
-          <button class="sy-pill ${sh ? 'on' : ''}" data-act="sy-shift" data-d="${d}" aria-label="Omar's shift on ${esc(short(d))}: ${esc(SHIFT_LABEL[sh])}. Tap to change.">${esc(SHIFT_LABEL[sh])}</button></div>
+          ${shiftBtn(d, sh, short(d))}</div>
         ${allDay.length ? `<div class="sy-allday">${allDay.map(a => `<span class="sy-chip">${esc(a)}</span>`).join('')}</div>` : ''}
         ${items.map(i => `<div class="sy-item ${i.done ? 'done' : ''}"><span class="sy-time">${esc(clockLabel(i.start))}</span><span class="sy-title">${esc(i.title)}</span>${i.assignable ? `<button class="sy-pill ${i.who !== 'me' ? 'on' : ''}" data-act="sy-who" data-k="${esc(i.key)}" data-dflt="${i.dflt}" aria-label="Who covers ${esc(i.title)}: ${WHO_LABEL[i.who]}. Tap to change.">${WHO_LABEL[i.who]}</button>` : ''}</div>`).join('') || (allDay.length ? '' : `<div class="sy-empty muted">${d > through ? 'Calendar not loaded yet for this day.' : d < addDays(td, -1) ? "Calendar history isn't kept here." : 'Nothing scheduled.'}</div>`)}
         <label class="sy-meal"><span>Dinner</span><input type="text" data-sy="meal" data-d="${d}" value="${esc(wk.meals[d] || '')}" placeholder="What's for dinner?"></label>
@@ -3288,6 +3404,48 @@ Rules:
       else if (el.dataset.sy === 'top') { const top = wk.top.slice(); top[+el.dataset.i] = el.value.trim(); saveSync(mon, { top }); }
       else if (el.dataset.sy === 'note') saveSync(mon, { note: el.value });
     });
+  }
+
+  // ---------- calm Home: icons, counts for collapsed rows, and the small handlers that go with them ----------
+  const svg = (inner, size = 20) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  const ICON = {
+    pencil: svg('<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>', 18),
+    info: svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5.2"/><circle cx="12" cy="7.8" r=".7" fill="currentColor"/>'),
+    moon: svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>', 22),
+    sun: svg('<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2L6 6M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8L6 18M18 6l1.8-1.8"/>', 22),
+    home: svg('<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', 22),
+    chev: svg('<path d="M6 9l6 6 6-6"/>', 14)
+  };
+  function renderFoldCounts() {
+    const { anytime } = views(), evs = eventsOn(today()).length, mail = (live.mail || []).length;
+    const set = (id, n) => { const el = $(id); if (el) el.textContent = n ? String(n) : ''; };
+    set('calCount', evs); set('anyCount', anytime.length);
+    const bits = [];
+    if (mail) bits.push(`Email ${mail}`);
+    if (evs) bits.push(`${evs} event${evs === 1 ? '' : 's'}`);
+    if (anytime.length) bits.push(`${anytime.length} anytime`);
+    if ($('suggestBox') && $('suggestBox').innerHTML.trim()) bits.push('Heads up');
+    const mc = $('moreCount'); if (mc) mc.textContent = bits.join(' · ');
+  }
+  function wireCalm() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'task-info': {
+          if (infoOpen.has(id)) infoOpen.delete(id); else infoOpen.add(id);
+          render(); const again = document.querySelector(`[data-act="task-info"][data-id="${CSS.escape(id)}"]`); if (again) again.focus(); break;
+        }
+        case 'task-todo': infoOpen.delete(id); setTask(id, { status: 'todo' }); break;
+        case 'now-start': case 'drop': if (el.closest('.ti-info')) { infoOpen.delete(id); render(); } break;
+        case 'today-all': ui.todayAll = !ui.todayAll; saveUi(); renderToday(); break;
+        case 'done-toggle': ui.open.doneToday = !ui.open.doneToday; saveUi(); renderToday(); break;
+        case 'cap-menu': ui.capOpen = !ui.capOpen; saveUi(); renderNow(); break;
+        case 'cap-set': ui.capOpen = false; saveUi(); renderNow(); break;
+        case 'dress-pencil': editDress = !editDress; render(); break;
+      }
+    });
+    document.addEventListener('input', e => { if (e.target && e.target.id === 'dumpText') renderHint(); });
   }
 
   function addProject() {
