@@ -1,0 +1,12 @@
+# Wakes the reminders every 5 minutes. GitHub may run it a few minutes late; that is fine for reminders.
+name: Reminder tick
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask the dashboard to send anything that is due
+        run: curl -fsS --max-time 25 "https://myday-orcin.vercel.app/api/push?action=tick" || true
