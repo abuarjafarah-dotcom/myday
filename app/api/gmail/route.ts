@@ -1,52 +1,3 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-
-export const dynamic = "force-dynamic";
-export const maxDuration = 30;
-
-// GET /api/gmail                  -> unread Primary emails (subject + sender), as before.
-// GET /api/gmail?mode=tasks       -> reads the last 7 days of email and suggests tasks (school forms, RSVPs, deadlines).
-//                                    Nothing is saved here. The dashboard shows the suggestions for review first.
-//   ?today=YYYY-MM-DD   the user's local date (so "by Friday" resolves correctly)
-//   ?seen=id1,id2       emails already reviewed, skipped
-// If ANTHROPIC_API_KEY is set in Vercel, Claude reads the emails. Without it (or if the call fails) simple rules are used.
-
-type GmailPart = { mimeType?: string; body?: { data?: string }; parts?: GmailPart[] };
-type GmailHeader = { name: string; value: string };
-type GmailMessage = { id: string; threadId?: string; payload?: GmailPart & { headers?: GmailHeader[] } };
-type MailDoc = { id: string; subject: string; from: string; body: string };
-type Suggestion = { mailId: string; subject: string; from: string; title: string; due: string | null; time: string | null; category: string; why: string };
-
-const CATEGORIES = ["kids", "work", "home", "errands", "self", "activity", "omar"];
-
-function decode(data: string): string {
-  return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
-}
-
-function findPart(p: GmailPart | undefined, mime: string): string {
-  if (!p) return "";
-  if (p.mimeType === mime && p.body?.data) return decode(p.body.data);
-  for (const c of p.parts || []) {
-    const r = findPart(c, mime);
-    if (r) return r;
-  }
-  return "";
-}
-
-function stripHtml(h: string): string {
-  return h
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<br\s*\/?>|<\/p>|<\/div>|<\/li>|<\/tr>|<\/h\d>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;|&rsquo;|&lsquo;/g, "'")
-    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n\s*\n+/g, "\n")
-    .trim();
-}
 
 // ---------- dates ----------
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
@@ -205,8 +156,8 @@ Return ONLY a JSON object, no other text:
 
 async function scanForTasks(auth: Record<string, string>, today: string, seen: Set<string>): Promise<Response> {
   const list = await fetch(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=" +
-      encodeURIComponent("in:inbox newer_than:7d -category:promotions -category:social") +
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox%20newer_than:2d%20-category:promotions%20-category:social&maxResults=5",
+      { headers: auth, cache: "no-store" }
       "&maxResults=15",
     { headers: auth, cache: "no-store" }
   );
@@ -247,8 +198,8 @@ export async function GET(request: Request) {
       return await scanForTasks(auth, today, seen);
     }
     const list = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread%20in:inbox%20category:primary&maxResults=8",
-      { headers: auth, cache: "no-store" }
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=                    in:inbox%20newer_than:2d%20-category:promotions%20-category:social&maxResults=
+in:inbox%20newer_than:2d%20-category:promotions%20-category:social&maxResults=5      { headers: auth, cache: "no-store" }
     );
     if (list.status === 401) return Response.json({ error: "Unauthorized" }, { status: 401 });
     const data = await list.json();
