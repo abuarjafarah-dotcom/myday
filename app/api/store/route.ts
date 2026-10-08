@@ -1,10 +1,11 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { viewFor } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta"]);
+const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips"]);
 const TABLE = "dashboard_docs";
 
 async function owner() {
@@ -12,9 +13,22 @@ async function owner() {
   return session?.user?.email?.toLowerCase() || null;
 }
 
-export async function GET() {
+// Omar's data only syncs from his own page. If he opens Farah's /dashboard on a shared device, that page would
+// otherwise upload whatever it has cached into his account, so it gets "wrong page" instead.
+function wrongPage(request: Request, email: string): boolean {
+  if (viewFor(email) !== "omar") return false;
+  try {
+    const path = new URL(request.headers.get("referer") || "").pathname;
+    return path === "/dashboard" || path.startsWith("/dashboard.");
+  } catch {
+    return false;
+  }
+}
+
+export async function GET(request: Request) {
   const email = await owner();
   if (!email) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (wrongPage(request, email)) return Response.json({ error: "wrong_page", home: "/omar" }, { status: 409 });
   const db = supabaseAdmin();
   if (!db) return Response.json({ error: "not_configured" }, { status: 503 });
 
@@ -44,6 +58,7 @@ type Write = { kind: string; id: string; data: Record<string, unknown> | null };
 export async function POST(request: Request) {
   const email = await owner();
   if (!email) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (wrongPage(request, email)) return Response.json({ error: "wrong_page", home: "/omar" }, { status: 409 });
   const db = supabaseAdmin();
   if (!db) return Response.json({ error: "not_configured" }, { status: 503 });
 

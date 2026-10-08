@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { fetchIcloudEvents } from "@/lib/ical";
+import { icloudUrlsFor } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function GET() {
     // iCloud feeds (ICLOUD_CALENDAR_URLS in Vercel) load alongside Google; a failed feed is skipped, never fatal.
     let icloudFailed = false;
     const failed: { name: string; status: number }[] = [];
-    const icloudPromise = fetchIcloudEvents(from, to).catch(() => { icloudFailed = true; return []; });
+    const icloudPromise = fetchIcloudEvents(from, to, icloudUrlsFor(session.user?.email)).catch(() => { icloudFailed = true; return []; });
     const params = new URLSearchParams({
       timeMin: new Date(from).toISOString(),
       timeMax: new Date(to).toISOString(),
@@ -58,6 +59,7 @@ export async function GET() {
               allDay: !e.start?.dateTime,
               calendar: cal.summary || "",
               color,
+              ...(e.location ? { location: String(e.location).slice(0, 200) } : {}),
               source: "google" as const,
             }));
         } catch {

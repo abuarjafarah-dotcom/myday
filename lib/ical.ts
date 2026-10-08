@@ -11,6 +11,7 @@ export type CalEvent = {
   calendar: string;
   color: string | null;
   source: "icloud";
+  location?: string;
 };
 
 type Prop = { name: string; params: Record<string, string>; value: string };
@@ -190,7 +191,7 @@ export function parseIcs(text: string, opts: { from: number; to: number; default
     else if (p.name === "X-APPLE-CALENDAR-COLOR") { const m = p.value.match(/^#[0-9a-fA-F]{6}/); if (m) color = m[0]; }
   }
 
-  type Ev = { uid: string; title: string; start: Stamp; durMs: number; rule: Rule | null; exdates: Set<number>; recurId: number | null; cancelled: boolean };
+  type Ev = { uid: string; title: string; location: string; start: Stamp; durMs: number; rule: Rule | null; exdates: Set<number>; recurId: number | null; cancelled: boolean };
   const evs: Ev[] = [];
   for (const props of raw) {
     const get = (n: string) => props.find((p) => p.name === n);
@@ -209,6 +210,7 @@ export function parseIcs(text: string, opts: { from: number; to: number; default
     evs.push({
       uid: (get("UID")?.value || `${calName}-${evs.length}`).trim(),
       title: unescapeText(get("SUMMARY")?.value || "(No title)"),
+      location: unescapeText(get("LOCATION")?.value || ""),
       start, durMs: Math.max(0, durMs),
       rule: rr ? parseRule(rr.value, start, defaultTz) : null,
       exdates,
@@ -224,11 +226,11 @@ export function parseIcs(text: string, opts: { from: number; to: number; default
       const endNaive = naive + Math.max(e.durMs, DAY);
       // All-day dates are calendar days; compare against the window generously (a day either side).
       if (endNaive < opts.from - DAY || naive > opts.to + DAY) return;
-      out.push({ id: `icloud:${e.uid}:${ymd(naive)}`, title: e.title, start: ymd(naive), end: ymd(endNaive), allDay: true, calendar: calName, color, source: "icloud" });
+      out.push({ id: `icloud:${e.uid}:${ymd(naive)}`, title: e.title, start: ymd(naive), end: ymd(endNaive), allDay: true, calendar: calName, color, source: "icloud", ...(e.location ? { location: e.location } : {}) });
     } else {
       const s = toUtc(e.start, naive), en = s + e.durMs;
       if (en < opts.from || s > opts.to) return;
-      out.push({ id: `icloud:${e.uid}:${s}`, title: e.title, start: new Date(s).toISOString(), end: new Date(en).toISOString(), allDay: false, calendar: calName, color, source: "icloud" });
+      out.push({ id: `icloud:${e.uid}:${s}`, title: e.title, start: new Date(s).toISOString(), end: new Date(en).toISOString(), allDay: false, calendar: calName, color, source: "icloud", ...(e.location ? { location: e.location } : {}) });
     }
   };
 
@@ -247,8 +249,9 @@ export function parseIcs(text: string, opts: { from: number; to: number; default
 }
 
 // Reads ICLOUD_CALENDAR_URLS (comma, space or newline separated; webcal:// or https://).
-export async function fetchIcloudEvents(from: number, to: number): Promise<CalEvent[]> {
-  const urls = (process.env.ICLOUD_CALENDAR_URLS || "")
+// Pass `list` to read a specific person's feeds instead (see lib/users.ts).
+export async function fetchIcloudEvents(from: number, to: number, list?: string): Promise<CalEvent[]> {
+  const urls = (list ?? process.env.ICLOUD_CALENDAR_URLS ?? "")
     .split(/[\s,]+/).map((u) => u.trim()).filter(Boolean)
     .map((u) => u.replace(/^webcals?:\/\//i, "https://"));
   const tz = process.env.CALENDAR_TIMEZONE || "America/Chicago";

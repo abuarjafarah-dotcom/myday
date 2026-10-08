@@ -2,6 +2,7 @@ import { createHash, createPrivateKey, generateKeyPairSync, sign, type JsonWebKe
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { homePath, viewFor, type View } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -130,14 +131,35 @@ function workActive(work: unknown, now: { date: string; min: number; dow: number
   return { start, end };
 }
 
-function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], meta: Doc, sent: Record<string, number>): Out[] {
+const shortDate = (ymd: string) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+};
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+
+// "Remind me a week before": tasks and trips carry a remindOn date; the reminder goes out in the morning window that day.
+function remindOnMessages(now: { date: string }, tasks: Doc[], trips: Doc[], push: (key: string, title: string, body: string) => void): void {
+  tasks.filter((t) => isOpen(t) && t.remindOn === now.date).forEach((t) => {
+    const due = typeof t.due === "string" ? t.due : "";
+    const when = due ? ` is due ${shortDate(due)}${daysBetween(now.date, due) > 0 ? ` (in ${daysBetween(now.date, due)} day${daysBetween(now.date, due) === 1 ? "" : "s"})` : ""}` : "";
+    push(`r-${String(t.id)}-${now.date}`, "Reminder", `${t.title}${when}`);
+  });
+  trips.filter((t) => t.remindOn === now.date).forEach((t) => {
+    const start = typeof t.start === "string" ? t.start : "";
+    push(`rt-${String(t.id)}-${now.date}`, "Trip coming up", `${String(t.destination || "Trip")}${start ? ` starts ${shortDate(start)}` : ""}. Weather and picks are on your dashboard.`);
+  });
+}
+
+function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], meta: Doc, sent: Record<string, number>, view: View = "farah", trips: Doc[] = []): Out[] {
   const cfg = (meta.notify || {}) as Doc;
   if (cfg.on === false || !cfg.on) return [];
   if (now.min >= BED_MIN || now.min < WAKE_MIN) return [];
   const out: Out[] = [];
+  const url = homePath(view);
   const push = (key: string, title: string, body: string) => {
-    if (!sent[key]) out.push({ key, title, body, url: "/dashboard", tag: key });
+    if (!sent[key]) out.push({ key, title, body, url, tag: key });
   };
+  if (view === "omar") return omarMessages(now, tasks, trips, cfg, push, out);
   const inWindow = (at: number, width = 25) => now.min >= at && now.min < at + width;
   const work = workActive(meta.work, now);
   const open = tasks.filter(isOpen);
@@ -182,6 +204,28 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
   return out;
 }
 
+// Omar's page has its own rhythm: high priorities in the morning, reminders, and due-tomorrow in the evening.
+function omarMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], trips: Doc[], cfg: Doc, push: (key: string, title: string, body: string) => void, out: Out[]): Out[] {
+  const inWindow = (at: number, width = 25) => now.min >= at && now.min < at + width;
+  const open = tasks.filter(isOpen);
+  const morning = toMin(cfg.morning || "07:00");
+  if (morning !== null && inWindow(morning)) {
+    const top = open
+      .filter((t) => Number(t.priority || 2) === 1 && (!t.due || String(t.due) <= now.date))
+      .concat(open.filter((t) => Number(t.priority || 2) !== 1 && t.due && String(t.due) <= now.date));
+    if (top.length) {
+      const names = top.slice(0, 3).map((t) => String(t.title)).join(", ") + (top.length > 3 ? ` +${top.length - 3} more` : "");
+      push(`morning-${now.date}`, "Today's priorities", names);
+    }
+    remindOnMessages(now, tasks, trips, push);
+  }
+  if (cfg.due !== false && inWindow(18 * 60)) {
+    const tomorrow = open.filter((t) => t.due === addDays(now.date, 1));
+    if (tomorrow.length) push(`dueeve-${now.date}`, "Due tomorrow", tomorrow.slice(0, 3).map((t) => String(t.title)).join(", "));
+  }
+  return out;
+}
+
 async function tick(db: Db): Promise<Response> {
   const v = await vapid(db);
   const { data: subRows } = await db.from(TABLE).select("owner,id,data").eq("kind", "push-sub");
@@ -189,9 +233,11 @@ async function tick(db: Db): Promise<Response> {
   ((subRows || []) as Row[]).forEach((r) => byOwner.set(r.owner, [...(byOwner.get(r.owner) || []), { ...r, kind: "push-sub" }]));
   let sentCount = 0;
   for (const [owner, subs] of byOwner) {
-    const { data: rows } = await db.from(TABLE).select("kind,id,data").eq("owner", owner).in("kind", ["tasks", "meta"]);
+    const view = viewFor(owner);
+    const { data: rows } = await db.from(TABLE).select("kind,id,data").eq("owner", owner).in("kind", view === "omar" ? ["tasks", "meta", "trips"] : ["tasks", "meta"]);
     const list = (rows || []) as Row[];
     const tasks = list.filter((r) => r.kind === "tasks").map((r) => r.data);
+    const trips = list.filter((r) => r.kind === "trips").map((r) => r.data);
     const meta = (list.find((r) => r.kind === "meta" && r.id === "main")?.data || {}) as Doc;
     const tz = String(subs[0].data.tz || "America/Chicago");
     const now = localNow(tz);
@@ -199,7 +245,7 @@ async function tick(db: Db): Promise<Response> {
     const sent = { ...((state.sent as Record<string, number>) || {}) };
     const cutoff = Date.now() - 3 * 86400000;
     Object.keys(sent).forEach((k) => { if (sent[k] < cutoff) delete sent[k]; });
-    const due = dueMessages(now, tasks, meta, sent);
+    const due = dueMessages(now, tasks, meta, sent, view, trips);
     for (const m of due) {
       sent[m.key] = Date.now();
       for (const s of subs) if (await deliver(db, v, s, { title: m.title, body: m.body, url: m.url, tag: m.tag })) sentCount++;
@@ -275,7 +321,7 @@ export async function POST(request: Request) {
       const { data } = await db.from(TABLE).select("owner,id,data").eq("owner", email).eq("kind", "push-sub");
       const subs = ((data || []) as Row[]).map((r) => ({ ...r, kind: "push-sub" }));
       let sent = 0;
-      for (const s of subs) if (await deliver(db, v, s, { title: "myday", body: "Reminders are on. This is a test.", url: "/dashboard", tag: "test" })) sent++;
+      for (const s of subs) if (await deliver(db, v, s, { title: "myday", body: "Reminders are on. This is a test.", url: homePath(viewFor(email)), tag: "test" })) sent++;
       return Response.json({ ok: true, phones: subs.length, sent });
     }
     return Response.json({ error: "unknown_action" }, { status: 400 });

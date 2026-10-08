@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="myday">
 <title>Farah Master Dashboard</title>
+<script>/* Omar has his own page; send him there. */ fetch('/api/me',{cache:'no-store',credentials:'same-origin'}).then(function(r){return r.ok?r.json():null}).then(function(m){if(m&&m.view==='omar')location.replace('/omar')}).catch(function(){});</script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
