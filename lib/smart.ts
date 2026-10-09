@@ -5,10 +5,31 @@
 // notes ("Note: ..."), priorities, due dates, times and reminders.
 
 export type Kind = "task" | "trip" | "note";
+export type Category = "paper" | "slides" | "email" | "meeting" | "other";
+export const CATEGORIES: Category[] = ["paper", "slides", "email", "meeting", "other"];
+
+// Which kind of work a task is. Order matters: a "presentation" is slides even if it also says "review".
+const CAT_RULES: [Category, RegExp][] = [
+  ["slides", /\b(power ?points?|ppts?|slides?|slide deck|deck|keynote|presentation|present(?:ing)?|talk|grand rounds|lecture|poster|webinar)\b/i],
+  ["paper", /\b(paper|papers|manuscript|article|abstract|draft|write[- ]?up|revis(?:e|ion|ions)|resubmi(?:t|ssion)|journal|reviewer|peer review|proofs?|grant|proposal|irb|protocol|chapter|publication|submission|letter of (?:rec|recommendation|support)|cover letter|report)\b/i],
+  ["email", /\b(e-?mails?|reply|respond|follow[- ]?up|write (?:back|to)|send (?:a |an )?(?:note|message)|message|inbox|get back to|cc)\b/i],
+  ["meeting", /\b(meeting|meet with|meet|call with|call|zoom|teams|1:1|one[- ]on[- ]one|sync|huddle|conference call|appointment|appt|committee|rounds|interview|check[- ]in|catch up)\b/i],
+];
+
+// Starts with an email verb ("Reply to the editor", "Email Dr. Smith") -> email, whatever it is about.
+const EMAIL_LEAD = /^\s*(?:please\s+)?(?:e-?mail|reply|respond|write back|follow[- ]?up|get back to|answer|forward)\b/i;
+
+export function categorize(text: string): Category {
+  if (/\b(?:power ?points?|ppts?|slides?|slide deck|presentation)\b/i.test(text)) return "slides";
+  if (EMAIL_LEAD.test(text)) return "email";
+  for (const [cat, re] of CAT_RULES) if (re.test(text)) return cat;
+  return "other";
+}
 export type Parsed = {
   kind: Kind;
   title: string;
   priority: 1 | 2 | 3;
+  category: Category;
   due: string | null;          // YYYY-MM-DD
   time: string | null;         // "3:00 PM"
   remindOn: string | null;     // YYYY-MM-DD
@@ -216,7 +237,7 @@ export function splitItems(text: string): string[] {
 function parseOne(raw: string, today: string): Parsed & { reminderOnly?: boolean; remindOffset?: number; remindExplicit?: string | null; remindLoose?: boolean } {
   let text = raw.trim();
   const out: Parsed & { reminderOnly?: boolean; remindOffset?: number; remindExplicit?: string | null; remindLoose?: boolean } = {
-    kind: "task", title: "", priority: 2, due: null, time: null, remindOn: null, text: raw.trim(),
+    kind: "task", title: "", category: "other", priority: 2, due: null, time: null, remindOn: null, text: raw.trim(),
   };
 
   // Reminders come off first so their dates don't become the due date.
@@ -282,6 +303,7 @@ function parseOne(raw: string, today: string): Parsed & { reminderOnly?: boolean
   }
 
   if (!out.title) out.title = cleanTitle(text);
+  out.category = categorize(raw);
   if (!out.title && (rel || out.remindExplicit !== undefined || out.remindLoose)) out.reminderOnly = true;
   return out;
 }

@@ -5,6 +5,7 @@ import { humanWhen, localToday, parseCapture, type Parsed } from "@/lib/smart";
 // Used by the voice shortcut (/api/capture with Omar's token) and the "Smart add" box on /omar.
 
 const TABLE = "dashboard_docs";
+const LABEL: Record<string, string> = { paper: "Paper", slides: "PowerPoint", email: "Email", meeting: "Meeting", other: "Other" };
 
 export type Saved = {
   items: (Parsed & { id: string })[];
@@ -46,7 +47,7 @@ export async function smartSave(owner: string, text: string, opts: { tz?: string
       const id = newId("t");
       rows.push({
         owner, kind: "tasks", id, updated_at: stamp,
-        data: { id, title: p.title, priority: p.priority, due: p.due, time: p.time, remindOn: p.remindOn, status: "todo", notes: "", said: p.text, source: opts.source, createdAt: now, updatedAt: now },
+        data: { id, title: p.title, category: p.category, priority: p.priority, due: p.due, time: p.time, remindOn: p.remindOn, status: "todo", notes: "", said: p.text, source: opts.source, createdAt: now, updatedAt: now },
       });
       items.push({ ...p, id });
     }
@@ -66,7 +67,7 @@ export async function smartSave(owner: string, text: string, opts: { tz?: string
   const parts = items.map((i) => {
     if (i.kind === "trip") return `${i.title}${i.start ? ` ${fmtShort(i.start)}${i.end && i.end !== i.start ? `–${fmtShort(i.end)}` : ""}` : ""}`;
     if (i.kind === "note") return `Note saved`;
-    return `${i.title} (P${i.priority}${i.due ? `, due ${fmtShort(i.due)}` : ""})`;
+    return `${i.title} (P${i.priority} ${LABEL[i.category] || "Other"}${i.due ? `, due ${fmtShort(i.due)}` : ""})`;
   });
   const remind = reminders.length ? ` Reminder${reminders.length > 1 ? "s" : ""}: ${reminders.map((r) => fmtShort(r.date)).join(", ")}.` : "";
   const moved = items.some((i) => i.remindAdjusted) ? " One reminder date had passed, so it's set for today." : "";

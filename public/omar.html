@@ -80,6 +80,17 @@ a { color: var(--text); }
 .pchip.p2 { background: var(--p2-bg); color: var(--p2); }
 .pchip.p3 { background: var(--p3-bg); color: var(--p3); }
 .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--chip); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.cat { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 600; color: var(--text); background: var(--soft); border: 1px solid var(--hair); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.filters { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; margin-top: 10px; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.filters button { flex: 0 0 auto; min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.filters button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.sugg { list-style: none; display: grid; gap: 8px; }
+.sugg li { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+.sugg .t { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.sugg .why { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.sugg .acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sugg select { width: auto; min-height: 36px; padding: 4px 8px; font-size: 14px; }
 .chip.late { background: var(--p1-bg); color: var(--p1); }
 .chip.today { background: var(--p2-bg); color: var(--p2); }
 
@@ -173,7 +184,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     <textarea id="smartText" rows="1" placeholder="Say or type: “Presentation Oct 15, high priority, remind me a week before”"></textarea>
     <button class="btn primary go" type="submit" id="smartGo">Add</button>
   </form>
-  <p class="smart-hint">Sorted for you: tasks with priority and due date, trips (“Flying to Lisbon Oct 20–24”), reminders and notes. Tap 🎤 on the keyboard to talk.</p>
+  <p class="smart-hint">Sorted for you by type (paper, PowerPoint, email, meeting) and priority, with due dates, reminders, trips (“Flying to Lisbon Oct 20–24”) and notes. Tap 🎤 on the keyboard to talk.</p>
   <div class="result hidden" id="smartResult" role="status" aria-live="polite"></div>
 </section>
 
@@ -194,6 +205,10 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       <legend>What</legend>
       <label>Task<input id="fTitle" required maxlength="140" placeholder="e.g. Submit grant report"></label>
       <label>Notes<textarea id="fNotes" rows="2" maxlength="1000" placeholder="Optional"></textarea></label>
+    </fieldset>
+    <fieldset>
+      <legend>Type</legend>
+      <div class="seg" role="group" aria-label="Type" id="fCat" style="flex-wrap:wrap"></div>
     </fieldset>
     <fieldset>
       <legend>How important</legend>
@@ -227,8 +242,15 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     <button type="button" data-show="open" aria-pressed="true">Open</button>
     <button type="button" data-show="done" aria-pressed="false">Done</button>
   </div>
+  <div class="filters" role="group" aria-label="Filter by type" id="catFilter"></div>
   <div id="groups"></div>
-  <p class="muted" style="margin-top:8px">Drag ⠿ to reorder or move between priorities. Tap a task to edit.</p>
+  <p class="muted" style="margin-top:8px">Drag ⠿ to reorder or move between priorities. Tap a task to edit. Meetings come from your calendar automatically.</p>
+</section>
+
+<section class="card" aria-labelledby="mailH">
+  <h2 id="mailH">From your email <button class="btn small" type="button" id="mailScan">Check email</button></h2>
+  <p class="muted" id="mailInfo">Looks through the last 7 days of your Gmail inbox for things to do. Nothing is added until you tap Add.</p>
+  <ul class="sugg" id="mailList" style="margin-top:8px"></ul>
 </section>
 
 <section class="card" aria-labelledby="remH">
@@ -270,6 +292,12 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   const KINDS = ['tasks', 'trips', 'notes', 'meta'];
   const CACHE = 'omar-cache-v1', PENDING = 'omar-pending-v1';
   const HOME = /rochester/i;
+  const CATS = [['paper', '📄', 'Paper'], ['slides', '📊', 'PowerPoint'], ['email', '✉️', 'Email'], ['meeting', '👥', 'Meeting'], ['other', '📌', 'Other']];
+  const CAT = Object.fromEntries(CATS.map(c => [c[0], c]));
+  const catOf = t => CAT[t.category] ? t.category : 'other';
+  const catChip = t => `<span class="cat">${CAT[catOf(t)][1]} ${esc(CAT[catOf(t)][2])}</span>`;
+  const catOptions = sel => CATS.map(c => `<option value="${c[0]}" ${c[0] === sel ? 'selected' : ''}>${c[1]} ${c[2]}</option>`).join('');
+  let catFilter = 'all';
 
   // ---------- dates ----------
   const pad = n => String(n).padStart(2, '0');
@@ -347,7 +375,9 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   function showResult(msg, err) { const el = $('smartResult'); el.textContent = msg; el.className = 'result' + (err ? ' err' : ''); }
 
   // ---------- add form ----------
-  let fPri = 2;
+  let fPri = 2, fCat = 'other';
+  $('fCat').innerHTML = CATS.map(c => `<button type="button" data-c="${c[0]}" aria-pressed="${c[0] === 'other'}">${c[1]} ${c[2]}</button>`).join('');
+  $('fCat').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; fCat = b.dataset.c; [...$('fCat').children].forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
   const toggleForm = open => { $('addForm').classList.toggle('hidden', !open); $('addToggle').setAttribute('aria-expanded', String(open)); if (open) $('fTitle').focus(); };
   $('addToggle').addEventListener('click', () => toggleForm($('addForm').classList.contains('hidden')));
   $('addCancel').addEventListener('click', () => { $('addForm').reset(); toggleForm(false); });
@@ -366,8 +396,9 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     const due = $('fDue').value || null;
     const choice = $('fRemind').value;
     if (choice && choice !== 'custom' && !due) { alert('Pick a due date so the reminder knows when “before” is.'); return; }
-    put('tasks', { id: newId('t'), title, priority: fPri, due, time: null, remindOn: remindFrom(choice, due, $('fRemindOn').value), status: 'todo', notes: $('fNotes').value.trim(), source: 'form', createdAt: Date.now() });
-    $('addForm').reset(); fPri = 2; [...$('fPri').children].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.p === '2')));
+    put('tasks', { id: newId('t'), title, category: fCat, priority: fPri, due, time: null, remindOn: remindFrom(choice, due, $('fRemindOn').value), status: 'todo', notes: $('fNotes').value.trim(), source: 'form', createdAt: Date.now() });
+    $('addForm').reset(); fPri = 2; fCat = 'other'; [...$('fPri').children].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.p === '2')));
+    [...$('fCat').children].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.c === 'other')));
     $('fRemindOnWrap').classList.add('hidden'); toggleForm(false);
   });
 
@@ -400,15 +431,16 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     const top = open.filter(t => (t.due && t.due <= td) || (pri(t) === 1 && !t.due))
       .sort((a, b) => ((a.due || td) < (b.due || td) ? -1 : (a.due || td) > (b.due || td) ? 1 : 0) || pri(a) - pri(b) || byOrder(a, b));
     const soon = open.filter(t => pri(t) === 1 && t.due && t.due > td && t.due <= addDays(td, 3)).sort(byOrder);
-    const evs = (events || []).filter(e => dayOf(e) === td);
+    const evs = (events || []).filter(e => dayOf(e) === td && (e.allDay || !S.tasks[meetingId(e)]));
     const items = [];
-    top.forEach(t => items.push(`<li class="today-item"><label class="chk"><input type="checkbox" data-done="${esc(t.id)}" aria-label="Done: ${esc(t.title)}"></label><span class="pchip p${pri(t)}">P${pri(t)}</span><span class="t">${esc(t.title)}</span>${dueChip(t)}</li>`));
+    top.forEach(t => items.push(`<li class="today-item"><label class="chk"><input type="checkbox" data-done="${esc(t.id)}" aria-label="Done: ${esc(t.title)}"></label><span class="pchip p${pri(t)}">P${pri(t)}</span><span class="t">${esc(t.title)}</span>${catOf(t) !== 'other' ? `<span aria-label="${esc(CAT[catOf(t)][2])}">${CAT[catOf(t)][1]}</span>` : ''}${dueChip(t)}</li>`));
     evs.forEach(e => items.push(`<li class="today-item ev"><span class="when">${esc(e.allDay ? 'All day' : timeOf(e.start))}</span><span class="t">${esc(e.title)}</span></li>`));
     soon.forEach(t => items.push(`<li class="today-item"><label class="chk"><input type="checkbox" data-done="${esc(t.id)}" aria-label="Done: ${esc(t.title)}"></label><span class="pchip p1">P1</span><span class="t">${esc(t.title)}</span>${dueChip(t)}</li>`));
     $('todayList').innerHTML = items.length ? items.join('') : '<li class="empty">Nothing urgent today. Add something above when it comes up.</li>';
     $('todayCount').textContent = top.length ? `${top.length} to do` : '';
     const p1 = open.filter(t => pri(t) === 1).length;
-    $('dayline').textContent = `${p1} high priorit${p1 === 1 ? 'y' : 'ies'} open · ${evs.length} event${evs.length === 1 ? '' : 's'} today`;
+    const meetingsToday = open.filter(t => catOf(t) === 'meeting' && t.due === td).length + evs.length;
+    $('dayline').textContent = `${p1} high priorit${p1 === 1 ? 'y' : 'ies'} open · ${meetingsToday} meeting${meetingsToday === 1 ? '' : 's'} today`;
   }
 
   function taskRow(t) {
@@ -421,7 +453,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       <div class="row">
         <button class="handle" type="button" aria-label="Drag to reorder ${esc(t.title)}" data-handle>⠿</button>
         <label class="chk" style="margin:0"><input type="checkbox" data-done="${esc(t.id)}" ${isOpen(t) ? '' : 'checked'} aria-label="Done: ${esc(t.title)}"></label>
-        <span class="main"><button class="t" type="button" data-edit="${esc(t.id)}" aria-expanded="${open}">${esc(t.title)}</button><span class="chips">${dueChip(t)}${bellChip(t)}</span></span>
+        <span class="main"><button class="t" type="button" data-edit="${esc(t.id)}" aria-expanded="${open}">${esc(t.title)}</button><span class="chips">${catChip(t)}${dueChip(t)}${bellChip(t)}</span></span>
         <button class="pchip p${p}" type="button" data-cycle="${esc(t.id)}" aria-label="Priority ${p}, tap to change">P${p}</button>
       </div>
       ${open ? `<form class="edit" data-form="${esc(t.id)}">
@@ -429,6 +461,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
         <div class="seg" role="group" aria-label="Priority" data-seg>
           ${[1, 2, 3].map(n => `<button type="button" data-p="${n}" aria-pressed="${n === p}">P${n}${n === 1 ? ' High' : n === 2 ? ' Normal' : ' Low'}</button>`).join('')}
         </div>
+        <label>Type<select name="category">${catOptions(catOf(t))}</select></label>
         <div class="two">
           <label>Due date<input type="date" name="due" value="${esc(t.due || '')}"></label>
           <label>Time<input name="time" value="${esc(t.time || '')}" placeholder="e.g. 3:00 PM" maxlength="12"></label>
@@ -439,13 +472,18 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
         </div>
         <label>Notes<textarea name="notes" rows="2" maxlength="1000">${esc(t.notes || '')}</textarea></label>
         ${t.said ? `<p class="muted">You said: “${esc(t.said)}”</p>` : ''}
+        ${t.source === 'calendar' ? '<p class="muted">From your calendar. Marked done automatically after it ends.</p>' : ''}
+        ${t.source === 'email' && t.why ? `<p class="muted">From email: ${esc(t.why)}</p>` : ''}
         <div class="acts"><button class="btn danger small" type="button" data-del="${esc(t.id)}">Delete</button><span style="display:flex;gap:8px"><button class="btn small" type="button" data-close>Close</button><button class="btn primary small" type="submit">Save</button></span></div>
       </form>` : ''}
     </li>`;
   }
 
   function renderGroups() {
-    const list = tasks().filter(t => show === 'open' ? isOpen(t) : !isOpen(t));
+    const shown = tasks().filter(t => show === 'open' ? isOpen(t) : !isOpen(t));
+    const counts = {}; shown.forEach(t => { counts[catOf(t)] = (counts[catOf(t)] || 0) + 1; });
+    $('catFilter').innerHTML = [['all', '', 'All']].concat(CATS).map(c => `<button type="button" data-cat="${c[0]}" aria-pressed="${catFilter === c[0]}">${c[1] ? c[1] + ' ' : ''}${esc(c[2])} ${c[0] === 'all' ? shown.length : (counts[c[0]] || 0)}</button>`).join('');
+    const list = shown.filter(t => catFilter === 'all' || catOf(t) === catFilter);
     const names = { 1: 'P1 · High', 2: 'P2 · Normal', 3: 'P3 · Low' };
     if (show === 'done') {
       const done = list.sort((a, b) => (b.doneAt || b.updatedAt || 0) - (a.doneAt || a.updatedAt || 0)).slice(0, 50);
@@ -479,6 +517,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     renderReminders();
     renderNotes();
     renderTrips();
+    renderMail();
     const m = S.meta.main && S.meta.main.notify;
     if (m && m.morning && document.activeElement !== $('morningTime')) $('morningTime').value = m.morning;
   }
@@ -499,7 +538,15 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     if (b.dataset.cycle) { const t = Object.assign({}, S.tasks[b.dataset.cycle]); t.priority = pri(t) === 3 ? 1 : pri(t) + 1; t.order = null; put('tasks', t); return; }
     if (b.dataset.edit) { editing = editing === b.dataset.edit ? null : b.dataset.edit; renderGroups(); return; }
     if (b.hasAttribute('data-close')) { editing = null; renderGroups(); return; }
-    if (b.dataset.del) { if (confirm('Delete this task?')) { editing = null; del('tasks', b.dataset.del); } return; }
+    if (b.dataset.cat) { catFilter = b.dataset.cat; renderGroups(); return; }
+    if (b.dataset.del) {
+      if (!confirm('Delete this task?')) return;
+      const gone = S.tasks[b.dataset.del];
+      if (gone && gone.source === 'calendar') remember('calDismissed', gone.id);
+      editing = null; del('tasks', b.dataset.del); return;
+    }
+    if (b.dataset.mailadd) { addSuggestion(Number(b.dataset.mailadd)); return; }
+    if (b.dataset.mailskip) { skipSuggestion(Number(b.dataset.mailskip)); return; }
     if (b.dataset.delnote) { del('notes', b.dataset.delnote); return; }
     if (b.dataset.deltrip) { if (confirm('Remove this trip?')) del('trips', b.dataset.deltrip); return; }
     const seg = b.closest('[data-seg]');
@@ -518,6 +565,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     t.time = form.time.value.trim() || null;
     t.remindOn = form.remind.value ? (form.remindOn.value || null) : null;
     t.notes = form.notes.value.trim();
+    t.category = form.category.value || catOf(t);
     editing = null; put('tasks', t);
   });
 
@@ -571,6 +619,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       if (!r.ok) { $('calNote').textContent = r.status === 401 ? 'Sign in again to load' : 'Unavailable'; return; }
       const data = await r.json();
       calEvents = data.events || [];
+      importMeetings();
       $('calNote').textContent = '';
       renderCalendar(); renderToday(calEvents); renderTrips();
     } catch (e) { $('calNote').textContent = 'Offline'; }
@@ -586,6 +635,104 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     }
     $('calList').innerHTML = days.join('') || '<p class="empty">Nothing on the calendar this week.</p>';
   }
+
+  // ---------- small helpers for settings kept in meta ----------
+  function metaMain() { return Object.assign({ id: 'main' }, S.meta.main || {}); }
+  function remember(key, value) {
+    const m = metaMain();
+    m[key] = (Array.isArray(m[key]) ? m[key] : []).filter(x => x !== value).concat(value).slice(-500);
+    put('meta', m);
+  }
+  function quietPut(kind, obj) { obj.updatedAt = Date.now(); S[kind][obj.id] = obj; pending[kind + '/' + obj.id] = obj; }
+
+  // ---------- meetings: pulled from the calendar automatically ----------
+  function meetingId(e) {
+    let h = 5381; const str = String(e.id);
+    for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+    return 'm-' + h.toString(36) + '-' + str.length.toString(36);
+  }
+  function importMeetings() {
+    const td = today(), horizon = addDays(td, 14), now = Date.now();
+    const dismissed = new Set(metaMain().calDismissed || []);
+    let changed = false;
+    calEvents.forEach(e => {
+      if (e.allDay || !e.start) return;
+      const day = dayOf(e);
+      if (day < td || day > horizon) return;
+      if (TRAVEL.test(e.title) && /\b(flight|fly|flying|depart|layover)\b|✈/i.test(e.title)) return;
+      const id = meetingId(e);
+      if (dismissed.has(id)) return;
+      const ex = S.tasks[id];
+      const time = timeOf(e.start);
+      if (!ex) {
+        quietPut('tasks', { id, title: e.title, category: 'meeting', priority: 2, due: day, time, remindOn: null, status: 'todo', notes: '', source: 'calendar', calTitle: e.title, eventEnd: e.end || e.start, createdAt: now });
+        changed = true;
+      } else if (ex.source === 'calendar' && (ex.due !== day || ex.time !== time || ex.eventEnd !== (e.end || e.start) || (ex.calTitle !== e.title && ex.title === ex.calTitle))) {
+        const n = Object.assign({}, ex, { due: day, time, eventEnd: e.end || e.start });
+        if (ex.title === ex.calTitle) n.title = e.title;
+        n.calTitle = e.title;
+        quietPut('tasks', n); changed = true;
+      }
+    });
+    // A meeting that has ended counts as done.
+    tasks().forEach(t => {
+      if (t.source === 'calendar' && isOpen(t) && t.eventEnd && Date.parse(t.eventEnd) < now) {
+        quietPut('tasks', Object.assign({}, t, { status: 'done', doneAt: now })); changed = true;
+      }
+    });
+    if (changed) { saveLocal(); render(); flush(); }
+  }
+
+  // ---------- email: suggestions to review ----------
+  let mailBusy = false;
+  function mailQueue() { return Array.isArray(metaMain().mailQueue) ? metaMain().mailQueue : []; }
+  function renderMail() {
+    const q = mailQueue();
+    const at = metaMain().mailScannedAt;
+    if (!mailBusy) $('mailInfo').textContent = q.length ? `${q.length} to review${at ? ' · checked ' + new Date(at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : ''}` : at ? `Nothing new to add · checked ${new Date(at).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}` : 'Looks through the last 7 days of your Gmail inbox for things to do. Nothing is added until you tap Add.';
+    $('mailList').innerHTML = q.map((x, i) => `<li>
+      <span class="t">${esc(x.title)}</span>
+      <span class="why">${esc(x.why || x.subject || '')}${x.due ? ' · due ' + esc(short(x.due)) : ''}</span>
+      <span class="acts">
+        <label class="hidden" for="mc${i}">Type</label><select id="mc${i}" data-mailcat="${i}">${catOptions(x.category)}</select>
+        <label class="hidden" for="mp${i}">Priority</label><select id="mp${i}" data-mailpri="${i}">${[1, 2, 3].map(n => `<option value="${n}" ${n === Number(x.priority || 2) ? 'selected' : ''}>P${n}</option>`).join('')}</select>
+        <button class="btn primary small" type="button" data-mailadd="${i}">Add</button>
+        <button class="btn ghost small" type="button" data-mailskip="${i}">Skip</button>
+      </span></li>`).join('');
+  }
+  async function scanMail(auto) {
+    if (mailBusy) return;
+    mailBusy = true; $('mailScan').disabled = true; $('mailInfo').textContent = 'Checking your inbox…';
+    try {
+      const seen = (metaMain().mailSeen || []).slice(-120);
+      const q = new URLSearchParams({ mode: 'tasks', today: today(), seen: seen.join(',') });
+      const r = await fetch('/api/gmail?' + q, { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { mailBusy = false; $('mailInfo').textContent = r.status === 401 ? 'Sign out and back in to let the dashboard read your Gmail.' : 'Couldn’t check email right now.'; return; }
+      const data = await r.json();
+      const m = metaMain();
+      const queue = Array.isArray(m.mailQueue) ? m.mailQueue.slice() : [];
+      const keys = new Set(queue.map(x => x.mailId + '|' + x.title));
+      (data.suggestions || []).forEach(x => { const k = x.mailId + '|' + x.title; if (!keys.has(k)) { keys.add(k); queue.push(x); } });
+      m.mailQueue = queue.slice(-40);
+      m.mailSeen = (Array.isArray(m.mailSeen) ? m.mailSeen : []).concat(data.scannedIds || []).filter((v, i, a) => a.indexOf(v) === i).slice(-300);
+      m.mailScannedAt = Date.now();
+      mailBusy = false;
+      put('meta', m);
+    } catch (e) { mailBusy = false; $('mailInfo').textContent = 'Offline. Try again later.'; }
+    finally { $('mailScan').disabled = false; renderMail(); }
+  }
+  function takeFromQueue(i) {
+    const m = metaMain(); const q = mailQueue().slice(); const x = q.splice(i, 1)[0];
+    m.mailQueue = q; return { m, x };
+  }
+  function addSuggestion(i) {
+    const cat = document.querySelector(`[data-mailcat="${i}"]`), pr = document.querySelector(`[data-mailpri="${i}"]`);
+    const { m, x } = takeFromQueue(i); if (!x) return;
+    quietPut('tasks', { id: newId('t'), title: x.title, category: (cat && cat.value) || x.category || 'email', priority: Number((pr && pr.value) || x.priority || 2), due: x.due || null, time: x.time || null, remindOn: null, status: 'todo', notes: '', source: 'email', why: x.why || x.subject || '', mailId: x.mailId, createdAt: Date.now() });
+    put('meta', m);
+  }
+  function skipSuggestion(i) { const { m } = takeFromQueue(i); put('meta', m); }
+  $('mailScan').addEventListener('click', () => scanMail(false));
 
   // ---------- trips: from what Omar said + travel spotted on his calendars ----------
   const TRAVEL = /(✈|\bflight\b|\bfly(ing)?\b|\btrip\b|\btravel|\bvacation\b|\bholiday\b|\bconference\b|\bhotel\b|\bairbnb\b|\bdepart|\blayover\b|\bvisit(ing)?\b)/i;
@@ -718,7 +865,9 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       if (me.view !== 'omar') { location.replace(me.home || '/dashboard'); return; }
     } catch (e) { /* offline: show the saved copy */ }
     render();
-    load(); loadCalendar();
+    await load(); loadCalendar();
+    const last = metaMain().mailScannedAt || 0;
+    if (Date.now() - last > 6 * 3600 * 1000) scanMail(true);
     setInterval(() => { if (!document.hidden) load(); }, 30000);
     setInterval(() => { if (!document.hidden) loadCalendar(); }, 5 * 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); render(); } });

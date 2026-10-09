@@ -1,5 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { viewFor } from "@/lib/users";
+import { omarExtract } from "@/lib/omarMail";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -203,10 +205,13 @@ Return ONLY a JSON object, no other text:
   }
 }
 
-async function scanForTasks(auth: Record<string, string>, today: string, seen: Set<string>): Promise<Response> {
+async function scanForTasks(auth: Record<string, string>, today: string, seen: Set<string>, forOmar = false): Promise<Response> {
+  const query = forOmar
+    ? "in:inbox newer_than:7d -category:promotions -category:social -category:updates -category:forums"
+    : "in:inbox newer_than:7d -category:promotions -category:social";
   const list = await fetch(
     "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=" +
-      encodeURIComponent("in:inbox newer_than:7d -category:promotions -category:social") +
+      encodeURIComponent(query) +
       "&maxResults=15",
     { headers: auth, cache: "no-store" }
   );
@@ -226,6 +231,10 @@ async function scanForTasks(auth: Record<string, string>, today: string, seen: S
     })
   );
   const withText = mails.filter((m) => m.body.length > 0);
+  // Omar: free rules that also sort by type (Paper, PowerPoint, Email, Meeting, Other) and priority.
+  if (forOmar) {
+    return Response.json({ suggestions: omarExtract(withText, today), how: "rules", scanned: mails.length, scannedIds: mails.map((m) => m.id) });
+  }
   let suggestions = await askClaude(withText, today);
   const how = suggestions ? "claude" : "rules";
   if (!suggestions) suggestions = ruleExtract(withText, today);
@@ -244,7 +253,7 @@ export async function GET(request: Request) {
       const t = url.searchParams.get("today") || "";
       const today = /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : fmtYmd(new Date());
       const seen = new Set((url.searchParams.get("seen") || "").split(",").filter(Boolean));
-      return await scanForTasks(auth, today, seen);
+      return await scanForTasks(auth, today, seen, viewFor(session.user?.email) === "omar");
     }
     const list = await fetch(
       "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread%20in:inbox%20category:primary&maxResults=8",
