@@ -152,6 +152,13 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 .src { font-size: 12px; color: var(--faint); }
 .src a { color: var(--faint); }
 
+/* Travel: collapsed by default */
+.trips-fold > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; margin: -6px 0; cursor: pointer; font-size: 15px; font-weight: 700; }
+.trips-fold > summary::-webkit-details-marker { display: none; }
+.trips-fold > summary .sum { font-size: 13px; font-weight: 600; color: var(--muted); display: flex; align-items: center; gap: 6px; text-align: right; }
+.trips-fold > summary .sum::after { content: "▾"; font-size: 14px; transition: transform .15s; }
+.trips-fold[open] > summary .sum::after { transform: rotate(180deg); }
+.trips-fold[open] > summary { margin-bottom: 4px; }
 /* Calendar */
 .day { margin-top: 8px; }
 .day h4 { font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
@@ -193,10 +200,10 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   <ul class="today-list" id="todayList"></ul>
 </section>
 
-<section class="card hidden" aria-labelledby="tripsH" id="tripsCard">
-  <h2 id="tripsH">Travel</h2>
+<details class="card hidden trips-fold" id="tripsCard">
+  <summary><span class="ttl">Travel</span><span class="sum" id="tripsSum"></span></summary>
   <div id="tripsList"></div>
-</section>
+</details>
 
 <section class="card" aria-labelledby="tasksH">
   <h2 id="tasksH">Tasks by priority <button class="btn small" type="button" id="addToggle" aria-expanded="false">+ Add task</button></h2>
@@ -809,12 +816,19 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     const td = today();
     const trips = allTrips();
     $('tripsCard').classList.toggle('hidden', !trips.length);
+    const first = trips[0];
+    if (first) {
+      const n = first.start ? diff(td, first.start) : null;
+      const when = n === null ? '' : n > 1 ? ` in ${n} days` : n === 1 ? ' tomorrow' : n === 0 ? ' today' : ' now';
+      $('tripsSum').textContent = `✈️ ${first.destination}${when}${trips.length > 1 ? ` · +${trips.length - 1} more` : ''}`;
+    }
+    const opened = $('tripsCard').open;
     if (!trips.length) return;
     $('tripsList').innerHTML = trips.map(t => {
       const key = `${t.destination}|${t.start || ''}|${t.end || ''}`;
       const info = destCache[key];
       const thisWeek = !t.start || t.start <= addDays(td, 7);
-      if (!info && thisWeek) destination(t);
+      if (!info && thisWeek && opened) destination(t);
       const n = t.start ? diff(td, t.start) : null;
       const count = n === null ? '' : n > 1 ? `in ${n} days` : n === 1 ? 'tomorrow' : n === 0 ? 'today' : 'now';
       const dates = t.start ? `${short(t.start)}${t.end && t.end !== t.start ? ' – ' + short(t.end) : ''}` : 'Dates not set';
@@ -838,6 +852,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       return `<article class="trip"><div class="trip-head"><div><h3>✈️ ${esc(info && info.place ? info.place.name : t.destination)}</h3><div class="sub">${esc(dates)}${place ? ' · ' + esc(place) : ''}${t.fromCalendar || t.onCalendar ? ' · on your calendar' : ''}</div></div><div style="text-align:right"><div class="count">${esc(count)}</div>${t.fromCalendar ? '' : `<button class="btn ghost small" type="button" data-deltrip="${esc(t.id)}" aria-label="Remove trip">✕</button>`}</div></div><div class="trip-body">${body}</div></article>`;
     }).join('');
   }
+  $('tripsCard').addEventListener('toggle', () => { if ($('tripsCard').open) renderTrips(); });
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-loadtrip]'); if (!b) return;
     const t = allTrips().find(x => `${x.destination}|${x.start || ''}|${x.end || ''}` === b.dataset.loadtrip); if (t) destination(t);
