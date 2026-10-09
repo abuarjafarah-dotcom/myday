@@ -2,106 +2,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { viewFor } from "@/lib/users";
 import { omarExtract } from "@/lib/omarMail";
+import { findPart, stripHtml, parseDue, fmtYmd, parseYmd, type GmailPart } from "@/lib/mailText";
+import { summarizeRecent, type MailIn } from "@/lib/mailSummary";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-// GET /api/gmail                  -> unread Primary emails (subject + sender), as before.
+// GET /api/gmail                  -> the 5 most recent Primary emails with a one-line summary and an optional suggested task.
 // GET /api/gmail?mode=tasks       -> reads the last 7 days of email and suggests tasks (school forms, RSVPs, deadlines).
 //                                    Nothing is saved here. The dashboard shows the suggestions for review first.
 //   ?today=YYYY-MM-DD   the user's local date (so "by Friday" resolves correctly)
 //   ?seen=id1,id2       emails already reviewed, skipped
 // If ANTHROPIC_API_KEY is set in Vercel, Claude reads the emails. Without it (or if the call fails) simple rules are used.
 
-type GmailPart = { mimeType?: string; body?: { data?: string }; parts?: GmailPart[] };
 type GmailHeader = { name: string; value: string };
 type GmailMessage = { id: string; threadId?: string; payload?: GmailPart & { headers?: GmailHeader[] } };
 type MailDoc = { id: string; subject: string; from: string; body: string };
 type Suggestion = { mailId: string; subject: string; from: string; title: string; due: string | null; time: string | null; category: string; why: string };
 
 const CATEGORIES = ["kids", "work", "home", "errands", "self", "activity", "omar"];
-
-function decode(data: string): string {
-  return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8");
-}
-
-function findPart(p: GmailPart | undefined, mime: string): string {
-  if (!p) return "";
-  if (p.mimeType === mime && p.body?.data) return decode(p.body.data);
-  for (const c of p.parts || []) {
-    const r = findPart(c, mime);
-    if (r) return r;
-  }
-  return "";
-}
-
-function stripHtml(h: string): string {
-  return h
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<br\s*\/?>|<\/p>|<\/div>|<\/li>|<\/tr>|<\/h\d>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;|&rsquo;|&lsquo;/g, "'")
-    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n\s*\n+/g, "\n")
-    .trim();
-}
-
-// ---------- dates ----------
-const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-const pad2 = (n: number) => String(n).padStart(2, "0");
-
-function parseYmd(s: string): Date {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
-}
-function fmtYmd(d: Date): string {
-  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
-}
-function addDaysYmd(s: string, n: number): string {
-  const d = parseYmd(s);
-  d.setUTCDate(d.getUTCDate() + n);
-  return fmtYmd(d);
-}
-function validYmd(y: number, m: number, d: number): boolean {
-  const t = new Date(Date.UTC(y, m - 1, d));
-  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
-}
-
-// Finds a due date in a sentence: 2026-10-14, 10/14, "Oct 14", "by Friday", "tomorrow".
-function parseDue(text: string, today: string): string | null {
-  const l = text.toLowerCase();
-  const ty = parseYmd(today).getUTCFullYear();
-  const iso = l.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
-  if (iso && validYmd(+iso[1], +iso[2], +iso[3])) return iso[0];
-  const monthName = l.match(new RegExp(`\\b(${MONTHS.join("|")})[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`));
-  if (monthName) {
-    const m = MONTHS.indexOf(monthName[1]) + 1;
-    const d = +monthName[2];
-    let y = ty;
-    if (validYmd(y, m, d) && fmtYmd(new Date(Date.UTC(y, m - 1, d))) < addDaysYmd(today, -30)) y += 1;
-    if (validYmd(y, m, d)) return `${y}-${pad2(m)}-${pad2(d)}`;
-  }
-  const slash = l.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
-  if (slash) {
-    const m = +slash[1];
-    const d = +slash[2];
-    let y = slash[3] ? +slash[3] : ty;
-    if (y < 100) y += 2000;
-    if (validYmd(y, m, d)) return `${y}-${pad2(m)}-${pad2(d)}`;
-  }
-  if (/\btomorrow\b/.test(l)) return addDaysYmd(today, 1);
-  if (/\btoday\b|\btonight\b/.test(l)) return today;
-  const cur = parseYmd(today).getUTCDay();
-  for (let i = 0; i < 7; i++) {
-    if (new RegExp(`\\b${WEEKDAYS[i]}\\b`).test(l)) return addDaysYmd(today, (i - cur + 7) % 7);
-  }
-  return null;
-}
 
 // ---------- rules (used when no Anthropic key is set, or if Claude can't be reached) ----------
 const ACTION = /\b(permission slip|sign(?:ed)?|return|bring|send in|send back|pack|wear|rsvp|reply|respond|register|sign ?up|pay|payment|due|deadline|forms?|submit|complete|picture day|field trip|early dismissal|half day|no school|conference|volunteer|donate|order|remind)\b/i;
@@ -208,7 +127,7 @@ Return ONLY a JSON object, no other text:
 async function scanForTasks(auth: Record<string, string>, today: string, seen: Set<string>, forOmar = false): Promise<Response> {
   const query = forOmar
     ? "in:inbox newer_than:7d -category:promotions -category:social -category:updates -category:forums"
-    : "in:inbox newer_than:7d -category:promotions -category:social";
+    : "in:inbox newer_than:7d -category:promotions -category:social -category:updates -category:forums";
   const list = await fetch(
     "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=" +
       encodeURIComponent(query) +
@@ -255,27 +174,42 @@ export async function GET(request: Request) {
       const seen = new Set((url.searchParams.get("seen") || "").split(",").filter(Boolean));
       return await scanForTasks(auth, today, seen, viewFor(session.user?.email) === "omar");
     }
+    // Default: the 5 most recent Primary emails, each with a one-line summary and,
+    // only when the email asks for something, a suggested task. Promotions, Social and Updates are left out.
+    const t = url.searchParams.get("today") || "";
+    const today = /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : fmtYmd(new Date());
+    const q = "in:inbox category:primary -category:promotions -category:social -category:updates -category:forums";
     const list = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread%20in:inbox%20category:primary&maxResults=8",
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5&q=" + encodeURIComponent(q),
       { headers: auth, cache: "no-store" }
     );
     if (list.status === 401) return Response.json({ error: "Unauthorized" }, { status: 401 });
-    const data = await list.json();
-    const ids: { id: string }[] = data.messages || [];
-    const emails = await Promise.all(
-      ids.map(async ({ id }) => {
-        const r = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`,
-          { headers: auth, cache: "no-store" }
-        );
-        const m = await r.json();
-        const headers: { name: string; value: string }[] = m.payload?.headers || [];
-        const get = (n: string) => headers.find((h) => h.name === n)?.value || "";
+    const data = (await list.json()) as { messages?: { id: string }[] };
+    const mails: MailIn[] = await Promise.all(
+      (data.messages || []).map(async ({ id }) => {
+        const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, { headers: auth, cache: "no-store" });
+        const m = (await r.json()) as GmailMessage & { snippet?: string; labelIds?: string[]; internalDate?: string };
+        const headers = m.payload?.headers || [];
+        const get = (n: string) => headers.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value || "";
+        const plain = findPart(m.payload, "text/plain");
+        const body = (plain || stripHtml(findPart(m.payload, "text/html"))).slice(0, 5000);
         const from = get("From").replace(/\s*<[^>]+>\s*$/, "").replace(/^"|"$/g, "");
-        return { id, threadId: m.threadId, subject: get("Subject") || "(No subject)", from };
+        const labels = m.labelIds || [];
+        return {
+          id,
+          threadId: m.threadId || id,
+          subject: get("Subject") || "(No subject)",
+          from,
+          body,
+          snippet: m.snippet || "",
+          unread: labels.includes("UNREAD"),
+          date: Number(m.internalDate) || 0,
+          promo: labels.includes("CATEGORY_PROMOTIONS") || /^bulk$/i.test(get("Precedence")),
+        };
       })
     );
-    return Response.json({ emails });
+    const { emails, how } = await summarizeRecent(mails, today);
+    return Response.json({ emails, how });
   } catch (error) {
     console.error("Gmail API error:", error);
     return Response.json({ error: "Failed to fetch emails" }, { status: 500 });

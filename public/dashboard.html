@@ -453,7 +453,19 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 }
 
 /* Email scan + finished projects */
-.mail-scan { width: 100%; margin-bottom: 8px; }
+.mail-card { padding: 12px 0; border-bottom: 1px solid var(--hair); }
+.mail-card:last-child { border-bottom: 0; }
+.mail-card .mail-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.mail-card .mail-top .from { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-card .mail-top .when { flex: none; color: var(--faint); }
+.mail-card .subj { font-size: 15px; color: var(--text); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mail-card.unread .subj { font-weight: 600; }
+.mail-card .mail-sum { font-size: 14px; color: var(--body); margin-top: 3px; line-height: 1.4; }
+.mail-card .mail-sug { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 8px; background: var(--chip); border-radius: 8px; }
+.mail-card .mail-sug-t { flex: 1; min-width: 0; font-size: 13px; color: var(--text); }
+.mail-card .mail-sug .mini { white-space: nowrap; }
+.mail-card .mail-sug .mini.made { color: var(--accent); }
+.mail-card .mail-open { display: inline-block; margin-top: 6px; font-size: 13px; color: var(--accent); text-decoration: none; min-height: 24px; }
 .pf { border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--card); }
 .pf label { font-size: 13px; color: var(--muted); }
 .pf input, .pf select { width: 100%; min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; }
@@ -691,10 +703,9 @@ details.fold.sub > summary { min-height: 48px; }
       <summary><span>More</span><span class="count" id="moreCount"></span></summary>
       <div class="fold-body more-list">
         <details class="fold sub" data-fold="inbox">
-          <summary><span>Action items</span><span class="count" id="mailCount"></span></summary>
+          <summary><span>Email</span><span class="count" id="mailCount"></span></summary>
           <div class="fold-body">
-            <button class="btn-secondary mail-scan" data-act="mail-scan">Find tasks in my email</button>
-            <div id="gmailList"><div class="empty">Loading unread email…</div></div>
+            <div id="gmailList"><div class="empty">Loading recent email…</div></div>
             <a class="h2-link" href="https://mail.google.com" target="_blank" rel="noopener">Open Gmail</a>
           </div>
         </details>
@@ -989,7 +1000,7 @@ details.fold.sub > summary { min-height: 48px; }
   async function loadLive() {
     const jobs = [
       getJson('/api/weather').then(d => { if (!d.error) live.weather = d; }).catch(() => {}),
-      getJson('/api/gmail').then(d => { live.mail = d.emails || []; live.mailErr = ''; })
+      getJson(`/api/gmail?today=${today()}`).then(d => { live.mail = d.emails || []; live.mailErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.mailErr = 'Couldn\'t load Gmail right now.'; }),
       getJson('/api/partner').then(d => { live.omar = d; }).catch(() => { live.omar = null; }),
       getJson('/api/calendar').then(d => { live.cal = d.events || []; live.calInfo = d.info || null; live.calErr = ''; })
@@ -1031,13 +1042,14 @@ details.fold.sub > summary { min-height: 48px; }
       wt.setAttribute('aria-label', `${deg(w.temperature)} degrees ${useC() ? 'Celsius' : 'Fahrenheit'}. Tap to switch to ${useC() ? 'Fahrenheit' : 'Celsius'}.`);
     }
     $('weatherLine').innerHTML = w ? `<span class="wx-feel">Feels like ${deg(w.feelsLike)}°${unitLetter()}</span><br>${esc(w.condition || '')}` : 'Loading weather…';
-    const mc = $('mailCount'); if (mc) mc.textContent = live.authed && live.mail && live.mail.length ? `${live.mail.length} unread` : '';
+    const unread = (live.mail || []).filter(m => m.unread).length;
+    const mc = $('mailCount'); if (mc) mc.textContent = live.authed && unread ? `${unread} unread` : '';
     let mh;
     if (!live.authed) mh = signInHtml('Gmail');
     else if (live.mailErr) mh = `<div class="empty">${esc(live.mailErr)}</div>`;
-    else if (!live.mail) mh = '<div class="empty">Loading unread email…</div>';
-    else if (!live.mail.length) mh = '<div class="empty">Inbox zero. No unread email.</div>';
-    else mh = live.mail.map(m => `<div class="mail-row">${mailTaskBtn(m)}<a class="mail-item" href="https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}" target="_blank" rel="noopener"><span class="subj">${esc(m.subject)}</span>${m.from ? `<span class="from">${esc(m.from)}</span>` : ''}</a></div>`).join('');
+    else if (!live.mail) mh = '<div class="empty">Loading recent email…</div>';
+    else if (!live.mail.length) mh = '<div class="empty">No recent email in Primary.</div>';
+    else mh = live.mail.map(mailRowHtml).join('');
     $('gmailList').innerHTML = mh;
     const evs = eventsOn(today());
     let ch = '';
@@ -2411,13 +2423,37 @@ Rules:
 
   // ---------- inbox -> task ----------
   const mailTask = m => Object.values(S.tasks).find(t => t.mailId === m.id && t.status !== 'dropped');
-  const mailTaskBtn = m => mailTask(m)
-    ? `<button class="mini made" data-act="tab" data-tab="home" aria-label="Already a task">✓ Task</button>`
-    : `<button class="mini" data-act="mail-task" data-id="${esc(m.id)}">Make task</button>`;
+  const mailUrl = m => `https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}`;
+  const mailWhen = ms => {
+    if (!ms) return '';
+    const d = new Date(ms), now = new Date();
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+  // One email: sender and time, subject, one-line summary. "Add task" shows only when the email asks for something.
+  function mailRowHtml(m) {
+    const a = m.action, done = mailTask(m);
+    const sug = a ? `<div class="mail-sug"><span class="mail-sug-t">${esc(a.title)}${a.due ? ` · due ${esc(fmtShortDate(a.due))}` : ''}</span>${done
+      ? `<button class="mini made" data-act="tab" data-tab="home" aria-label="Already a task">✓ Added</button>`
+      : `<button class="mini" data-act="mail-task" data-id="${esc(m.id)}">+ Add task</button>`}</div>` : '';
+    return `<div class="mail-card ${m.unread ? 'unread' : ''}">
+      <div class="mail-top"><span class="from">${esc(m.from || 'Unknown sender')}</span><span class="when">${esc(mailWhen(m.date))}</span></div>
+      <div class="subj">${esc(m.subject)}</div>
+      ${m.summary && m.summary !== m.subject ? `<div class="mail-sum">${esc(m.summary)}</div>` : ''}
+      ${sug}
+      <a class="mail-open" href="${mailUrl(m)}" target="_blank" rel="noopener">Open in Gmail</a>
+    </div>`;
+  }
+  function fmtShortDate(ymd) {
+    if (ymd === today()) return 'today';
+    if (ymd === addDays(today(), 1)) return 'tomorrow';
+    return parseYmd(ymd).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  }
   function makeMailTask(id) {
-    const m = (live.mail || []).find(x => x.id === id); if (!m || mailTask(m)) return;
-    const t = makeTask({ title: m.subject, category: guessCategory(`${m.subject} ${m.from || ''}`), date: today(), source: 'gmail' });
-    t.mailId = m.id; t.notes = `From ${m.from || 'email'} · https://mail.google.com/mail/u/0/#inbox/${m.threadId || m.id}`;
+    const m = (live.mail || []).find(x => x.id === id); if (!m || !m.action || mailTask(m)) return;
+    const a = m.action;
+    const t = makeTask({ title: a.title, category: a.category || guessCategory(`${m.subject} ${m.from || ''}`), date: planDate(a.due) || today(), source: 'gmail' });
+    t.mailId = m.id; t.notes = `${m.summary || m.subject} · From ${m.from || 'email'} · ${mailUrl(m)}`;
     put('tasks', t);
   }
 
