@@ -1,6 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { smartSave } from "@/lib/smartSave";
+import { smartSaveFarah } from "@/lib/smartFarah";
+import { viewFor } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +14,9 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { text?: unknown; tz?: unknown };
   const text = String(body.text || "").replace(/\r\n/g, "\n").trim().slice(0, 5000);
   if (!text) return Response.json({ error: "Nothing to add." }, { status: 400 });
-  const result = await smartSave(email, text, { tz: String(body.tz || "America/Chicago").slice(0, 60), source: "smart-add" });
+  const opts = { tz: String(body.tz || "America/Chicago").slice(0, 60), source: "smart-add" };
+  // Each person gets their own tags: Omar's work types on /omar, Farah's kids/work/errands/... on /dashboard.
+  const result = viewFor(email) === "omar" ? await smartSave(email, text, opts) : await smartSaveFarah(email, text, opts);
   if ("error" in result) return Response.json({ error: result.error }, { status: result.status });
   return Response.json({ ok: true, message: result.message, items: result.items, reminders: result.reminders });
 }

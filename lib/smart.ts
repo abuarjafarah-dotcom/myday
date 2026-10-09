@@ -234,7 +234,7 @@ export function splitItems(text: string): string[] {
     .filter((s) => s.replace(/[\s.,;!?]/g, "").length > 0);
 }
 
-function parseOne(raw: string, today: string): Parsed & { reminderOnly?: boolean; remindOffset?: number; remindExplicit?: string | null; remindLoose?: boolean } {
+function parseOne(raw: string, today: string, trips = true): Parsed & { reminderOnly?: boolean; remindOffset?: number; remindExplicit?: string | null; remindLoose?: boolean } {
   let text = raw.trim();
   const out: Parsed & { reminderOnly?: boolean; remindOffset?: number; remindExplicit?: string | null; remindLoose?: boolean } = {
     kind: "task", title: "", category: "other", priority: 2, due: null, time: null, remindOn: null, text: raw.trim(),
@@ -288,7 +288,7 @@ function parseOne(raw: string, today: string): Parsed & { reminderOnly?: boolean
   }
 
   // Trip?
-  if (out.kind === "task" && TRAVEL.test(raw)) {
+  if (trips && out.kind === "task" && TRAVEL.test(raw)) {
     const pl = findPlace(text);
     if (pl) {
       out.kind = "trip";
@@ -326,10 +326,13 @@ function settleReminder(p: ReturnType<typeof parseOne>, today: string): void {
   p.remindOn = on;
 }
 
-export function parseCapture(text: string, today: string): Parsed[] {
+// opts.trips = false: no trip detection (Farah's errands like "going to Target" stay tasks).
+// opts.split = false: treat the text as one item (the caller already split it).
+export function parseCapture(text: string, today: string, opts: { trips?: boolean; split?: boolean } = {}): Parsed[] {
   const items: ReturnType<typeof parseOne>[] = [];
-  for (const piece of splitItems(text).slice(0, 20)) {
-    const p = parseOne(piece, today);
+  const pieces = opts.split === false ? [text.trim()].filter(Boolean) : splitItems(text).slice(0, 20);
+  for (const piece of pieces) {
+    const p = parseOne(piece, today, opts.trips !== false);
     // "Remind me a week before." on its own line belongs to the item before it.
     if (p.reminderOnly && items.length) {
       const prev = items[items.length - 1];

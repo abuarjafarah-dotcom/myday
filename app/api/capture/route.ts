@@ -2,11 +2,13 @@ import { timingSafeEqual } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { omarEmail } from "@/lib/users";
 import { smartSave } from "@/lib/smartSave";
+import { smartSaveFarah } from "@/lib/smartFarah";
 
 export const dynamic = "force-dynamic";
 
 // Capture from anywhere: an iOS Shortcut (voice or text, or the share sheet) posts a brain dump here.
-// It lands in "Brain dumps to sort" on the dashboard, where you review it before anything is added.
+// Farah's entries are sorted on arrival by her smart filter: tagged kids/work/home/errands/self/activity/omar,
+// grocery filed by store, dates, times, priority and reminders picked out. The reply says what was added.
 // Auth: header "Authorization: Bearer <CAPTURE_TOKEN>". Owner: CAPTURE_EMAIL. Both are Vercel env vars.
 // Omar's shortcut uses CAPTURE_TOKEN_OMAR instead. His entries skip the review queue: the smart filter files
 // them straight onto /omar as tasks, trips or notes, and the reply lists any reminders for his iPhone.
@@ -38,10 +40,6 @@ async function readBody(request: Request): Promise<{ text: string; tz: string }>
   return { text: await request.text(), tz: "" };
 }
 
-async function readText(request: Request): Promise<string> {
-  return (await readBody(request)).text;
-}
-
 export async function POST(request: Request) {
   const who = whoIsCapturing(request);
   if (!who) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,20 +49,35 @@ export async function POST(request: Request) {
   const db = supabaseAdmin();
   if (!db) return Response.json({ error: "Sync is not set up" }, { status: 503 });
 
-  const text = (await readText(request)).replace(/\r\n/g, "\n").trim().slice(0, 5000);
-  if (!text) return Response.json({ error: "Nothing to save. Send some text." }, { status: 400 });
+  const { text: raw, tz } = await readBody(request);
+  const text = raw.replace(/\r\n/g, "\n").trim().slice(0, 5000);
+  if (!text) return Response.json({ error: "Nothing to save. Say or type something." }, { status: 400 });
 
-  const now = Date.now();
-  const id = `d-${now.toString(36)}${Math.random().toString(36).slice(2, 7)}`;
-  const data = { id, text, createdAt: now, processed: false, source: "shortcut", updatedAt: now };
-  const { error } = await db
-    .from("dashboard_docs")
-    .upsert([{ owner, kind: "dumps", id, data, updated_at: new Date(now).toISOString() }], { onConflict: "owner,kind,id" });
-  if (error) {
-    console.error("capture write", error);
-    return Response.json({ error: "Couldn't save. Try again." }, { status: 500 });
+  const result = await smartSaveFarah(owner, text, {
+    tz: tz || process.env.CALENDAR_TIMEZONE || "America/Chicago",
+    source: "shortcut",
+    reminderTime: process.env.FARAH_REMINDER_TIME || "8:00 AM",
+  });
+  if ("error" in result) {
+    // Nothing recognisable: keep the note in "Brain dumps to sort" so nothing she said is lost.
+    if (result.status !== 400) return Response.json({ error: result.error }, { status: result.status });
+    const now = Date.now();
+    const id = `d-${now.toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+    const data = { id, text, createdAt: now, processed: false, autoTried: true, source: "shortcut", updatedAt: now };
+    const { error } = await db.from("dashboard_docs").upsert([{ owner, kind: "dumps", id, data, updated_at: new Date(now).toISOString() }], { onConflict: "owner,kind,id" });
+    if (error) return Response.json({ error: "Couldn't save. Try again." }, { status: 500 });
+    return Response.json({ ok: true, message: "Saved to your dashboard to sort", items: [], reminders: [], hasReminder: "no", reminderTitle: "", reminderWhen: "" });
   }
-  return Response.json({ ok: true, message: "Saved to your dashboard" });
+  const first = result.reminders[0];
+  return Response.json({
+    ok: true,
+    message: result.message,
+    items: result.items,
+    reminders: result.reminders,
+    hasReminder: first ? "yes" : "no",
+    reminderTitle: first ? first.title : "",
+    reminderWhen: first ? first.when : "",
+  });
 }
 
 async function captureForOmar(request: Request): Promise<Response> {
