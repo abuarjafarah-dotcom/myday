@@ -892,6 +892,16 @@ details.fold.sub > summary { min-height: 48px; }
   let pending = lsGet(LS.pending, {});           // "kind/id" -> object | null (delete), survives reloads until synced
   let ui = Object.assign({ tab: 'home', sub: 'today', open: {}, showDone: false }, lsGet(LS.ui, {}));
   if (ui.sub === 'reset') ui.sub = 'sync';
+  // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('tab') === 'grocery') {
+      ui.tab = 'grocery';
+      const st = q.get('store');
+      if (st) { ui.store = st; ui.open = Object.assign({}, ui.open, { ['g-' + st]: true }); }
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (e) {}
   let db = null, base = null, sample = null;
   let mode = 'starting';                          // 'cloud' | 'local'
   const srv = { tasksOpen: {}, tasksClosed: {}, projects: {}, grocery: {}, notes: {}, dumps: {}, meta: {} };
