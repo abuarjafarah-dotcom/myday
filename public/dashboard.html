@@ -3281,17 +3281,26 @@ Rules:
     // where the energy went
     label(y, 'Where your energy went'); y += 30;
     if (cats.length) {
+      // donut: each slice is a category's share of the month's finished tasks; total in the middle
       const total = cats.reduce((a, [, n]) => a + n, 0);
-      o.push(`<clipPath id="barclip"><rect x="${X}" y="${y}" width="${IW}" height="40" rx="20"/></clipPath><g clip-path="url(#barclip)">`);
-      let bx = X; cats.forEach(([c, n]) => { const w = IW * n / total; o.push(`<rect x="${bx.toFixed(1)}" y="${y}" width="${(w + .5).toFixed(1)}" height="40" fill="${catColor(c)}"/>`); bx += w; });
-      o.push('</g>'); y += 40 + 44;
-      cats.slice(0, 8).forEach(([c, n], i) => {
-        const col = i % 2, ry = y + Math.floor(i / 2) * 46, x0 = X + col * 330;
-        o.push(`<circle cx="${x0 + 9}" cy="${ry - 9}" r="9" fill="${catColor(c)}"/>`);
-        text(x0 + 30, ry, (CATS[c] || {}).label || c, { size: 28 });
-        text(x0 + 294, ry, `${n} · ${Math.round(n / total * 100)}%`, { anchor: 'end', size: 26, fill: MUTED });
+      const R = 112, SW = 46, dcx = X + R + SW / 2, dcy = y + R + SW / 2 + 16, C = 2 * Math.PI * R, gap = cats.length > 1 ? 4 : 0;
+      o.push(`<circle cx="${dcx}" cy="${dcy}" r="${R}" fill="none" stroke="${LINE}" stroke-width="${SW}"/>`);
+      let acc = 0;
+      cats.forEach(([c, n]) => {
+        const len = C * n / total;
+        o.push(`<circle cx="${dcx}" cy="${dcy}" r="${R}" fill="none" stroke="${catColor(c)}" stroke-width="${SW}" stroke-dasharray="${Math.max(1, len - gap).toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${(-acc).toFixed(1)}" transform="rotate(-90 ${dcx} ${dcy})"/>`);
+        acc += len;
       });
-      y += Math.ceil(Math.min(8, cats.length) / 2) * 46;
+      text(dcx, dcy + 18, String(total), { anchor: 'middle', serif: true, bold: true, size: 60 });
+      text(dcx, dcy + 52, 'done', { anchor: 'middle', size: 22, fill: MUTED });
+      const lx = X + 2 * R + SW + 44, rows = Math.min(8, cats.length), rowH = 48, ly0 = dcy - (rows - 1) * rowH / 2 + 9;
+      cats.slice(0, 8).forEach(([c, n], i) => {
+        const ry = ly0 + i * rowH;
+        o.push(`<circle cx="${lx + 9}" cy="${ry - 9}" r="9" fill="${catColor(c)}"/>`);
+        text(lx + 30, ry, (CATS[c] || {}).label || c, { size: 28 });
+        text(W - X, ry, `${n} · ${Math.round(n / total * 100)}%`, { anchor: 'end', size: 26, fill: MUTED });
+      });
+      y = Math.max(dcy + R + SW / 2, ly0 + (rows - 1) * rowH + 10) + 24;
     } else { text(X, y + 30, 'Nothing finished yet. The first one starts the picture.', { size: 26, fill: MUTED }); y += 60; }
     y += 20; rule(y); y += 56;
 
