@@ -2,6 +2,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { fetchIcloudEvents } from "@/lib/ical";
 import { icloudUrlsFor } from "@/lib/users";
+import { viewFor } from "@/lib/users";
+import { publishOmarCalendar } from "@/lib/partner";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +93,11 @@ export async function GET() {
       google: events.filter((e) => e.source === "google").length, icloud: events.filter((e) => e.source === "icloud").length,
       failed, icloudFailed,
     };
+    // Omar's page keeps Farah's "Omar this week" strip current (generic labels only, and only if he shares).
+    if (viewFor(session.user?.email) === "omar") {
+      const db = supabaseAdmin();
+      if (db) await publishOmarCalendar(db, events).catch((e) => console.error("share publish", e instanceof Error ? e.message : e));
+    }
     return Response.json({ events, info });
   } catch (error) {
     console.error("Calendar API error:", error);

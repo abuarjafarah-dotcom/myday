@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { homePath, viewFor, type View } from "@/lib/users";
+import { isFarah, partnerDays } from "@/lib/partner";
+import { statusLine, type DayStatus } from "@/lib/dayStatus";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -150,7 +152,9 @@ function remindOnMessages(now: { date: string }, tasks: Doc[], trips: Doc[], pus
   });
 }
 
-function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], meta: Doc, sent: Record<string, number>, view: View = "farah", trips: Doc[] = []): Out[] {
+const isHigh = (t: Doc) => { const v = String(t.priority ?? "").toLowerCase(); return v === "1" || v.startsWith("h") || v === "urgent"; };
+
+function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], meta: Doc, sent: Record<string, number>, view: View = "farah", trips: Doc[] = [], partner: DayStatus[] = []): Out[] {
   const cfg = (meta.notify || {}) as Doc;
   if (cfg.on === false || !cfg.on) return [];
   if (now.min >= BED_MIN || now.min < WAKE_MIN) return [];
@@ -175,6 +179,10 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
     if (timed.length) parts.push(`First: ${timed[0].title} at ${timed[0].time}.`);
     if (dueToday.length) parts.push(`Due today: ${names(dueToday)}.`);
     if (work) parts.push(`Work day until ${clock(work.end)}.`);
+    const high = open.filter((t) => isHigh(t) && ((typeof t.date === "string" && t.date <= now.date) || (typeof t.due === "string" && t.due <= now.date)));
+    if (high.length) parts.push(`High priority: ${names(high)}.`);
+    const omarToday = partner.find((d) => d.date === now.date);
+    if (omarToday && omarToday.kind !== "free") parts.push(`Omar: ${statusLine(omarToday)}.`);
     push(`morning-${now.date}`, "Good morning", parts.join(" "));
   }
   const wind = toMin(cfg.wind || "20:30");
@@ -185,6 +193,13 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
   if (cfg.due !== false && inWindow(18 * 60)) {
     const tomorrow = open.filter((t) => t.due === addDays(now.date, 1));
     if (tomorrow.length) push(`dueeve-${now.date}`, "Due tomorrow", names(tomorrow));
+    const omarTmrw = partner.find((d) => d.date === addDays(now.date, 1));
+    if (omarTmrw && omarTmrw.kind !== "free") push(`omar-${now.date}`, "Omar tomorrow", statusLine(omarTmrw));
+  }
+  // Midday nudge for high-priority tasks still open today.
+  if (cfg.high !== false && inWindow(12 * 60 + 30)) {
+    const stillOpen = open.filter((t) => isHigh(t) && (t.date === now.date || t.due === now.date || (typeof t.due === "string" && t.due < now.date)));
+    if (stillOpen.length) push(`high-${now.date}`, "High priority still open", names(stillOpen));
   }
   if (cfg.timed !== false) {
     const quiet = (t: Doc) => !!work && !["work", "kids", "omar"].includes(String(t.category));
@@ -245,7 +260,8 @@ async function tick(db: Db): Promise<Response> {
     const sent = { ...((state.sent as Record<string, number>) || {}) };
     const cutoff = Date.now() - 3 * 86400000;
     Object.keys(sent).forEach((k) => { if (sent[k] < cutoff) delete sent[k]; });
-    const due = dueMessages(now, tasks, meta, sent, view, trips);
+    const partner = isFarah(owner) ? (await partnerDays(db, 2).catch(() => ({ days: [] as DayStatus[] }))).days : [];
+    const due = dueMessages(now, tasks, meta, sent, view, trips, partner);
     for (const m of due) {
       sent[m.key] = Date.now();
       for (const s of subs) if (await deliver(db, v, s, { title: m.title, body: m.body, url: m.url, tag: m.tag })) sentCount++;

@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 20;
 
 // Trip card data. Free sources, no keys:
-//   Open-Meteo geocoding + forecast (°F)   https://open-meteo.com
+//   Open-Meteo geocoding + forecast (°C)   https://open-meteo.com
 //   Wikipedia summary (highlights)          https://en.wikipedia.org
 //   Wikivoyage (see / do / eat picks)       https://en.wikivoyage.org
 // GET /api/destination?place=Lisbon&start=2026-10-20&end=2026-10-24
@@ -69,7 +69,7 @@ async function forecast(g: Geo, start: string | null, end: string | null) {
   const data = await getJson<{ daily?: Record<string, (number | string)[]> }>(
     `https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}` +
       `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
-      `&temperature_unit=fahrenheit&timezone=auto&start_date=${from}&end_date=${to}`,
+      `&temperature_unit=celsius&timezone=auto&start_date=${from}&end_date=${to}`,
     HOUR
   );
   const d = data?.daily;

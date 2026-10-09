@@ -598,6 +598,29 @@ details.fold.sub > summary { min-height: 48px; }
 .shift-btn { flex: 0 0 auto; width: 44px; height: 44px; border: 0; background: none; color: var(--text); opacity: .3; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; }
 .shift-btn.on { opacity: 1; }
 .sy-head .shift-btn, .week-tools .shift-btn { margin-right: -6px; }
+/* Priority: badge, picker and filter */
+.pri-badge { display: inline-block; font-size: 12px; font-weight: 700; line-height: 1.4; padding: 0 6px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+.pri-badge.high { background: #F9ECE5; color: #A24B28; }
+.pri-badge.medium { background: #F7F0E2; color: #82601F; }
+.pri-badge.low { background: #EAF0F5; color: #4F6880; }
+.pri-pick { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.pri-pick .mini[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.pri-filter { display: flex; gap: 6px; overflow-x: auto; margin: -2px 0 10px; scrollbar-width: none; }
+.pri-filter::-webkit-scrollbar { display: none; }
+.pri-filter button { flex: 0 0 auto; min-height: 36px; padding: 2px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.pri-filter button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+/* Omar at a glance */
+.omar-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
+.omar-strip::-webkit-scrollbar { display: none; }
+.omar-strip .od { flex: 0 0 auto; display: flex; flex-direction: column; gap: 1px; min-width: 92px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); font-size: 13px; }
+.omar-strip .od b { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+.omar-strip .od.today { border-color: var(--accent); }
+.omar-strip .od span { white-space: nowrap; }
+.omar-strip .od i { font-style: normal; font-size: 12px; color: var(--muted); }
+.omar-head { font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.auto-sorted { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pri-badge.high { background: #3A2820; color: #E89A78; } :root:not([data-theme="light"]) .pri-badge.medium { background: #352D1C; color: #E0BE7C; } :root:not([data-theme="light"]) .pri-badge.low { background: #222C36; color: #9DB6CE; } }
+:root[data-theme="dark"] .pri-badge.high { background: #3A2820; color: #E89A78; } :root[data-theme="dark"] .pri-badge.medium { background: #352D1C; color: #E0BE7C; } :root[data-theme="dark"] .pri-badge.low { background: #222C36; color: #9DB6CE; }
 </style>
 </head>
 <body>
@@ -612,6 +635,7 @@ details.fold.sub > summary { min-height: 48px; }
     <div class="dress" id="dress"></div>
   </section>
   <div id="dressPanel"></div>
+  <section class="omar-card" id="omarCard" aria-label="Omar this week" hidden></section>
   <div class="dayline" id="dayline">
     <div class="dl-track" role="img" aria-label="Your day from 6 AM to bedtime at 9 PM. The dot marks where you are now.">
       <svg viewBox="0 0 1000 24" preserveAspectRatio="none"><path id="dlPath" d="M2 17 C 250 9, 500 8, 750 9 S 950 13, 998 17"></path></svg>
@@ -640,6 +664,7 @@ details.fold.sub > summary { min-height: 48px; }
     <div id="recapBanner" class="h-reset"></div>
     <div class="card h-today">
       <h2>Today</h2>
+      <div class="pri-filter" id="priFilter" role="group" aria-label="Filter by priority"></div>
       <div id="todayList"></div>
     </div>
     <div id="carryBox" class="h-carry"></div>
@@ -851,8 +876,8 @@ details.fold.sub > summary { min-height: 48px; }
   const byTime = (a, b) => timeMin(a.time) - timeMin(b.time) || (a.createdAt || 0) - (b.createdAt || 0);
   const isOpen = t => t.status === 'todo' || t.status === 'doing';
   const catColor = c => (CATS[c] || {}).color || '#999';
-  // Temperature units: the weather comes in °F; Celsius is a display choice saved in her settings.
-  const useC = () => meta().units === 'c';
+  // Temperature units: the weather comes in °F; Celsius is the default display, °F is a choice saved in her settings.
+  const useC = () => meta().units !== 'f';
   const deg = f => Math.round(useC() ? (f - 32) * 5 / 9 : f);
   const unitLetter = () => (useC() ? 'C' : 'F');
 
@@ -966,6 +991,7 @@ details.fold.sub > summary { min-height: 48px; }
       getJson('/api/weather').then(d => { if (!d.error) live.weather = d; }).catch(() => {}),
       getJson('/api/gmail').then(d => { live.mail = d.emails || []; live.mailErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.mailErr = 'Couldn\'t load Gmail right now.'; }),
+      getJson('/api/partner').then(d => { live.omar = d; }).catch(() => { live.omar = null; }),
       getJson('/api/calendar').then(d => { live.cal = d.events || []; live.calInfo = d.info || null; live.calErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.calErr = 'Couldn\'t load your calendar right now.'; })
     ];
@@ -978,7 +1004,26 @@ details.fold.sub > summary { min-height: 48px; }
   const evMin = ev => { if (ev.allDay) return -1; const d = new Date(ev.start); return d.getHours() * 60 + d.getMinutes(); };
   const eventsOn = d => (live.cal || []).filter(ev => evDate(ev) === d).sort((a, b) => evMin(a) - evMin(b));
   const signInHtml = what => `<div class="not-connected"><span>Sign in again to load ${what}.</span><a href="/">Sign in ↗</a></div>`;
+  // Omar at a glance: one label per day (shift, travel, admin, off, meetings). Shared from his page.
+  function renderOmar() {
+    const el = $('omarCard'); if (!el) return;
+    const o = live.omar;
+    if (!o) { el.hidden = true; return; }
+    if (!o.shared) {
+      el.hidden = !!ui.omarHintHide;
+      el.innerHTML = `<div class="omar-head"><span>Omar this week</span><button class="link-btn" data-act="omar-hint-hide">Hide</button></div><p class="muted">Shows here once Omar turns on “Share my day with Farah” on his page.</p>`;
+      return;
+    }
+    el.hidden = false;
+    const td = today();
+    el.innerHTML = `<div class="omar-head"><span>Omar this week</span></div><div class="omar-strip">${o.days.map(d => {
+      const name = d.date === td ? 'Today' : d.date === addDays(td, 1) ? 'Tmrw' : new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+      const extra = d.kind === 'travel' && d.place ? d.place : (d.meetings && d.kind !== 'free' ? `${d.meetings} meeting${d.meetings === 1 ? '' : 's'}` : '');
+      return `<div class="od ${d.date === td ? 'today' : ''}"><b>${esc(name)}</b><span>${d.emoji} ${esc(d.label)}</span>${extra ? `<i>${esc(extra)}</i>` : ''}</div>`;
+    }).join('')}</div>`;
+  }
   function renderLive() {
+    renderOmar();
     const w = live.weather;
     const wt = $('weatherTemp'); wt.hidden = !w;
     if (w) {
@@ -1044,6 +1089,7 @@ details.fold.sub > summary { min-height: 48px; }
       }
       srvAll = next; cloudNote = ''; mode = 'cloud';
       applyCloud();
+      autoSortDumps();
       scheduleFlush(0);
     } catch (e) {
       cloudNote = 'Offline: saved on this device';
@@ -1362,6 +1408,7 @@ details.fold.sub > summary { min-height: 48px; }
     if (!done && opts.tomorrow !== false) acts.push(`<button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move to tomorrow">Tmrw</button>`);
     const panel = open ? `<div class="ti-info" id="ti-${id}">
         <div class="ti-line"><i class="cdot" style="background:${catColor(t.category)}"></i>${esc(catLabel || 'No category')}${facts.length ? ' · ' + facts.join(' · ') : ''}</div>
+        ${!done ? `<div class="pri-pick" role="group" aria-label="Priority">Priority ${['high', 'medium', 'low', 'none'].map(l => `<button class="mini" data-act="set-pri" data-id="${id}" data-pri="${l}" aria-pressed="${priLevel(t.priority) === l}">${PRI_NAME[l]}</button>`).join('')}</div>` : ''}
         <div class="ti-acts">
           ${!done && t.status !== 'doing' ? `<button class="toggle-line" data-act="now-start" data-id="${id}">Start timer</button>` : ''}
           ${t.status === 'doing' ? `<button class="toggle-line" data-act="task-todo" data-id="${id}">Move back to To do</button>` : ''}
@@ -1370,7 +1417,7 @@ details.fold.sub > summary { min-height: 48px; }
         </div></div>` : '';
     return `<div class="task-item ${done ? 'done' : ''} ${open ? 'open' : ''}" ${opts.board ? `data-drag-id="${id}"` : ''}>
       <div class="ti-main"><input type="checkbox" data-act="toggle" data-id="${id}" ${done ? 'checked' : ''} aria-label="Done">
-        <span class="text"><span class="t">${esc(t.title)}</span></span>
+        <span class="text">${!done && priLevel(t.priority) !== 'none' ? `<span class="pri-badge ${priLevel(t.priority)}">${PRI_NAME[priLevel(t.priority)]}</span>` : ''}<span class="t">${esc(t.title)}</span></span>
         ${acts.join('')}<button class="icon-btn ti-i ${hot ? 'hot' : ''}" data-act="task-info" data-id="${id}" aria-expanded="${open}" aria-controls="ti-${id}" aria-label="Details for ${esc(t.title)}">${ICON.info}</button></div>
       ${panel}
     </div>`;
@@ -1378,11 +1425,11 @@ details.fold.sub > summary { min-height: 48px; }
 
   function renderWaiting() {
     const waiting = Object.values(S.dumps).filter(d => !d.processed && (!review || review.dumpId !== d.id)).sort((a, b) => a.createdAt - b.createdAt);
-    $('waitingBox').innerHTML = waiting.length ? `<div class="card"><h2>Brain dumps to sort (${waiting.length})</h2>
+    $('waitingBox').innerHTML = autoSortedHtml() + (waiting.length ? `<div class="card"><h2>Brain dumps to sort (${waiting.length})</h2>
       ${waiting.map(d => `<div class="note-item"><span>${d.source === 'shortcut' ? '📱 ' : ''}${esc(d.text.length > 140 ? d.text.slice(0, 140) + '…' : d.text)}</span>
         <button class="mini primary" data-act="dump-retry" data-id="${esc(d.id)}">Sort</button>
         <button class="mini ghost" data-act="dump-dismiss" data-id="${esc(d.id)}" aria-label="Dismiss">${confirmKey === 'dd-' + d.id ? 'Sure?' : '✕'}</button></div>`).join('')}
-    </div>` : '';
+    </div>` : '');
   }
 
   function renderCarry() {
@@ -1400,7 +1447,8 @@ details.fold.sub > summary { min-height: 48px; }
       return;
     }
     const rowOpts = t => ({ board: 'home', tomorrow: t.status !== 'done' });
-    const rows = list => list.map(t => taskRow(t, rowOpts(t))).join('');
+    const rows = list => list.filter(priOk).map(t => taskRow(t, rowOpts(t))).join('');
+    renderPriFilter(b.todo.concat(b.doing));
     const LIMIT = 3, showAll = !!ui.todayAll, shown = showAll ? b.todo : b.todo.slice(0, LIMIT), hidden = b.todo.length - shown.length;
     const hint = txt => `<div class="zone-hint">${txt}</div>`;
     const doing = b.doing.length
@@ -1413,6 +1461,14 @@ details.fold.sub > summary { min-height: 48px; }
       + `<div class="drop ${doneOpen && b.done.length ? '' : 'zone-only'}" data-drop="done" data-board="home">${doneOpen ? rows(b.done) : ''}${hint('Drop here to finish')}</div>`;
     $('todayList').innerHTML = doing + todo + done + pausedHtml();
   }
+  function renderPriFilter(list) {
+    const counts = { high: 0, medium: 0, low: 0 };
+    list.forEach(t => { const l = priLevel(t.priority); if (counts[l] !== undefined) counts[l]++; });
+    const cur = ui.priFilter || 'all';
+    const el = $('priFilter'); if (!el) return;
+    el.innerHTML = [['all', 'All', list.length], ['high', 'High', counts.high], ['medium', 'Medium', counts.medium], ['low', 'Low', counts.low]]
+      .map(([k, label, n]) => `<button type="button" data-act="pri-filter" data-pri="${k}" aria-pressed="${cur === k}">${label} ${n}</button>`).join('');
+  }
   function pausedHtml() {
     const { paused } = views(); if (!paused.length) return '';
     const open = !!ui.open.paused;
@@ -1423,7 +1479,7 @@ details.fold.sub > summary { min-height: 48px; }
   function renderAnytime() {
     const { anytime } = views();
     $('anytimeBox').innerHTML = anytime.length ? `<div class="card"><h2>Anytime (${anytime.length})</h2>
-      ${anytime.map(t => taskRow(t, { today: true })).join('')}</div>` : '';
+      ${anytime.filter(priOk).map(t => taskRow(t, { today: true })).join('') || '<div class="empty">None at this priority.</div>'}</div>` : '';
   }
 
   function renderSuggest() {
@@ -1590,8 +1646,9 @@ Rules:
         const words = norm(pr.name).split(' ').filter(w => w.length > 3 && !['game', 'project', 'with', 'outing'].includes(w));
         return words.some(w => norm(p).includes(w));
       });
-      out.tasks.push({ title: bare ? `${storeHit} run` : p.charAt(0).toUpperCase() + p.slice(1), category: proj ? (proj.category || guessCategory(p)) : guessCategory(p),
-        projectId: proj ? proj.id : null, newProject: null, date: guessDate(p, dumpDate), time: null, duplicateOf: null });
+      const pr = dumpPriority(p); const clean = pr ? (stripPriority(p) || p) : p;
+      out.tasks.push({ title: bare ? `${storeHit} run` : clean.charAt(0).toUpperCase() + clean.slice(1), category: proj ? (proj.category || guessCategory(p)) : guessCategory(p),
+        projectId: proj ? proj.id : null, newProject: null, date: guessDate(p, dumpDate), time: null, duplicateOf: null, priority: pr });
     });
     return out;
   }
@@ -1604,7 +1661,8 @@ Rules:
       return { title: String(t.title).trim(), category: CATS[t.category] ? t.category : guessCategory(t.title),
         projectId: t.projectId && S.projects[t.projectId] ? t.projectId : null,
         newProject: !t.projectId && t.newProject ? String(t.newProject).trim() : null,
-        date: dateOk(t.date), time: t.time ? String(t.time) : null, mailId: t.mailId ? String(t.mailId) : null, due: dateOk(t.due), why: t.why ? String(t.why) : '', dupOf: dup ? dup.title : null, include: !dup };
+        date: dateOk(t.date), time: t.time ? String(t.time) : null, mailId: t.mailId ? String(t.mailId) : null, due: dateOk(t.due), why: t.why ? String(t.why) : '', dupOf: dup ? dup.title : null, include: !dup,
+        priority: ['high', 'medium', 'low'].includes(String(t.priority || '').toLowerCase()) ? String(t.priority).toLowerCase() : dumpPriority(t.title) };
     });
     const grocery = (Array.isArray(raw.grocery) ? raw.grocery : []).filter(g => g && g.item).map(g => {
       const store = storeList.find(s => s.toLowerCase() === String(g.store || '').toLowerCase()) || 'Other';
@@ -1627,6 +1685,49 @@ Rules:
     review = normalizeReview(raw, dump.id, how);
     render();
   }
+  // Voice notes from the back-tap Shortcut are sorted automatically (same rules as "Organize it") and added
+  // straight away. A small card says what was added, with Undo, which puts the note back in "to sort".
+  function autoSortDumps() {
+    const fresh = Object.values(S.dumps).filter(d => d && !d.processed && !d.autoTried && d.source === 'shortcut');
+    if (!fresh.length) return;
+    fresh.forEach(d => {
+      const rv = normalizeReview(localParse(d.text), d.id, 'rules');
+      const added = { tasks: [], grocery: [], notes: [] };
+      rv.tasks.filter(t => t.include && t.title).forEach(t => {
+        const nt = makeTask({ title: t.title, category: t.category, projectId: t.projectId, date: t.date, time: t.time, source: 'brain-dump' });
+        if (t.due) nt.due = t.due;
+        if (t.priority) nt.priority = t.priority;
+        stage('tasks', nt); added.tasks.push(nt.id);
+      });
+      rv.grocery.filter(g => g.include && g.item).forEach(g => {
+        const id = newId('g'); stage('grocery', { id, item: g.item, store: g.store, checked: false, archived: false, quantity: null, notes: '', createdAt: Date.now() }); added.grocery.push(id);
+      });
+      rv.ideas.filter(i => i.include && i.text).forEach(i => {
+        const id = newId('n'); stage('notes', { id, text: i.text, projectId: i.projectId || null, createdAt: Date.now() }); added.notes.push(id);
+      });
+      stage('dumps', Object.assign({}, d, { processed: true, processedAt: Date.now(), autoTried: true, autoAdded: added, autoSeen: false }));
+    });
+    commit();
+  }
+  function undoAutoSort(id) {
+    const d = S.dumps[id]; if (!d || !d.autoAdded) return;
+    (d.autoAdded.tasks || []).forEach(x => { if (S.tasks[x]) unstage('tasks', x); });
+    (d.autoAdded.grocery || []).forEach(x => { if (S.grocery[x]) unstage('grocery', x); });
+    (d.autoAdded.notes || []).forEach(x => { if (S.notes[x]) unstage('notes', x); });
+    stage('dumps', Object.assign({}, d, { processed: false, autoAdded: null, autoSeen: true }));
+    commit();
+  }
+  function autoSortedHtml() {
+    const recent = Object.values(S.dumps).filter(d => d && d.autoAdded && !d.autoSeen && Date.now() - (d.processedAt || 0) < 3 * 86400000)
+      .sort((a, b) => (b.processedAt || 0) - (a.processedAt || 0));
+    return recent.map(d => {
+      const a = d.autoAdded, n = (k, one, many) => (a[k] || []).length ? `${a[k].length} ${a[k].length === 1 ? one : many}` : '';
+      const what = [n('tasks', 'task', 'tasks'), n('grocery', 'grocery item', 'grocery items'), n('notes', 'idea', 'ideas')].filter(Boolean).join(', ') || 'nothing new (already on your list)';
+      const titles = (a.tasks || []).map(x => S.tasks[x] && S.tasks[x].title).filter(Boolean).slice(0, 3).join(' · ');
+      return `<div class="card"><div class="auto-sorted"><span>📱 From your voice note: added ${esc(what)}${titles ? `<br><span class="muted">${esc(titles)}</span>` : ''}</span>
+        <span style="display:flex;gap:6px"><button class="mini" data-act="auto-ok" data-id="${esc(d.id)}">Looks good</button><button class="mini ghost" data-act="auto-undo" data-id="${esc(d.id)}">Undo</button></span></div></div>`;
+    }).join('');
+  }
   function commitReview() {
     if (!review || review.loading) return;
     const madeProjects = {};
@@ -1642,6 +1743,7 @@ Rules:
       const nt = makeTask({ title: t.title, category: t.category, projectId: pid, date: t.date, time: t.time, source: review.source === 'email' ? 'gmail' : 'brain-dump' });
       if (t.mailId) { nt.mailId = t.mailId; nt.notes = `From email · https://mail.google.com/mail/u/0/#inbox/${t.mailId}`; }
       if (t.due) nt.due = t.due;
+      if (t.priority) nt.priority = t.priority;
       stage('tasks', nt);
     });
     review.grocery.filter(g => g.include && g.item).forEach(g => {
@@ -1866,6 +1968,18 @@ Rules:
     if (v === '2' || v.startsWith('m')) return 15;
     return 0;
   };
+  const priLevel = p => { const sc = priorityScore(p); if (sc >= 30) return 'high'; if (sc >= 15) return 'medium'; const v = String(p || '').toLowerCase(); return v === '3' || v.startsWith('l') ? 'low' : 'none'; };
+  const PRI_NAME = { high: 'High', medium: 'Medium', low: 'Low', none: 'None' };
+  const priOk = t => !ui.priFilter || ui.priFilter === 'all' || priLevel(t.priority) === ui.priFilter;
+  // "high priority", "urgent", "asap", "low priority", "whenever" in a brain dump line.
+  function dumpPriority(text) {
+    const s = String(text);
+    if (/\b(high[\s-]?priority|top priority|urgent(ly)?|asap|as soon as possible|important|must do|critical)\b/i.test(s)) return 'high';
+    if (/\b(medium[\s-]?priority|normal priority)\b/i.test(s)) return 'medium';
+    if (/\b(low[\s-]?priority|not urgent|no rush|whenever|someday|if (?:i|there's) time)\b/i.test(s)) return 'low';
+    return null;
+  }
+  const stripPriority = s => String(s).replace(/[,\s]*\b(high[\s-]?priority|top priority|urgent(ly)?|asap|as soon as possible|medium[\s-]?priority|normal priority|low[\s-]?priority|not urgent|no rush|whenever)\b[,.!\s]*/gi, ' ').replace(/\s{2,}/g, ' ').trim();
 
   // Everything the two sections reason about, gathered in one place.
   function smartContext() {
@@ -2592,6 +2706,11 @@ Rules:
         case 'tab': ui.tab = el.dataset.tab; saveUi(); render(); window.scrollTo({ top: 0 }); break;
         case 'sub': ui.sub = el.dataset.sub; saveUi(); render(); break;
         case 'unit-toggle': setMeta({ units: useC() ? 'f' : 'c' }); break;
+        case 'set-pri': setTask(id, { priority: el.dataset.pri === 'none' ? null : el.dataset.pri }); break;
+        case 'pri-filter': ui.priFilter = el.dataset.pri; saveUi(); render(); break;
+        case 'auto-undo': undoAutoSort(id); break;
+        case 'omar-hint-hide': ui.omarHintHide = true; saveUi(); renderOmar(); break;
+        case 'auto-ok': { const d = S.dumps[id]; if (d) put('dumps', Object.assign({}, d, { autoSeen: true })); break; }
         case 'heads-dismiss': ui.headsHide = { day: today(), sig: el.dataset.sig || '' }; saveUi(); renderSuggest(); break;
         case 'toggle': { const t = S.tasks[id]; if (t) setTask(id, { status: t.status === 'done' ? 'todo' : 'done' }); break; }
         case 'status': setTask(id, { status: el.dataset.to }); break;

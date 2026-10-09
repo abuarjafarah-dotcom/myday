@@ -53,3 +53,13 @@ The filter is free and rule based: it picks out priority (high/urgent → P1, lo
 ## 5. Phone notifications from the page (optional)
 
 On Omar's iPhone: open /omar in Safari → Share → Add to Home Screen → open it from the icon → **Phone reminders → Turn on**. Each morning (default 7:00) he gets his high priorities, plus any "week before" reminders due that day; the evening before a due date he gets "Due tomorrow".
+
+## 6. Sharing his day with Farah (optional, his choice)
+
+On /omar → **Share my day with Farah** → tick the box. Farah's dashboard then shows "Omar this week": one label per day (night shift, post-night, day shift, on call, admin, traveling, off, or number of meetings). No event names, times, tasks or notes are shared. Farah also gets "Omar: …" in her morning notification and an "Omar tomorrow" note at 6 PM.
+
+Labels come from words in his calendar events: "night"/"nights" → Night shift (the next day shows Post-night), "on call", "admin"/"academic"/"research day", "off"/"PTO"/"vacation", shift words like "ICU", "clinic", "service", "attending" → Day shift, flights and trips → Traveling. Anything else counts as a meeting.
+
+## Task types
+
+Omar's tasks have a type (Paper, PowerPoint, Email, Meeting, Other) and a priority (P1–P3). Voice and Smart add pick the type from the words he uses. Meetings on his calendar for the next two weeks are added automatically and marked done after they end. "From your email" suggests tasks from his last 7 days of Gmail for him to add or skip.

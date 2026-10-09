@@ -268,6 +268,15 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   <ul class="list" id="notesList"></ul>
 </section>
 
+<section class="card" aria-labelledby="shareH">
+  <h2 id="shareH">Share my day with Farah</h2>
+  <label style="display:flex;gap:12px;align-items:flex-start;font-size:14px;cursor:pointer">
+    <input type="checkbox" id="shareToggle" style="margin-top:2px">
+    <span>Farah sees one label per day — night shift, day shift, on call, admin, traveling, off, or how many meetings. No event names, times or details, and none of your tasks or notes.</span>
+  </label>
+  <p class="muted" id="shareNote" style="margin-top:6px"></p>
+</section>
+
 <section class="card" aria-labelledby="setH">
   <h2 id="setH">Phone reminders</h2>
   <p class="muted" id="pushInfo">Get a morning list of your high priorities and the “week before” reminders on this phone. On iPhone, add this page to your Home Screen first (Share → Add to Home Screen), then open it from there.</p>
@@ -518,6 +527,9 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     renderNotes();
     renderTrips();
     renderMail();
+    const sharing = !!(S.meta.main && S.meta.main.shareWithFarah);
+    $('shareToggle').checked = sharing;
+    $('shareNote').textContent = sharing ? 'On. It updates whenever you open this page, and from your iPhone calendars.' : 'Off.';
     const m = S.meta.main && S.meta.main.notify;
     if (m && m.morning && document.activeElement !== $('morningTime')) $('morningTime').value = m.morning;
   }
@@ -733,6 +745,11 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   }
   function skipSuggestion(i) { const { m } = takeFromQueue(i); put('meta', m); }
   $('mailScan').addEventListener('click', () => scanMail(false));
+  $('shareToggle').addEventListener('change', async e => {
+    const m = metaMain(); m.shareWithFarah = e.target.checked; put('meta', m);
+    // Save first, then reload the calendar so the server publishes his day labels right away.
+    setTimeout(() => { flush().then(() => loadCalendar()); }, 300);
+  });
 
   // ---------- trips: from what Omar said + travel spotted on his calendars ----------
   const TRAVEL = /(✈|\bflight\b|\bfly(ing)?\b|\btrip\b|\btravel|\bvacation\b|\bholiday\b|\bconference\b|\bhotel\b|\bairbnb\b|\bdepart|\blayover\b|\bvisit(ing)?\b)/i;
@@ -808,7 +825,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       else if (info.error) body = `<p class="muted">${esc(info.error)}</p>`;
       else {
         const wx = info.weather && info.weather.days && info.weather.days.length
-          ? `<div><h4>Weather (°F)</h4><div class="wx">${info.weather.days.map(d => `<div class="d"><div>${esc(parse(d.date).toLocaleDateString('en-US', { weekday: 'short' }))} ${esc(parse(d.date).getDate())}</div><div class="i" aria-hidden="true">${d.icon}</div><div class="hl">${esc(d.hi)}° / ${esc(d.lo)}°</div><div>${esc(d.label)}</div>${d.rain != null ? `<div class="rain">💧 ${esc(d.rain)}%</div>` : ''}</div>`).join('')}</div>${info.weather.note ? `<p class="muted">${esc(info.weather.note)}</p>` : ''}</div>`
+          ? `<div><h4>Weather (°C)</h4><div class="wx">${info.weather.days.map(d => `<div class="d"><div>${esc(parse(d.date).toLocaleDateString('en-US', { weekday: 'short' }))} ${esc(parse(d.date).getDate())}</div><div class="i" aria-hidden="true">${d.icon}</div><div class="hl">${esc(d.hi)}° / ${esc(d.lo)}°</div><div>${esc(d.label)}</div>${d.rain != null ? `<div class="rain">💧 ${esc(d.rain)}%</div>` : ''}</div>`).join('')}</div>${info.weather.note ? `<p class="muted">${esc(info.weather.note)}</p>` : ''}</div>`
           : `<p class="muted">${esc((info.weather && info.weather.note) || 'Forecast unavailable.')}</p>`;
         const hl = info.highlights ? `<div><h4>Highlights</h4><p style="font-size:14px">${esc(info.highlights.summary)}</p></div>` : '';
         const pk = info.picks || {};
