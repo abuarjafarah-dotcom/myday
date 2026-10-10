@@ -188,8 +188,12 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
   }
   const wind = toMin(cfg.wind || "20:30");
   if (wind !== null && inWindow(wind)) {
-    const left = today.filter((t) => t.category !== "omar");
-    push(`wind-${now.date}`, "Wind down", left.length ? `${left.length} left today. Move them to tomorrow and rest.` : "Everything is done. Time to rest.");
+    // Evening wrap-up: name what's left; tapping opens the wrap-up card, which suggests a slot for each tomorrow.
+    const left = open.filter((t) => t.category !== "omar" && typeof t.date === "string" && t.date <= now.date);
+    const key = `wind-${now.date}`;
+    if (!left.length) push(key, "Wind down", "Everything is done. Time to rest.");
+    else if (!sent[key]) out.push({ key, tag: key, url: `${url}?open=wrapup`, title: "Evening wrap-up",
+      body: `${left.length} left: ${names(left, 2)}. Tap to sort them for tomorrow, then rest.` });
   }
   if (cfg.due !== false && inWindow(18 * 60)) {
     const tomorrow = open.filter((t) => t.due === addDays(now.date, 1));

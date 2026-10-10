@@ -674,6 +674,11 @@ details.fold.sub > summary { min-height: 48px; }
 .hh-row.done > .t { text-decoration: line-through; }
 .hh-row.done > .t .muted { text-decoration: none; }
 .hh-check { width: 20px; text-align: center; color: var(--muted); }
+.wr-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--hair); }
+.wr-row.off .t { color: var(--muted); }
+.wr-row .t { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; font-size: 15px; }
+.wr-row .t .muted { font-size: 13px; }
+.wr-row .plan-time[type="date"] { width: 150px; min-height: 36px; }
 </style>
 </head>
 <body>
@@ -949,6 +954,7 @@ details.fold.sub > summary { min-height: 48px; }
   // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
   try {
     const q = new URLSearchParams(location.search);
+    if (q.get('open') === 'wrapup') { ui.tab = 'home'; ui.wrapAsk = Date.now(); ui.wrapScroll = true; history.replaceState(null, '', location.pathname); }
     if (q.get('open') === 'reset') { ui.tab = 'schedule'; ui.sub = 'sync'; history.replaceState(null, '', location.pathname); }
     if (q.get('tab') === 'grocery') {
       ui.tab = 'grocery';
@@ -3340,9 +3346,64 @@ Rules:
     return null;
   }
   function weekTop() { const wt = meta().weekTop; return wt && wt.week === weekStart() && Array.isArray(wt.ids) ? wt.ids.map(i => S.tasks[i]).filter(Boolean) : []; }
+  // ----- Evening wrap-up: from wind-down time (or when opened from the notification), sort what's left for tomorrow -----
+  const windMin = () => { const m = timeMin(notifyCfg().wind || '20:30'); return m < 9000 ? m : 20 * 60 + 30; };
+  const wrapKey = () => nowMinutes() < 4 * 60 ? addDays(today(), -1) : today();      // the evening being wrapped up
+  const wrapSkip = new Set();
+  function wrapLeft() {
+    const td = today();
+    return Object.values(S.tasks).filter(t => isOpen(t) && capVisible(t) && t.category !== 'omar' && t.date && t.date <= td && !(t.time && t.category === 'kids'))
+      .sort((a, b) => priorityScore(b.priority) - priorityScore(a.priority) || byTime(a, b));
+  }
+  function wrapShow() {
+    const n = nowMinutes(), asked = ui.wrapAsk && Date.now() - ui.wrapAsk < 6 * 3600000;
+    return (asked || n >= windMin() || n < 4 * 60) && meta().wrapDone !== wrapKey() && wrapLeft().length > 0;
+  }
+  function wrapPlan() {
+    const holds = [], from = nowMinutes() < 4 * 60 ? today() : addDays(today(), 1);
+    return wrapLeft().map(t => { const slot = wrapSkip.has(t.id) ? null : findSlot(t, { from, days: 7, holds }); if (slot) holds.push(slot); return { t, slot }; });
+  }
+  function wrapHtml() {
+    const plan = wrapPlan(), on = plan.filter(x => !wrapSkip.has(x.t.id)), next = nowMinutes() < 4 * 60 ? today() : addDays(today(), 1);
+    const rows = plan.map(({ t, slot }) => {
+      const id = esc(t.id), skip = wrapSkip.has(t.id);
+      const where = skip ? 'Stays as is' : slot ? `→ ${slot.date === next ? 'Tomorrow' : shortDay(slot.date)}, ${clockLabel(slot.start)}` : '→ Tomorrow, no time yet';
+      return `<div class="wr-row ${skip ? 'off' : ''}"><input type="checkbox" data-act="wr-inc" data-id="${id}" ${skip ? '' : 'checked'} aria-label="Move ${esc(t.title)}">
+        <span class="t">${esc(t.title)}<span class="muted">${esc(where)}</span></span>
+        <span class="as-acts"><input type="date" class="plan-time" data-wr-date="${id}" min="${next}" aria-label="Pick another day for ${esc(t.title)}">
+          <button class="mini" data-act="hh-hand" data-id="${id}" aria-label="Hand ${esc(t.title)} to Omar">To Omar</button>
+          <button class="mini ghost" data-act="drop" data-id="${id}">Let go</button></span></div>`;
+    }).join('');
+    return `<div class="card as-wrap" id="wrapCard"><h2><span>Evening wrap-up</span><span class="muted">${plan.length} left</span></h2>
+      <p class="muted">Each one has a spot in your free time. Change anything, then rest.</p>${rows}
+      <label class="set-chk"><input type="checkbox" id="wrapToCal" ${calCfg().toCal ? 'checked' : ''}>Block them on my Google Calendar</label>
+      <div class="rv-actions"><button class="btn-add" data-act="wr-commit" ${on.length ? '' : 'disabled'}>Move ${on.length || ''}</button>
+        <button class="btn-secondary" data-act="wr-tmrw" ${on.length ? '' : 'disabled'}>Tomorrow, no times</button>
+        <button class="mini ghost" data-act="wr-x">Not tonight</button></div></div>`;
+  }
+  async function wrapCommit(withTimes) {
+    const next = nowMinutes() < 4 * 60 ? today() : addDays(today(), 1);
+    const cb = $('wrapToCal'), toCal = !!(cb && cb.checked) && withTimes;
+    const moved = wrapPlan().filter(x => !wrapSkip.has(x.t.id));
+    moved.forEach(({ t, slot }) => {
+      const date = withTimes && slot ? slot.date : next;
+      stage('tasks', Object.assign({}, t, { date, time: withTimes && slot ? clockLabel(slot.start) : null, duration: withTimes && slot ? slot.mins : t.duration,
+        originalDate: t.originalDate || t.date }));
+    });
+    // A block whose task lost its time is removed; the rest move with their tasks below.
+    moved.forEach(({ t, slot }) => { if (t.calEventId && !(withTimes && slot)) { const ev = t.calEventId; S.tasks[t.id].calEventId = null; S.tasks[t.id].calLink = null; unblockTask(ev); } });
+    setMetaStaged({ wrapDone: wrapKey() }); if (cb && withTimes) setMetaStaged({ cal: Object.assign(calCfg(), { toCal }) });
+    ui.wrapAsk = null; saveUi(); wrapSkip.clear(); commit();
+    let n = 0;
+    if (withTimes) for (const { t, slot } of moved) { const cur = S.tasks[t.id]; if (!slot || !cur || !(toCal || cur.calEventId)) continue; const ok = await blockTask(t.id); if (ok === false) break; n++; }
+    calNote = { kind: 'ok', text: `${moved.length} moved to ${withTimes ? 'their new spots' : 'tomorrow'}${n ? `, ${n} on your calendar` : ''}. Rest well.` };
+    if (n) loadCal(); else render();
+  }
+
   function renderAssist() {
     const el = $('assistBox'); if (!el) return;
     const parts = [];
+    if (wrapShow()) parts.push(wrapHtml());
     if (calNote) {
       if (calNote.kind === 'scope') parts.push(`<div class="card as-note"><span>To add blocks to Google Calendar, allow calendar access once. Sign in again and approve the new permission.</span><span class="as-acts"><a class="mini primary" href="/?reauth=1">Allow</a><button class="mini ghost" data-act="cal-note-x" aria-label="Dismiss">✕</button></span></div>`);
       else parts.push(`<div class="card as-note ${calNote.kind}" role="status"><span>${esc(calNote.text)}</span><button class="mini ghost" data-act="cal-note-x" aria-label="Dismiss">✕</button></div>`);
@@ -3367,6 +3428,7 @@ Rules:
     if (nice) parts.push(`<div class="card as-wx nice"><div class="as-wx-t">${wxIcon(nice.w)} <b>${esc(dayName(nice.d).replace(/^./, c => c.toUpperCase()))}</b> looks lovely: ${esc(nice.w.condition.toLowerCase() || 'clear')}, ${deg(nice.w.hi)}°. A good day for a family outing.</div>
       <div class="as-acts"><button class="mini primary" data-act="nice-add" data-d="${nice.d}">Add a family outing</button><button class="mini ghost" data-act="nice-x" data-d="${nice.d}">Not this time</button></div></div>`);
     el.innerHTML = parts.join('');
+    if (ui.wrapScroll && $('wrapCard')) { ui.wrapScroll = false; $('wrapCard').scrollIntoView({ block: 'start' }); }
   }
 
   // ----- Weekly focus (in the Sunday sync): pick up to 3 from your list or type them, then plan them into free time -----
@@ -3454,6 +3516,10 @@ Rules:
         case 'wx-indoor': setTask(id, { outdoor: false }, { noCal: true }); break;
         case 'nice-add': { const t = makeTask({ title: 'Family outing', category: 'activity', date: d }); put('tasks', t); assistHidden()['nice-' + d] = 1; saveUi(); openSched(t.id); break; }
         case 'nice-x': assistHidden()['nice-' + d] = 1; saveUi(); render(); break;
+        case 'wr-inc': if (el.checked) wrapSkip.delete(id); else wrapSkip.add(id); render(); break;
+        case 'wr-commit': wrapCommit(true); break;
+        case 'wr-tmrw': wrapCommit(false); break;
+        case 'wr-x': ui.wrapAsk = null; saveUi(); setMeta({ wrapDone: wrapKey() }); break;
         case 'wt-pick': {
           const mon = syncWeekStart(), f = focusOf(mon), k = f.findIndex(x => !x.text), t = S.tasks[id];
           if (k < 0 || !t) break;
@@ -3479,6 +3545,10 @@ Rules:
     };
     document.addEventListener('input', keepSched);
     document.addEventListener('change', keepSched);
+    document.addEventListener('change', e => {
+      const id = e.target.dataset && e.target.dataset.wrDate, t = id && S.tasks[id];
+      if (t && /^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) setTask(id, { date: e.target.value, time: null, originalDate: t.originalDate || t.date });
+    });
     document.addEventListener('change', e => {
       const el = e.target; if (!el.dataset || !el.dataset.wp || !weekPlan) return;
       const it = weekPlan.items[+el.dataset.i]; if (!it) return;
