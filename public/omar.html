@@ -173,6 +173,19 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 .foot { margin-top: 28px; display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
 .foot a { color: var(--muted); }
 @media (max-width: 420px) { .headline { font-size: 28px; } .two { grid-template-columns: 1fr; } }
+.hh-add { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.hh-opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hh-opts .seg { margin: 0; }
+#hhTo button { padding: 0 16px; }
+.hh-opts input[type="date"] { width: 160px; }
+.hh-sub { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 12px 0 2px; display: flex; justify-content: space-between; }
+.hh-row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--hair); }
+.hh-row:last-child { border-bottom: 0; }
+.hh-row input[type="checkbox"] { width: 22px; min-height: 22px; height: 22px; flex: 0 0 22px; padding: 0; }
+.hh-row .t { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; font-size: 15px; }
+.hh-row.done .t { color: var(--muted); text-decoration: line-through; }
+.hh-pill { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
+.hh-pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -198,6 +211,22 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 <section class="card" aria-labelledby="todayH">
   <h2 id="todayH">Today's priorities <span class="count" id="todayCount"></span></h2>
   <ul class="today-list" id="todayList"></ul>
+</section>
+
+<section class="card hidden" aria-labelledby="hhH" id="hhCard">
+  <h2 id="hhH">Household <span class="count" id="hhCount"></span></h2>
+  <form class="hh-add" id="hhForm">
+    <input id="hhTitle" maxlength="160" placeholder="Add for the house, e.g. Pick up dry cleaning" aria-label="New household task">
+    <div class="hh-opts">
+      <div class="seg" role="group" aria-label="Who does it" id="hhTo">
+        <button type="button" data-to="omar" aria-pressed="true">Me</button><button type="button" data-to="farah" aria-pressed="false">Farah</button><button type="button" data-to="either" aria-pressed="false">Either</button>
+      </div>
+      <input type="date" id="hhDate" aria-label="Day (optional)">
+      <button class="btn primary" type="submit">Add</button>
+    </div>
+  </form>
+  <div class="result hidden" id="hhMsg" role="status" aria-live="polite"></div>
+  <div id="hhList"></div>
 </section>
 
 <details class="card hidden trips-fold" id="tripsCard">
@@ -451,6 +480,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     const items = [];
     top.forEach(t => items.push(`<li class="today-item"><label class="chk"><input type="checkbox" data-done="${esc(t.id)}" aria-label="Done: ${esc(t.title)}"></label><span class="pchip p${pri(t)}">P${pri(t)}</span><span class="t">${esc(t.title)}</span>${catOf(t) !== 'other' ? `<span aria-label="${esc(CAT[catOf(t)][2])}">${CAT[catOf(t)][1]}</span>` : ''}${dueChip(t)}</li>`));
     evs.forEach(e => items.push(`<li class="today-item ev"><span class="when">${esc(e.allDay ? 'All day' : timeOf(e.start))}</span><span class="t">${esc(e.title)}</span></li>`));
+    hhMine().filter(t => (t.date && t.date <= td) || (t.due && t.due <= td)).forEach(t => items.push(`<li class="today-item"><label class="chk"><input type="checkbox" data-hh-done="${esc(t.id)}" aria-label="Done: ${esc(t.title)}"></label><span class="pchip p2" title="Household">🏠</span><span class="t">${esc(t.title)}${t.by === 'farah' ? ' <span class="muted">from Farah</span>' : ''}</span></li>`));
     soon.forEach(t => items.push(`<li class="today-item"><label class="chk"><input type="checkbox" data-done="${esc(t.id)}" aria-label="Done: ${esc(t.title)}"></label><span class="pchip p1">P1</span><span class="t">${esc(t.title)}</span>${dueChip(t)}</li>`));
     $('todayList').innerHTML = items.length ? items.join('') : '<li class="empty">Nothing urgent today. Add something above when it comes up.</li>';
     $('todayCount').textContent = top.length ? `${top.length} to do` : '';
@@ -888,6 +918,67 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
+  // ---------- household: one shared list with Farah (/api/household) ----------
+  const HH = { me: null, items: null, to: 'omar' };
+  const HH_WHO = { omar: 'You', farah: 'Farah', either: 'Either' };
+  const HH_NEXT = { omar: 'farah', farah: 'either', either: 'omar' };
+  async function loadHousehold() {
+    try {
+      const r = await fetch('/api/household', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { if (r.status === 403 || r.status === 503) $('hhCard').classList.add('hidden'); return; }
+      const d = await r.json(); HH.me = d.me; HH.items = d.items || [];
+      $('hhCard').classList.remove('hidden'); renderHousehold(); renderToday(calEvents);
+    } catch (e) { /* offline: keep what's shown */ }
+  }
+  async function hhSend(body) {
+    try {
+      const r = await fetch('/api/household', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) hhMsg('Couldn’t save that. Try again.', true); else $('hhMsg').classList.add('hidden');
+    } catch (e) { hhMsg('No connection. Try again in a moment.', true); }
+    loadHousehold();
+  }
+  function hhMsg(text, err) { const el = $('hhMsg'); el.textContent = text; el.className = 'result' + (err ? ' err' : ''); }
+  const hhMine = () => (HH.items || []).filter(t => t.status !== 'done' && (t.to === 'omar' || t.to === 'either'));
+  const hhWhen = t => t.date ? dueLabel(t.date) : t.due ? 'due ' + dueLabel(t.due) : '';
+  function hhRow(t) {
+    const id = esc(t.id), done = t.status === 'done';
+    return `<div class="hh-row ${done ? 'done' : ''}"><input type="checkbox" data-hh-done="${id}" ${done ? 'checked' : ''} aria-label="Done: ${esc(t.title)}">
+      <span class="t">${esc(t.title)}<span class="muted">${esc(hhWhen(t))}${t.by === 'farah' ? (hhWhen(t) ? ' · ' : '') + 'from Farah' : ''}${done ? ` · ${t.doneBy === 'omar' ? 'you' : 'Farah'} ✓` : ''}</span></span>
+      ${done ? '' : `<button type="button" class="hh-pill ${t.to !== 'omar' ? 'on' : ''}" data-hh-who="${id}" aria-label="Who: ${HH_WHO[t.to]}. Tap to change.">${HH_WHO[t.to]}</button>`}</div>`;
+  }
+  function renderHousehold() {
+    if (!HH.items) return;
+    const open = HH.items.filter(t => t.status !== 'done');
+    const sort = l => l.sort((a, b) => (a.date || a.due || '9999').localeCompare(b.date || b.due || '9999') || a.createdAt - b.createdAt);
+    const grp = (label, list) => list.length ? `<div class="hh-sub"><span>${label}</span><span>${list.length}</span></div>${sort(list).map(hhRow).join('')}` : '';
+    const recent = HH.items.filter(t => t.status === 'done' && t.doneAt && Date.now() - t.doneAt < 2 * 86400000).sort((a, b) => b.doneAt - a.doneAt).slice(0, 5);
+    $('hhList').innerHTML = (open.length ? grp('Yours', open.filter(t => t.to === 'omar')) + grp('Either of you', open.filter(t => t.to === 'either')) + grp('Farah’s', open.filter(t => t.to === 'farah'))
+      : '<p class="empty">Nothing shared right now. Things Farah hands to you show up here.</p>') + grp('Done lately', recent);
+    const mine = hhMine().length;
+    $('hhCount').textContent = mine ? `${mine} for you` : '';
+  }
+  $('hhTo').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; HH.to = b.dataset.to; [...$('hhTo').children].forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+  $('hhForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = $('hhTitle').value.trim(); if (!title) { $('hhTitle').focus(); return; }
+    const date = $('hhDate').value || null;
+    (HH.items = HH.items || []).push({ id: 'pending', title, to: HH.to, by: 'omar', date, status: 'todo', createdAt: Date.now() });
+    $('hhTitle').value = ''; $('hhDate').value = ''; renderHousehold();
+    hhSend({ op: 'add', title, to: HH.to, date });
+  });
+  document.addEventListener('change', e => {
+    const id = e.target.dataset && e.target.dataset.hhDone; if (!id) return;
+    const t = (HH.items || []).find(x => x.id === id); if (t) { t.status = e.target.checked ? 'done' : 'todo'; t.doneBy = 'omar'; t.doneAt = Date.now(); }
+    renderHousehold(); renderToday(calEvents);
+    hhSend({ op: 'update', id, patch: { status: e.target.checked ? 'done' : 'todo' } });
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-hh-who]'); if (!b) return;
+    const t = (HH.items || []).find(x => x.id === b.dataset.hhWho); if (!t) return;
+    t.to = HH_NEXT[t.to] || 'omar'; renderHousehold(); renderToday(calEvents);
+    hhSend({ op: 'update', id: t.id, patch: { to: t.to } });
+  });
+
   // ---------- start ----------
   (async () => {
     try {
@@ -897,12 +988,13 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       if (me.view !== 'omar') { location.replace(me.home || '/dashboard'); return; }
     } catch (e) { /* offline: show the saved copy */ }
     render();
-    await load(); loadCalendar();
+    await load(); loadCalendar(); loadHousehold();
+    setInterval(() => { if (!document.hidden) loadHousehold(); }, 60000);
     const last = metaMain().mailScannedAt || 0;
     if (Date.now() - last > 6 * 3600 * 1000) scanMail(true);
     setInterval(() => { if (!document.hidden) load(); }, 30000);
     setInterval(() => { if (!document.hidden) loadCalendar(); }, 5 * 60000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); render(); } });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); render(); loadHousehold(); } });
   })();
 })();
 </script>

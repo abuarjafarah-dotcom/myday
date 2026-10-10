@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { homePath, viewFor, type View } from "@/lib/users";
 import { isFarah, partnerDays } from "@/lib/partner";
 import { statusLine, type DayStatus } from "@/lib/dayStatus";
+import { householdMessages, listShared, whoIs, type Shared } from "@/lib/household";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -247,6 +248,7 @@ async function tick(db: Db): Promise<Response> {
   const byOwner = new Map<string, Row[]>();
   ((subRows || []) as Row[]).forEach((r) => byOwner.set(r.owner, [...(byOwner.get(r.owner) || []), { ...r, kind: "push-sub" }]));
   let sentCount = 0;
+  let household: Shared[] | null = null;
   for (const [owner, subs] of byOwner) {
     const view = viewFor(owner);
     const { data: rows } = await db.from(TABLE).select("kind,id,data").eq("owner", owner).in("kind", view === "omar" ? ["tasks", "meta", "trips"] : ["tasks", "meta"]);
@@ -262,6 +264,12 @@ async function tick(db: Db): Promise<Response> {
     Object.keys(sent).forEach((k) => { if (sent[k] < cutoff) delete sent[k]; });
     const partner = isFarah(owner) ? (await partnerDays(db, 2).catch(() => ({ days: [] as DayStatus[] }))).days : [];
     const due = dueMessages(now, tasks, meta, sent, view, trips, partner);
+    // Shared household tasks: what the other person added for you, and what they finished for you.
+    const me = whoIs(owner), cfg = (meta.notify || {}) as Doc;
+    if (me && cfg.on && (me === "omar" || (now.min >= WAKE_MIN && now.min < BED_MIN))) {
+      if (household === null) household = await listShared(db).catch(() => []);
+      householdMessages(me, household, sent).forEach((m) => due.push({ ...m, url: homePath(view), tag: m.key }));
+    }
     for (const m of due) {
       sent[m.key] = Date.now();
       for (const s of subs) if (await deliver(db, v, s, { title: m.title, body: m.body, url: m.url, tag: m.tag })) sentCount++;

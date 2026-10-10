@@ -440,7 +440,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-reset { order: 3; } .h-today { order: 4; } .h-carry { order: 5; } .h-dump { order: 6; } .h-review { order: 7; } .h-waiting { order: 8; } .h-time { order: 9; } .h-more { order: 10; }
+.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-household { order: 4; } .h-reset { order: 3; } .h-today { order: 4; } .h-carry { order: 5; } .h-dump { order: 6; } .h-review { order: 7; } .h-waiting { order: 8; } .h-time { order: 9; } .h-more { order: 10; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -660,6 +660,20 @@ details.fold.sub > summary { min-height: 48px; }
 .plan-time[type="date"] { width: 156px; }
 .fc-dot { width: 18px; text-align: center; color: var(--muted); }
 .rs-plan { margin-top: 12px; }
+.h-household:empty { display: none; }
+.hh-add { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.hh-add #hhTitle { min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; width: 100%; }
+.hh-opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hh-opts .hh-to { margin: 0; }
+.hh-opts .plan-time[type="date"] { width: 156px; }
+.hh-row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 0; border-bottom: 1px solid var(--hair); font-size: 15px; }
+.hh-row:last-child { border-bottom: 0; }
+.hh-row .t { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; }
+.hh-row .t .muted { font-size: 13px; }
+.hh-row.done .t > :first-child, .hh-row.done .t { color: var(--muted); }
+.hh-row.done > .t { text-decoration: line-through; }
+.hh-row.done > .t .muted { text-decoration: none; }
+.hh-check { width: 20px; text-align: center; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -700,6 +714,7 @@ details.fold.sub > summary { min-height: 48px; }
     <div id="nowBox" class="h-now"></div>
     <div id="planBox" class="h-plan"></div>
     <div id="assistBox" class="h-assist"></div>
+    <div id="householdBox" class="h-household"></div>
     <div id="resetBanner" class="h-reset"></div>
     <div id="recapBanner" class="h-reset"></div>
     <div class="card h-today">
@@ -1304,7 +1319,7 @@ details.fold.sub > summary { min-height: 48px; }
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
+    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderAssist(); renderHousehold(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
@@ -1465,6 +1480,7 @@ details.fold.sub > summary { min-height: 48px; }
           ${!done && t.status !== 'doing' ? `<button class="toggle-line" data-act="now-start" data-id="${id}">Start timer</button>` : ''}
           ${t.status === 'doing' ? `<button class="toggle-line" data-act="task-todo" data-id="${id}">Move back to To do</button>` : ''}
           ${!done ? `<button class="toggle-line" data-act="sched-open" data-id="${id}">${t.calEventId ? '📅 On your calendar · Move' : '📅 Schedule it'}</button>` : ''}
+          ${!done ? `<button class="toggle-line" data-act="hh-hand" data-id="${id}">👥 Hand to Omar</button>` : ''}
           ${!done ? `<button class="toggle-line" data-act="drop" data-id="${id}">Let this go</button>` : ''}
           ${opts.board ? `<span class="ti-reorder">${dragHandle(t, opts.board)}<span>Drag to reorder</span></span>` : ''}
         </div>
@@ -2777,6 +2793,7 @@ Rules:
     wireProjectsDone();
     wireFeatures();
     wireAssist();
+    wireHousehold();
     wireCalm();
     wireRecap();
     wireSync();
@@ -3469,6 +3486,99 @@ Rules:
       if (el.dataset.wp === 'start') { const m = timeMin(el.value); if (m < 9000) it.start = m; }
       render();
     });
+  }
+
+
+  // ---------- shared household tasks (one list with Omar, via /api/household) ----------
+  const hh = { me: null, items: null, off: false, err: '', to: 'omar', draft: '', date: '' };
+  const HH_WHO = { omar: 'Omar', farah: 'You', either: 'Either' };
+  const HH_NEXT = { omar: 'farah', farah: 'either', either: 'omar' };
+  async function loadHousehold() {
+    try { const d = await getJson('/api/household'); hh.me = d.me; hh.items = d.items || []; hh.off = false; hh.err = ''; }
+    catch (e) { if (!e.auth && /http 40[34]|http 503/.test(String(e.message))) hh.off = true; }
+    renderHousehold();
+  }
+  async function hhSend(body, okText) {
+    const res = await calFetch('POST', '/api/household', body);
+    hh.err = res.ok ? '' : (res.data && res.data.error && res.data.error.length < 60 ? res.data.error : "Couldn't save that. Try again.");
+    if (res.ok && okText) calNote = { kind: 'ok', text: okText };
+    await loadHousehold(); if (okText) render();
+    return res.ok;
+  }
+  function hhLocal(id, patch) {   // instant feedback; the server copy replaces it a moment later
+    const t = (hh.items || []).find(x => x.id === id); if (t) Object.assign(t, patch); renderHousehold();
+  }
+  const hhWhen = t => t.date ? (t.date === today() ? 'Today' : t.date < today() ? `from ${dayLabel(t.date)}` : shortDay(t.date)) : (t.due ? `due ${dayLabel(t.due)}` : '');
+  function hhRow(t) {
+    const id = esc(t.id), done = t.status === 'done';
+    const info = [hhWhen(t), t.by && t.by !== hh.me ? 'from Omar' : ''].filter(Boolean).join(' · ');
+    return `<div class="hh-row ${done ? 'done' : ''}">
+      <input type="checkbox" data-act="hh-done" data-id="${id}" ${done ? 'checked' : ''} aria-label="Done: ${esc(t.title)}">
+      <span class="t">${esc(t.title)}<span class="muted">${esc(info)}</span></span>
+      ${done ? '' : `<button class="sy-pill ${t.to !== 'farah' ? 'on' : ''}" data-act="hh-who" data-id="${id}" aria-label="Who: ${HH_WHO[t.to]}. Tap to change.">${HH_WHO[t.to]}</button>`}
+      <button class="mini ghost" data-act="hh-del" data-id="${id}" aria-label="Remove ${esc(t.title)}">${confirmKey === 'hh-' + t.id ? 'Sure?' : '✕'}</button></div>`;
+  }
+  function renderHousehold() {
+    const el = $('householdBox'); if (!el) return;
+    if (hh.off || (!hh.items && !hh.me)) { el.innerHTML = ''; return; }
+    const items = hh.items || [], open = items.filter(t => t.status !== 'done');
+    const sortOpen = list => list.sort((a, b) => (a.date || a.due || '9999').localeCompare(b.date || b.due || '9999') || a.createdAt - b.createdAt);
+    const grp = (label, list) => list.length ? `<div class="grp-h"><span>${label}</span><span>${list.length}</span></div>${sortOpen(list).map(hhRow).join('')}` : '';
+    const recent = items.filter(t => t.status === 'done' && t.doneAt && Date.now() - t.doneAt < 3 * 86400000).sort((a, b) => b.doneAt - a.doneAt);
+    const doneOpen = !!ui.open.hhDone;
+    const toBtn = k => `<button type="button" data-act="hh-to" data-to="${k}" aria-pressed="${hh.to === k}">${k === 'farah' ? 'Me' : HH_WHO[k]}</button>`;
+    el.innerHTML = `<div class="card hh"><h2><span>Shared with Omar</span><span class="muted">${open.length ? open.length + ' open' : ''}</span></h2>
+      <div class="hh-add">
+        <input type="text" id="hhTitle" maxlength="160" value="${esc(hh.draft)}" placeholder="Add for the house, e.g. Take out recycling" aria-label="New shared task">
+        <div class="hh-opts"><div class="pri-filter hh-to" role="group" aria-label="Who does it">${toBtn('omar')}${toBtn('farah')}${toBtn('either')}</div>
+          <input type="date" id="hhDate" class="plan-time" value="${esc(hh.date)}" min="${today()}" aria-label="Day (optional)">
+          <button class="btn-add" data-act="hh-add">Add</button></div>
+        ${hh.err ? `<p class="muted" role="alert">${esc(hh.err)}</p>` : ''}
+      </div>
+      ${open.length ? grp("Omar's", open.filter(t => t.to === 'omar')) + grp('Yours', open.filter(t => t.to === 'farah')) + grp('Either of you', open.filter(t => t.to === 'either'))
+        : '<div class="empty">Nothing shared yet. Add something above, or open any task and tap "Hand to Omar".</div>'}
+      ${recent.length ? `<button class="toggle-line" data-act="hh-done-toggle" aria-expanded="${doneOpen}">${doneOpen ? 'Hide' : 'Show'} ${recent.length} done lately</button>
+        ${doneOpen ? recent.map(t => `<div class="hh-row done"><span class="hh-check">✓</span><span class="t">${esc(t.title)}<span class="muted">${t.doneBy === 'omar' ? 'Omar' : 'You'} · ${esc(new Date(t.doneAt).toLocaleDateString('en-US', { weekday: 'short' }))}</span></span>
+          <button class="mini ghost" data-act="hh-undo" data-id="${esc(t.id)}">Undo</button></div>`).join('') : ''}` : ''}
+    </div>`;
+  }
+  function hhAdd() {
+    const title = ($('hhTitle') || {}).value ? $('hhTitle').value.trim() : '';
+    if (!title) { const i = $('hhTitle'); if (i) i.focus(); return; }
+    const date = ($('hhDate') || {}).value || null, to = hh.to;
+    hh.draft = ''; hh.date = '';
+    (hh.items = hh.items || []).push({ id: 'pending', title, to, by: hh.me, date, due: null, status: 'todo', createdAt: Date.now() });
+    renderHousehold();
+    hhSend({ op: 'add', title, to, date }, null);
+  }
+  async function handToOmar(id) {
+    const t = S.tasks[id]; if (!t) return;
+    const ok = await hhSend({ op: 'add', title: t.title, to: 'omar', date: t.date && t.date >= today() ? t.date : null, due: t.due || null, note: t.notes || '' }, `Handed to Omar: ${t.title}`);
+    if (ok) { infoOpen.delete(id); setTask(id, { status: 'dropped', handedTo: 'omar' }); }   // not counted as "let go"; its calendar block is removed
+  }
+  function wireHousehold() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'hh-to': hh.to = el.dataset.to; renderHousehold(); break;
+        case 'hh-add': hhAdd(); break;
+        case 'hh-done': hhLocal(id, { status: el.checked ? 'done' : 'todo', doneBy: hh.me, doneAt: Date.now() }); hhSend({ op: 'update', id, patch: { status: el.checked ? 'done' : 'todo' } }); break;
+        case 'hh-undo': hhLocal(id, { status: 'todo' }); hhSend({ op: 'update', id, patch: { status: 'todo' } }); break;
+        case 'hh-who': { const t = (hh.items || []).find(x => x.id === id); if (!t) break; const to = HH_NEXT[t.to] || 'omar'; hhLocal(id, { to }); hhSend({ op: 'update', id, patch: { to } }); break; }
+        case 'hh-del':
+          if (confirmKey !== 'hh-' + id) { armConfirm('hh-' + id); renderHousehold(); return; }
+          confirmKey = null; hh.items = (hh.items || []).filter(x => x.id !== id); renderHousehold(); hhSend({ op: 'delete', id }); break;
+        case 'hh-done-toggle': ui.open.hhDone = !ui.open.hhDone; saveUi(); renderHousehold(); break;
+        case 'hh-hand': handToOmar(id); break;
+      }
+    });
+    document.addEventListener('input', e => { if (e.target.id === 'hhTitle') hh.draft = e.target.value; });
+    document.addEventListener('change', e => { if (e.target.id === 'hhDate') hh.date = e.target.value; });
+    document.addEventListener('keydown', e => { if (e.target.id === 'hhTitle' && e.key === 'Enter') { e.preventDefault(); hhAdd(); } });
+    loadHousehold();
+    setInterval(() => { if (!document.hidden) loadHousehold(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadHousehold(); });
   }
 
   // ---------- reminders (installable app + notifications) and work-day settings ----------
