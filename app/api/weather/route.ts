@@ -2,7 +2,7 @@ export async function GET(request: Request) {
   try {
     // Open-Meteo API - free, no key required
     const response = await fetch(
-      "https://api.open-meteo.com/v1/forecast?latitude=43.8509&longitude=-92.2174&current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature&daily=apparent_temperature_min,apparent_temperature_max,precipitation_probability_max&forecast_days=1&temperature_unit=fahrenheit&timezone=America/Chicago",
+      "https://api.open-meteo.com/v1/forecast?latitude=43.8509&longitude=-92.2174&current=temperature_2m,relative_humidity_2m,weather_code,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_min,apparent_temperature_max,precipitation_probability_max&forecast_days=8&temperature_unit=fahrenheit&timezone=America/Chicago",
       { next: { revalidate: 600 } } as RequestInit
     );
 
@@ -51,6 +51,18 @@ export async function GET(request: Request) {
       lowFeels: lowFeels === null ? null : Math.round(lowFeels),
       highFeels: highFeels === null ? null : Math.round(highFeels),
       precipChance,
+      // Eight days ahead, for weather-aware planning and the weekly reset.
+      days: (Array.isArray(daily.time) ? (daily.time as string[]) : []).map((date, i) => {
+        const at = (k: string) => { const v = (daily as Record<string, unknown>)[k]; return Array.isArray(v) && typeof v[i] === "number" ? (v[i] as number) : null; };
+        const r = (v: number | null) => (v === null ? null : Math.round(v));
+        const code = at("weather_code");
+        return {
+          date, code, condition: code === null ? "" : weatherCodes[code] || "",
+          precip: at("precipitation_probability_max"),
+          hi: r(at("temperature_2m_max")), lo: r(at("temperature_2m_min")),
+          feelsHi: r(at("apparent_temperature_max")), feelsLo: r(at("apparent_temperature_min")),
+        };
+      }),
     });
   } catch (error) {
     console.error("Weather API error:", error);

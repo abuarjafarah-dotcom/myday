@@ -440,7 +440,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-reset { order: 3; } .h-today { order: 4; } .h-carry { order: 5; } .h-dump { order: 6; } .h-review { order: 7; } .h-waiting { order: 8; } .h-time { order: 9; } .h-more { order: 10; }
+.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-reset { order: 3; } .h-today { order: 4; } .h-carry { order: 5; } .h-dump { order: 6; } .h-review { order: 7; } .h-waiting { order: 8; } .h-time { order: 9; } .h-more { order: 10; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -633,6 +633,33 @@ details.fold.sub > summary { min-height: 48px; }
 .auto-sorted { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pri-badge.high { background: #3A2820; color: #E89A78; } :root:not([data-theme="light"]) .pri-badge.medium { background: #352D1C; color: #E0BE7C; } :root:not([data-theme="light"]) .pri-badge.low { background: #222C36; color: #9DB6CE; } }
 :root[data-theme="dark"] .pri-badge.high { background: #3A2820; color: #E89A78; } :root[data-theme="dark"] .pri-badge.medium { background: #352D1C; color: #E0BE7C; } :root[data-theme="dark"] .pri-badge.low { background: #222C36; color: #9DB6CE; }
+
+/* Assistant: Schedule it, weather, top 3, Sunday reset */
+.h-assist:empty { display: none; }
+.as-note, .as-wx { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.as-note.err { border-left: 3px solid var(--carry-line); }
+.as-acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.as-acts a.mini { text-decoration: none; display: inline-flex; align-items: center; }
+.as-wx-t { flex: 1 1 220px; min-width: 0; color: var(--body); line-height: 1.45; }
+.as-top-row { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 15px; }
+.as-top-row .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.as-top-row.done .t { text-decoration: line-through; color: var(--muted); }
+.sched-box { margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); display: flex; flex-direction: column; gap: 8px; }
+.sched-h { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+.sched-mail { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.sched-mail input { min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--body); font-size: 16px; }
+.cal-on { font-size: 13px; color: var(--muted); }
+.wx-chip { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.fc-row { display: flex; align-items: center; gap: 8px; }
+.fc-row .sy-top { flex: 1; min-width: 0; }
+.fc-meta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.fc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.fc-chip { min-height: 36px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 18px; background: var(--card); color: var(--body); font-size: 14px; text-align: left; cursor: pointer; }
+.fc-chip:hover { background: var(--soft); }
+.fc-plan { margin: 4px 0 10px; }
+.plan-time[type="date"] { width: 156px; }
+.fc-dot { width: 18px; text-align: center; color: var(--muted); }
+.rs-plan { margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -672,6 +699,7 @@ details.fold.sub > summary { min-height: 48px; }
   <div class="home-main">
     <div id="nowBox" class="h-now"></div>
     <div id="planBox" class="h-plan"></div>
+    <div id="assistBox" class="h-assist"></div>
     <div id="resetBanner" class="h-reset"></div>
     <div id="recapBanner" class="h-reset"></div>
     <div class="card h-today">
@@ -906,6 +934,7 @@ details.fold.sub > summary { min-height: 48px; }
   // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
   try {
     const q = new URLSearchParams(location.search);
+    if (q.get('open') === 'reset') { ui.tab = 'schedule'; ui.sub = 'sync'; history.replaceState(null, '', location.pathname); }
     if (q.get('tab') === 'grocery') {
       ui.tab = 'grocery';
       const st = q.get('store');
@@ -1023,7 +1052,7 @@ details.fold.sub > summary { min-height: 48px; }
   const srcIcon = ev => ev.source === 'icloud' ? '☁️' : '📅';
   const evTime = ev => ev.allDay ? 'All day' : new Date(ev.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const evMin = ev => { if (ev.allDay) return -1; const d = new Date(ev.start); return d.getHours() * 60 + d.getMinutes(); };
-  const eventsOn = d => (live.cal || []).filter(ev => evDate(ev) === d).sort((a, b) => evMin(a) - evMin(b));
+  const eventsOn = d => (live.cal || []).filter(ev => evDate(ev) === d && !(ev.task && S.tasks[ev.task])).sort((a, b) => evMin(a) - evMin(b));
   const signInHtml = what => `<div class="not-connected"><span>Sign in again to load ${what}.</span><a href="/">Sign in ↗</a></div>`;
   // Omar at a glance: one label per day (shift, travel, admin, off, meetings). Shared from his page.
   function renderOmar() {
@@ -1241,11 +1270,12 @@ details.fold.sub > summary { min-height: 48px; }
       date: f.date || null, time: f.time || null, duration: null, priority: null, status: 'todo', notes: '',
       createdAt: Date.now(), completedAt: null, source: f.source || 'manual' };
   }
-  function setTask(id, patch) {
+  function setTask(id, patch, opts = {}) {
     const t = S.tasks[id]; if (!t) return;
     const n = Object.assign({}, t, patch);
     if (patch.status === 'done' && t.status !== 'done') n.completedAt = Date.now();
     if (patch.status && patch.status !== 'done') n.completedAt = null;
+    if (!opts.noCal && t.calEventId) calFollow(t, n);    // keep its Google Calendar block in step
     put('tasks', n);
   }
   function moveTo(id, date) {
@@ -1274,7 +1304,7 @@ details.fold.sub > summary { min-height: 48px; }
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderResetBanner(); renderReset();
+    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
@@ -1434,9 +1464,12 @@ details.fold.sub > summary { min-height: 48px; }
         <div class="ti-acts">
           ${!done && t.status !== 'doing' ? `<button class="toggle-line" data-act="now-start" data-id="${id}">Start timer</button>` : ''}
           ${t.status === 'doing' ? `<button class="toggle-line" data-act="task-todo" data-id="${id}">Move back to To do</button>` : ''}
+          ${!done ? `<button class="toggle-line" data-act="sched-open" data-id="${id}">${t.calEventId ? '📅 On your calendar · Move' : '📅 Schedule it'}</button>` : ''}
           ${!done ? `<button class="toggle-line" data-act="drop" data-id="${id}">Let this go</button>` : ''}
           ${opts.board ? `<span class="ti-reorder">${dragHandle(t, opts.board)}<span>Drag to reorder</span></span>` : ''}
-        </div></div>` : '';
+        </div>
+        ${!done ? `<label class="set-chk"><input type="checkbox" data-act="outdoor" data-id="${id}" ${isOutdoor(t) ? 'checked' : ''}>Outdoors (plan around the weather)</label>` : ''}
+        ${!done && sched && sched.id === t.id ? schedHtml(t) : ''}</div>` : '';
     return `<div class="task-item ${done ? 'done' : ''} ${open ? 'open' : ''}" ${opts.board ? `data-drag-id="${id}"` : ''}>
       <div class="ti-main"><input type="checkbox" data-act="toggle" data-id="${id}" ${done ? 'checked' : ''} aria-label="Done">
         <span class="text">${!done && priLevel(t.priority) !== 'none' ? `<span class="pri-badge ${priLevel(t.priority)}">${PRI_NAME[priLevel(t.priority)]}</span>` : ''}<span class="t">${esc(t.title)}</span></span>
@@ -1634,7 +1667,7 @@ Rules:
     if (/hamad|talal|yousef|yusuf|\bkids?\b|school|daycare|pediatric|diaper|nap|\brms\b|\bot\b|soccer|nanny/i.test(s)) return 'kids';
     if (/workwave|\bwork\b|email|portfolio|course|meeting|interview|onboard|resume/i.test(s)) return 'work';
     if (/shower|workout|gym|\bread\b|rest\b|sleep|walk|pray|nails|hair/i.test(s)) return 'self';
-    if (/park|library|museum|outing|picking|play ?date|class\b|zoo/i.test(s)) return 'activity';
+    if (/park|library|museum|outing|picking|play ?date|class\b|zoo|pumpkin|orchard|hike|farm\b|picnic/i.test(s)) return 'activity';
     if (/\bcall\b|walgreens|pharmacy|pick ?up|drop ?off|\border\b|\bbuy\b|return|post office|bank|appointment|costco|target|walmart|aldi|amazon/i.test(s)) return 'errands';
     return 'home';
   }
@@ -1845,7 +1878,7 @@ Rules:
       const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span>
-          <span class="week-tools">${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
+          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
         <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
@@ -1979,6 +2012,7 @@ Rules:
     if (/\b(run|trip|shopping|costco|trader|target|walmart|aldi|errand)\b/.test(s)) return 45;
     if (/\b(cook|make|bake|dinner|lunch|kofta|maqlou?b|prep)\b/.test(s)) return 45;
     if (/\b(course|study|learn|write|design|build|develop|launch|test|plan|stories|layout|sew)\b/.test(s)) return 45;
+    if (/\b(pumpkin patch|orchard|zoo|farm|hike|picnic)\b/.test(s)) return 120;
     if (/\b(outing|stroll|park|picking|carving|museum|library)\b/.test(s)) return 45;
     if (t.projectId) return 30;
     return ({ kids: 20, work: 40, home: 20, errands: 40, self: 30, activity: 45, omar: 20 })[t.category] || 30;
@@ -2742,6 +2776,7 @@ Rules:
     wireDrag();
     wireProjectsDone();
     wireFeatures();
+    wireAssist();
     wireCalm();
     wireRecap();
     wireSync();
@@ -3043,7 +3078,8 @@ Rules:
     const stop = BED_MIN - 30;                                   // leave the last half hour to wind down
     const gaps = freeGaps(items, td, nowMin).map(g => ({ start: g.start, end: Math.min(g.end, stop) })).filter(g => g.end - g.start >= MIN_GAP);
     const pool = Object.values(S.tasks).filter(t => capVisible(t) && isOpen(t) && !(t.time && t.date === td));
-    const ranked = rankCandidates(pool, td, nowMin, 600);
+    const wetToday = wxBad(wxDay(td));
+    const ranked = rankCandidates(pool, td, nowMin, 600).filter(c => !(wetToday && isOutdoor(c.t)));   // outdoor tasks wait for better weather
     const cap = PLAN_MAX[capMode()], out = [], used = new Set();
     for (const g of gaps) {
       let cur = Math.ceil(g.start / 5) * 5;
@@ -3070,16 +3106,369 @@ Rules:
     el.innerHTML = `<div class="card review"><h2>Plan for today</h2>
       <p class="muted">${plan.items.length ? 'Placed in your free time, with a break between each. The last half hour before bed stays clear. Adjust anything, then add.' : 'Nothing to place right now. Your free time is full, or your list is clear.'}</p>
       ${rows}
+      ${plan.items.length ? `<label class="set-chk"><input type="checkbox" id="planToCal" ${calCfg().toCal ? 'checked' : ''}>Block them on my Google Calendar</label>` : ''}
+      ${wxBad(wxDay(today())) ? `<p class="muted">${wxIcon(wxDay(today()))} ${esc(wxWhy(wxDay(today())).replace(/^./, c => c.toUpperCase()))} today, so outdoor tasks are left out.</p>` : ''}
       <div class="rv-actions">${plan.items.length ? `<button class="btn-add" data-act="plan-commit" ${n ? '' : 'disabled'}>Add ${n} to my day</button>` : ''}<button class="btn-secondary" data-act="plan-cancel">${plan.items.length ? 'Not now' : 'Close'}</button></div></div>`;
   }
-  function commitPlan() {
+  async function commitPlan() {
     if (!plan) return;
     const td = today();
-    plan.items.filter(i => i.include).forEach(i => {
+    const cb = $('planToCal'), toCal = !!(cb && cb.checked);
+    const chosen = plan.items.filter(i => i.include);
+    chosen.forEach(i => {
       const t = S.tasks[i.id]; if (!t) return;
       stage('tasks', Object.assign({}, t, { date: td, originalDate: t.originalDate || (t.date && t.date !== td ? t.date : null), time: clockLabel(i.start), duration: i.mins }));
     });
+    if (cb) setMetaStaged({ cal: Object.assign(calCfg(), { toCal }) });
     plan = null; commit();
+    let n = 0;
+    for (const i of chosen) {
+      const t = S.tasks[i.id]; if (!t || !(toCal || t.calEventId)) continue;
+      const ok = await blockTask(i.id); if (ok === false) break; n++;
+    }
+    if (n) { calNote = { kind: 'ok', text: `${n} block${n === 1 ? '' : 's'} added to your calendar for today.` }; loadCal(); }
+  }
+
+
+  // ---------- assistant: Schedule it, calendar blocks, weather-aware planning, Sunday reset ----------
+  const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Chicago'; } catch (e) { return 'America/Chicago'; } })();
+  const calCfg = () => Object.assign({ toCal: true, inviteOmar: false }, meta().cal || {});
+  let calNote = null;      // { kind: 'scope' | 'ok' | 'err', text }
+  let sched = null;        // the open "Schedule it" panel: { id, date, start, mins }
+  let weekPlan = null;     // Sunday reset proposals: { items: [{ id, title, category, date, start, mins, include }] }
+
+  // Weather for a day (from /api/weather days[]). Bad days hold outdoor tasks back; nice weekend days suggest an outing.
+  const wxDay = d => ((live.weather && live.weather.days) || []).find(x => x.date === d) || null;
+  const wxSnow = c => (c >= 71 && c <= 77) || c === 85 || c === 86;
+  function wxBad(w) {
+    if (!w) return false;
+    const p = w.precip ?? 0, c = w.code ?? 0;
+    return p >= 60 || c >= 95 || (wxSnow(c) && p >= 40) || (w.feelsHi != null && w.feelsHi < 20);
+  }
+  const wxNice = w => !!w && (w.precip ?? 100) < 30 && w.code != null && w.code <= 2 && w.feelsHi != null && w.feelsHi >= 50 && w.feelsHi <= 85;
+  function wxIcon(w) {
+    const c = w ? w.code : null;
+    if (c == null) return '';
+    if (c >= 95) return '⛈️'; if (wxSnow(c)) return '🌨️'; if (c >= 51) return '🌧️';
+    if (c === 45 || c === 48) return '🌫️'; if (c === 3) return '☁️'; if (c === 2) return '⛅'; return '☀️';
+  }
+  const wxShort = w => w ? `${wxIcon(w)} ${w.hi != null ? deg(w.hi) + '°' : ''}${(w.precip ?? 0) >= 30 ? ` · ${w.precip}%` : ''}` : '';
+  function wxWhy(w) {
+    if (!w) return '';
+    const c = w.code ?? 0;
+    if (c >= 95) return `storms (${w.precip ?? '?'}%)`;
+    if (wxSnow(c) && (w.precip ?? 0) >= 40) return `snow ${w.precip}%`;
+    if ((w.precip ?? 0) >= 60) return `rain ${w.precip}%`;
+    return `feels like ${deg(w.feelsHi)}°`;
+  }
+  const OUTDOOR_RE = /\b(walk|stroll|park|playground|yard|garden|gardening|rake|raking|leaves|mow|lawn|car wash|wash (the )?car|bike|biking|hike|hiking|trail|zoo|pumpkin|apple picking|orchard|farm|farmers market|outdoors?|outside|picnic|beach|lake|patio|deck|gutters?|sled|sledding|snowman|outing|fishing)\b/;
+  const isOutdoor = t => t.outdoor === true || (t.outdoor !== false && OUTDOOR_RE.test(norm(t.title)));
+  const dayName = d => d === today() ? 'today' : d === addDays(today(), 1) ? 'tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long' });
+  const shortDay = d => parseYmd(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // Free windows on a day: calendar events, timed tasks and key times are busy; the last half hour before bed stays clear.
+  function slotsOn(d, fromMin, skipId, holds) {
+    const stop = BED_MIN - 30;
+    const busy = dayItems(d).filter(i => !i.done && i.id !== skipId)
+      .concat((holds || []).map(h => ({ start: h.start, end: h.start + h.mins })))
+      .sort((a, b) => a.start - b.start);
+    const gaps = []; let cur = Math.max(fromMin, DAY_START_MIN);
+    for (const it of busy) {
+      if (it.end <= cur && it.start < cur) continue;
+      const end = Math.min(it.start - BUFFER_MIN, stop);
+      if (end - cur >= MIN_GAP) gaps.push({ start: cur, end });
+      cur = Math.max(cur, it.end + BUFFER_MIN);
+    }
+    if (stop - cur >= MIN_GAP) gaps.push({ start: cur, end: stop });
+    return gaps;
+  }
+  // The next slot that fits the task: respects work hours, bedtime, and (for outdoor tasks) the forecast.
+  function findSlot(t, opts = {}) {
+    const td = today(), nowMin = nowMinutes();
+    const mins = Math.min(taskMinutes(t), 180);
+    const first = opts.from && opts.from > td ? opts.from : td;
+    const outdoor = isOutdoor(t);
+    const tryDays = avoid => {
+      for (let i = 0; i < (opts.days || 8); i++) {
+        const d = addDays(first, i);
+        if (avoid && avoid.has(d)) continue;
+        if (outdoor && wxBad(wxDay(d))) continue;
+        const from = d === td ? Math.ceil((nowMin + 10) / 5) * 5 : (opts.dayStart ?? 9 * 60);   // future days: from 9 AM
+        for (const g of slotsOn(d, from, t.id, (opts.holds || []).filter(h => h.date === d))) {
+          const h = workHours(d);
+          const starts = [Math.ceil(g.start / 5) * 5];
+          if (h && t.category !== 'work' && h.end > g.start && h.end < g.end) starts.push(h.end);   // try right after work
+          for (const s of starts) if (g.end - s >= mins && okAt(t, s, d)) return { date: d, start: s, mins };
+        }
+      }
+      return null;
+    };
+    return (opts.avoid && tryDays(opts.avoid)) || tryDays(null);
+  }
+
+  // ----- Google Calendar blocks -----
+  async function calFetch(method, url, body) {
+    try {
+      const r = await fetch(url, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+      const data = await r.json().catch(() => ({}));
+      return { ok: r.ok, status: r.status, data };
+    } catch (e) { return { ok: false, status: 0, data: {} }; }
+  }
+  function calFail(res) {
+    if (res.status === 403 && res.data.error === 'scope') calNote = { kind: 'scope' };
+    else if (res.status === 401) calNote = { kind: 'err', text: 'Signed out. Sign in again to add calendar blocks.' };
+    else calNote = { kind: 'err', text: "Couldn't reach Google Calendar. The time is saved here; try again later." };
+  }
+  async function loadCal() {
+    try { const d = await getJson('/api/calendar'); live.cal = d.events || []; live.calInfo = d.info || null; render(); } catch (e) {}
+  }
+  // Create or move the block for a task that has a date and time. Returns true on success.
+  async function blockTask(id, extra = {}) {
+    const t = S.tasks[id]; if (!t || !t.date || !t.time) return false;
+    const start = timeMin(t.time); if (start >= 9000) return false;
+    const inviteOmar = extra.inviteOmar ?? !!t.calOmar, emails = extra.emails ?? (t.calGuests || []);
+    const res = await calFetch('POST', '/api/calendar/block', { taskId: id, title: t.title, date: t.date, start, mins: taskMinutes(t), tz: TZ, eventId: t.calEventId || undefined, inviteOmar, emails });
+    if (!res.ok) { calFail(res); render(); return false; }
+    const cur = S.tasks[id]; if (!cur) return false;
+    setTask(id, { calEventId: res.data.id, calLink: res.data.link || null, calOmar: !!inviteOmar, calGuests: emails }, { noCal: true });
+    return res.data.invited || 0;
+  }
+  async function unblockTask(eventId) {
+    if (!eventId) return;
+    const res = await calFetch('DELETE', `/api/calendar/block?id=${encodeURIComponent(eventId)}`);
+    if (!res.ok) calFail(res);
+    loadCal();
+  }
+  // Keeps a task's block in step when it is moved, renamed, unscheduled or let go. Called from setTask.
+  function calFollow(old, n) {
+    if (n.status === 'dropped' || !n.date || !n.time) {
+      const ev = old.calEventId; n.calEventId = null; n.calLink = null;
+      setTimeout(() => unblockTask(ev), 0); return;
+    }
+    if (n.date !== old.date || n.time !== old.time || n.title !== old.title || n.duration !== old.duration) {
+      setTimeout(() => blockTask(n.id).then(ok => { if (ok !== false) loadCal(); }), 0);
+    }
+  }
+
+  // ----- "Schedule it" on a task -----
+  function openSched(id) {
+    const t = S.tasks[id]; if (!t) return;
+    const slot = (t.date && t.time && timeMin(t.time) < 9000) ? { date: t.date, start: timeMin(t.time), mins: taskMinutes(t) } : findSlot(t);
+    sched = { id, date: slot ? slot.date : today(), start: slot ? slot.start : 18 * 60, mins: slot ? slot.mins : taskMinutes(t), found: !!slot };
+    infoOpen.add(id); render();
+  }
+  function schedHtml(t) {
+    const s = sched, c = calCfg(), id = esc(t.id);
+    const w = wxDay(s.date), warn = isOutdoor(t) && wxBad(w) ? `<p class="muted">${wxIcon(w)} Heads-up: ${esc(wxWhy(w))} ${esc(dayName(s.date))}.</p>` : '';
+    const guests = (t.calGuests || []).join(', ');
+    return `<div class="sched-box" data-id="${id}">
+      <div class="sched-h">${t.calEventId ? 'Move this block' : s.found ? 'Next free time' : 'No free slot in the next week. Pick a time.'}</div>
+      <div class="set-grid">
+        <label>Day<input type="date" data-sched="date" min="${today()}" value="${esc(s.date)}"></label>
+        <label>Start<input type="time" data-sched="start" value="${hhmm(s.start)}"></label>
+        <label>Minutes<input type="number" data-sched="mins" min="5" max="600" step="5" value="${s.mins}"></label>
+      </div>${warn}
+      <label class="set-chk"><input type="checkbox" data-sched="toCal" ${(s.toCal ?? (c.toCal || !!t.calEventId)) ? 'checked' : ''}>Block it on my Google Calendar</label>
+      <label class="set-chk"><input type="checkbox" data-sched="omar" ${(s.omar ?? (t.calOmar ?? c.inviteOmar)) ? 'checked' : ''}>Invite Omar</label>
+      <label class="sched-mail">Invite others<input type="text" inputmode="email" id="schedMail" data-sched="emails" value="${esc(s.emails ?? guests)}" placeholder="name@email.com, another@email.com"></label>
+      <div class="rv-actions"><button class="btn-add" data-act="sched-save" data-id="${id}">${t.calEventId ? 'Save' : 'Schedule'}</button>
+        <button class="btn-secondary" data-act="sched-cancel">Cancel</button>
+        ${t.calEventId ? `<button class="mini ghost" data-act="sched-remove" data-id="${id}">Remove from calendar</button>` : ''}</div>
+    </div>`;
+  }
+  async function saveSched(id) {
+    const box = document.querySelector(`.sched-box[data-id="${CSS.escape(id)}"]`), t = S.tasks[id];
+    if (!box || !t) return;
+    const val = k => box.querySelector(`[data-sched="${k}"]`);
+    const date = val('date').value, start = timeMin(val('start').value), mins = Math.max(5, Math.min(600, parseInt(val('mins').value, 10) || taskMinutes(t)));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || start >= 9000) { calNote = { kind: 'err', text: 'Pick a day and a start time.' }; render(); return; }
+    const toCal = val('toCal').checked, inviteOmar = val('omar').checked;
+    const emails = val('emails').value.split(/[,;\s]+/).map(x => x.trim()).filter(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)).slice(0, 10);
+    setMetaStaged({ cal: Object.assign(calCfg(), { toCal, inviteOmar }) });
+    setTask(id, { date, time: clockLabel(start), duration: mins, calOmar: inviteOmar, calGuests: emails, originalDate: t.originalDate || (t.date && t.date !== date ? t.date : null), status: t.status === 'dropped' ? 'todo' : t.status }, { noCal: true });
+    sched = null; calNote = null; render();
+    if (toCal) {
+      const ok = await blockTask(id, { inviteOmar, emails });
+      if (ok !== false) { calNote = { kind: 'ok', text: `${t.title}: on your calendar ${dayName(date)} at ${clockLabel(start)}${ok ? '. Invite sent.' : '.'}` }; loadCal(); }
+    } else if (t.calEventId) { const ev = t.calEventId; setTask(id, { calEventId: null, calLink: null }, { noCal: true }); unblockTask(ev); }
+    else { calNote = { kind: 'ok', text: `${t.title}: planned for ${dayName(date)} at ${clockLabel(start)}.` }; render(); }
+  }
+
+  // ----- Home: this week's top 3, weather heads-ups, nice-day suggestion, calendar notes -----
+  const assistHidden = () => (ui.assistHide = ui.assistHide || {});
+  function weatherMoves() {
+    const td = today(), out = [];
+    if (!live.weather || !live.weather.days) return out;
+    Object.values(S.tasks).filter(t => isOpen(t) && t.date && t.date >= td && t.date <= addDays(td, 6) && isOutdoor(t)).forEach(t => {
+      const w = wxDay(t.date); if (!wxBad(w) || assistHidden()['wx-' + t.id + '-' + t.date]) return;
+      let alt = null;
+      for (let i = 0; i < 7 && !alt; i++) { const d = addDays(td, i); if (d !== t.date && wxNice(wxDay(d)) && !(d === td && nowMinutes() > BED_MIN - 120)) alt = d; }
+      for (let i = 0; i < 7 && !alt; i++) { const d = addDays(td, i); if (d !== t.date && wxDay(d) && !wxBad(wxDay(d)) && d !== td) alt = d; }
+      out.push({ t, w, alt });
+    });
+    return out.sort((a, b) => a.t.date.localeCompare(b.t.date));
+  }
+  function niceDay() {
+    const td = today();
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(td, i), dow = parseYmd(d).getDay();
+      if (dow !== 0 && dow !== 6) continue;
+      if (d === td && nowMinutes() > 14 * 60) continue;
+      const w = wxDay(d);
+      if (!wxNice(w) || assistHidden()['nice-' + d]) continue;
+      const planned = Object.values(S.tasks).some(t => isOpen(t) && t.date === d && (t.category === 'activity' || isOutdoor(t)));
+      if (planned || eventsOn(d).filter(e => !e.allDay).length >= 3) continue;
+      return { d, w };
+    }
+    return null;
+  }
+  function weekTop() { const wt = meta().weekTop; return wt && wt.week === weekStart() && Array.isArray(wt.ids) ? wt.ids.map(i => S.tasks[i]).filter(Boolean) : []; }
+  function renderAssist() {
+    const el = $('assistBox'); if (!el) return;
+    const parts = [];
+    if (calNote) {
+      if (calNote.kind === 'scope') parts.push(`<div class="card as-note"><span>To add blocks to Google Calendar, allow calendar access once. Sign in again and approve the new permission.</span><span class="as-acts"><a class="mini primary" href="/?reauth=1">Allow</a><button class="mini ghost" data-act="cal-note-x" aria-label="Dismiss">✕</button></span></div>`);
+      else parts.push(`<div class="card as-note ${calNote.kind}" role="status"><span>${esc(calNote.text)}</span><button class="mini ghost" data-act="cal-note-x" aria-label="Dismiss">✕</button></div>`);
+    }
+    const top = weekTop();
+    if (top.length && !isResting()) {
+      const linked = top.map(x => x.id && S.tasks[x.id]).filter(Boolean), done = linked.filter(t => t.status === 'done').length;
+      parts.push(`<div class="card as-top"><h2><span>This week's focus</span><span class="muted">${linked.length ? `${done} of ${linked.length} done` : ''}</span></h2>
+        ${top.map(x => { const t = x.id && S.tasks[x.id]; return t ? `<div class="as-top-row ${t.status === 'done' ? 'done' : ''}"><input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${t.status === 'done' ? 'checked' : ''} aria-label="Done: ${esc(t.title)}">
+          <span class="t">${esc(t.title)}</span><span class="muted">${t.date ? esc(t.date === today() ? 'Today' : shortDay(t.date)) + (t.time ? ' · ' + esc(t.time) : '') : ''}${t.calEventId ? ' 📅' : ''}</span></div>`
+          : `<div class="as-top-row"><span class="fc-dot" aria-hidden="true">•</span><span class="t">${esc(x.text)}</span></div>`; }).join('')}</div>`);
+    }
+    const moves = weatherMoves();
+    moves.slice(0, 3).forEach(({ t, w, alt }) => {
+      const aw = alt ? wxDay(alt) : null;
+      parts.push(`<div class="card as-wx"><div class="as-wx-t">${wxIcon(w)} <b>${esc(t.title)}</b> is ${esc(dayName(t.date))}: ${esc(wxWhy(w))}.${alt ? ` ${esc(dayName(alt).replace(/^./, c => c.toUpperCase()))} looks better (${esc(wxShort(aw).trim())}).` : ''}</div>
+        <div class="as-acts">${alt ? `<button class="mini primary" data-act="wx-move" data-id="${esc(t.id)}" data-d="${alt}">Move to ${esc(alt === addDays(today(), 1) ? 'tomorrow' : parseYmd(alt).toLocaleDateString('en-US', { weekday: 'short' }))}</button>` : ''}
+        <button class="mini" data-act="wx-keep" data-id="${esc(t.id)}" data-d="${t.date}">Keep</button>
+        <button class="mini ghost" data-act="wx-indoor" data-id="${esc(t.id)}" title="Not weather-dependent">Indoors anyway</button></div></div>`);
+    });
+    const nice = niceDay();
+    if (nice) parts.push(`<div class="card as-wx nice"><div class="as-wx-t">${wxIcon(nice.w)} <b>${esc(dayName(nice.d).replace(/^./, c => c.toUpperCase()))}</b> looks lovely: ${esc(nice.w.condition.toLowerCase() || 'clear')}, ${deg(nice.w.hi)}°. A good day for a family outing.</div>
+      <div class="as-acts"><button class="mini primary" data-act="nice-add" data-d="${nice.d}">Add a family outing</button><button class="mini ghost" data-act="nice-x" data-d="${nice.d}">Not this time</button></div></div>`);
+    el.innerHTML = parts.join('');
+  }
+
+  // ----- Weekly focus (in the Sunday sync): pick up to 3 from your list or type them, then plan them into free time -----
+  // Stored with the sync week: top = the 3 texts, topIds = the linked task for each (or null for a typed one).
+  const focusOf = mon => { const wk = syncWeekOf(mon); const ids = Array.isArray(wk.topIds) ? wk.topIds : []; return [0, 1, 2].map(i => ({ text: wk.top[i] || '', id: ids[i] && S.tasks[ids[i]] ? ids[i] : null })); };
+  function saveFocus(mon, f) { saveSync(mon, { top: f.map(x => x.text), topIds: f.map(x => x.id) }); }
+  function weekTop() { return focusOf(weekStart()).filter(x => x.text); }
+  function topCandidates(mon) {
+    const td = today(), linked = new Set(focusOf(mon).map(x => x.id).filter(Boolean));
+    return Object.values(S.tasks).filter(t => isOpen(t) && capVisible(t) && !linked.has(t.id) && t.category !== 'omar' && !(t.time && t.category === 'kids' && priLevel(t.priority) !== 'high'))   // skip kids routines like naps
+      .map(t => {
+        let s = priorityScore(t.priority);
+        if (t.due) s += Math.max(0, 20 - daysBetween(td, t.due) * 2);
+        if (t.originalDate && t.originalDate < td) s += Math.min(15, daysBetween(t.originalDate, td));
+        if (t.date && t.date < td) s += 8;
+        return { t, s };
+      }).sort((a, b) => b.s - a.s).slice(0, 6).map(x => x.t);
+  }
+  function buildWeekPlan(mon) {
+    const holds = [], avoid = new Set(), items = [];
+    focusOf(mon).forEach((f, i) => {
+      if (!f.text) return;
+      const t = f.id ? S.tasks[f.id] : { id: 'focus-' + i, title: f.text, category: guessCategory(f.text), duration: null };
+      const slot = findSlot(t, { from: mon, days: 7, holds, avoid });
+      if (slot) { holds.push(slot); avoid.add(slot.date); }
+      items.push({ slot: i, id: f.id, title: f.text, category: t.category, date: slot ? slot.date : null, start: slot ? slot.start : 18 * 60, mins: slot ? slot.mins : taskMinutes(t), include: !!slot });
+    });
+    return { mon, items };
+  }
+  function focusHtml(mon, wk) {
+    const f = focusOf(mon), c = calCfg(), free = f.some(x => !x.text);
+    const rows = f.map((x, i) => {
+      const t = x.id ? S.tasks[x.id] : null;
+      const when = t && t.date ? `${shortDay(t.date)}${t.time ? ' · ' + t.time : ''}${t.calEventId ? ' 📅' : ''}` : '';
+      return `<div class="fc-row"><input type="text" class="sy-top" data-sy="top" data-i="${i}" value="${esc(x.text)}" placeholder="${i + 1}. What matters most" aria-label="Focus ${i + 1}">
+        ${t ? `<span class="fc-meta">${t.status === 'done' ? '✓ Done' : esc(when || 'On your list')}</span>` : ''}</div>`;
+    }).join('');
+    const cands = free ? topCandidates(mon) : [];
+    const chips = cands.length ? `<div class="sy-sub">Or pick from your list</div><div class="fc-chips">${cands.map(t => `<button class="fc-chip" data-act="wt-pick" data-id="${esc(t.id)}">${priLevel(t.priority) === 'high' ? '● ' : ''}${esc(t.title)}</button>`).join('')}</div>` : '';
+    const any = f.some(x => x.text);
+    const wp = weekPlan && weekPlan.mon === mon ? `<div class="rs-plan">${weekPlan.items.map((it, i) => `<div class="rv-row plan-row ${it.include ? '' : 'off'}" style="border-left-color:${catColor(it.category)}">
+        <input type="checkbox" data-act="wp-inc" data-i="${i}" ${it.include ? 'checked' : ''} aria-label="Include ${esc(it.title)}">
+        <span class="plan-title">${esc(it.title)}${it.date && isOutdoor({ title: it.title }) ? ` <span class="muted">${esc(wxIcon(wxDay(it.date)))}</span>` : ''}</span>
+        <input type="date" class="plan-time" data-wp="date" data-i="${i}" min="${today()}" value="${esc(it.date || '')}" aria-label="Day for ${esc(it.title)}">
+        <input type="time" class="plan-time" data-wp="start" data-i="${i}" value="${hhmm(it.start)}" aria-label="Start time for ${esc(it.title)}">
+        <span class="muted">~${it.mins} min</span></div>`).join('')}
+      <p class="muted">One per day, in free time around your calendar. Adjust anything.</p>
+      <label class="set-chk"><input type="checkbox" data-wpopt="toCal" ${c.toCal ? 'checked' : ''}>Block them on my Google Calendar</label>
+      <div class="rv-actions"><button class="btn-add" data-act="wp-commit" ${weekPlan.items.some(i => i.include && i.date) ? '' : 'disabled'}>Add to my week</button><button class="btn-secondary" data-act="wp-cancel">Not now</button></div></div>` : '';
+    return `<div class="card"><h2>This week's focus</h2>${rows}${chips}
+      ${any && !(weekPlan && weekPlan.mon === mon) ? '<button class="btn-add full fc-plan" data-act="wp-open">Plan them into the week</button>' : ''}${wp}
+      <textarea class="sy-note" data-sy="note" placeholder="Anything Omar needs to know, or you need from him" aria-label="Notes">${esc(wk.note)}</textarea></div>`;
+  }
+  async function commitWeekPlan(toCal) {
+    if (!weekPlan) return;
+    const mon = weekPlan.mon, f = focusOf(mon), chosen = weekPlan.items.filter(i => i.include && i.date);
+    chosen.forEach(i => {
+      let t = i.id ? S.tasks[i.id] : null;
+      if (!t) { t = makeTask({ title: i.title, category: i.category, date: i.date }); f[i.slot] = { text: i.title, id: t.id }; }   // a typed focus becomes a task
+      stage('tasks', Object.assign({}, t, { date: i.date, time: clockLabel(i.start), duration: i.mins, priority: 'high', reviewedOn: weekStart(), originalDate: t.originalDate || (t.date && t.date !== i.date ? t.date : null) }));
+      i.id = t.id;
+    });
+    const all = Object.assign({}, syncAll()); all[mon] = Object.assign(syncWeekOf(mon), { top: f.map(x => x.text), topIds: f.map(x => x.id) });
+    setMetaStaged({ sync: all, cal: Object.assign(calCfg(), { toCal }) });
+    weekPlan = null; commit();
+    let n = 0;
+    for (const i of chosen) { const t = S.tasks[i.id]; if (!t || !(toCal || t.calEventId)) continue; const ok = await blockTask(i.id); if (ok === false) break; n++; }
+    calNote = { kind: 'ok', text: n ? `Your focus is planned: ${n} block${n === 1 ? '' : 's'} on your calendar.` : `Your focus is planned into the week.` };
+    if (n) loadCal(); else render();
+  }
+
+  function wireAssist() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id, d = el.dataset.d;
+      switch (el.dataset.act) {
+        case 'sched-open': openSched(id); break;
+        case 'sched-cancel': sched = null; render(); break;
+        case 'sched-save': saveSched(id); break;
+        case 'sched-remove': { const t = S.tasks[id]; if (t && t.calEventId) { const ev = t.calEventId; setTask(id, { calEventId: null, calLink: null }, { noCal: true }); unblockTask(ev); } sched = null; calNote = { kind: 'ok', text: 'Removed from your calendar. The task keeps its time here.' }; render(); break; }
+        case 'outdoor': { const t = S.tasks[id]; if (t) setTask(id, { outdoor: el.checked }, { noCal: true }); break; }
+        case 'cal-note-x': calNote = null; render(); break;
+        case 'wx-move': { const t = S.tasks[id]; if (t) moveTo(id, d); break; }
+        case 'wx-keep': assistHidden()['wx-' + id + '-' + d] = 1; saveUi(); render(); break;
+        case 'wx-indoor': setTask(id, { outdoor: false }, { noCal: true }); break;
+        case 'nice-add': { const t = makeTask({ title: 'Family outing', category: 'activity', date: d }); put('tasks', t); assistHidden()['nice-' + d] = 1; saveUi(); openSched(t.id); break; }
+        case 'nice-x': assistHidden()['nice-' + d] = 1; saveUi(); render(); break;
+        case 'wt-pick': {
+          const mon = syncWeekStart(), f = focusOf(mon), k = f.findIndex(x => !x.text), t = S.tasks[id];
+          if (k < 0 || !t) break;
+          f[k] = { text: t.title, id }; weekPlan = null; saveFocus(mon, f); break;
+        }
+        case 'wp-open': weekPlan = buildWeekPlan(syncWeekStart()); render(); break;
+        case 'wp-cancel': weekPlan = null; render(); break;
+        case 'wp-inc': if (weekPlan) { weekPlan.items[+el.dataset.i].include = el.checked; render(); } break;
+        case 'wp-commit': { const box = el.closest('.rs-plan'); const cb = box && box.querySelector('[data-wpopt="toCal"]'); commitWeekPlan(!!(cb && cb.checked)); break; }
+      }
+    });
+    // Remember what's typed in the Schedule it form, so a background refresh doesn't lose it.
+    const keepSched = e => {
+      const el = e.target; if (!el.dataset || !el.dataset.sched || !sched) return;
+      const k = el.dataset.sched;
+      if (k === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(el.value)) sched.date = el.value;
+      else if (k === 'start') { const m = timeMin(el.value); if (m < 9000) sched.start = m; }
+      else if (k === 'mins') { const m = parseInt(el.value, 10); if (m > 0) sched.mins = m; }
+      else if (k === 'toCal') sched.toCal = el.checked;
+      else if (k === 'omar') sched.omar = el.checked;
+      else if (k === 'emails') sched.emails = el.value;
+      if (k === 'date' && e.type === 'change') render();   // refresh the weather note for the new day
+    };
+    document.addEventListener('input', keepSched);
+    document.addEventListener('change', keepSched);
+    document.addEventListener('change', e => {
+      const el = e.target; if (!el.dataset || !el.dataset.wp || !weekPlan) return;
+      const it = weekPlan.items[+el.dataset.i]; if (!it) return;
+      if (el.dataset.wp === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(el.value)) { it.date = el.value; it.include = true; }
+      if (el.dataset.wp === 'start') { const m = timeMin(el.value); if (m < 9000) it.start = m; }
+      render();
+    });
   }
 
   // ---------- reminders (installable app + notifications) and work-day settings ----------
@@ -3510,7 +3899,7 @@ Rules:
       const sh = shiftsMap()[d] || '';
       return `<div class="card sy-day ${d === td ? 'is-today' : ''}">
         <div class="sy-head"><span class="sy-dow">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'long' }))} <span class="muted sy-date">${esc(short(d))}</span></span>
-          ${shiftBtn(d, sh, short(d))}</div>
+          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${shiftBtn(d, sh, short(d))}</span></div>
         ${allDay.length ? `<div class="sy-allday">${allDay.map(a => `<span class="sy-chip">${esc(a)}</span>`).join('')}</div>` : ''}
         ${items.map(i => `<div class="sy-item ${i.done ? 'done' : ''}"><span class="sy-time">${esc(clockLabel(i.start))}</span><span class="sy-title">${esc(i.title)}</span>${i.assignable ? `<button class="sy-pill ${i.who !== 'me' ? 'on' : ''}" data-act="sy-who" data-k="${esc(i.key)}" data-dflt="${i.dflt}" aria-label="Who covers ${esc(i.title)}: ${WHO_LABEL[i.who]}. Tap to change.">${WHO_LABEL[i.who]}</button>` : ''}</div>`).join('') || (allDay.length ? '' : `<div class="sy-empty muted">${d > through ? 'Calendar not loaded yet for this day.' : d < addDays(td, -1) ? "Calendar history isn't kept here." : 'Nothing scheduled.'}</div>`)}
         <label class="sy-meal"><span>Dinner</span><input type="text" data-sy="meal" data-d="${d}" value="${esc(wk.meals[d] || '')}" placeholder="What's for dinner?"></label>
@@ -3531,10 +3920,7 @@ Rules:
         ${dueAll.length ? `<div class="sy-sub">Due this week</div>${dueAll.map(({ t, d }) => `<div class="sy-flag">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'short' }))}: ${esc(t.title)}</div>`).join('')}` : ''}
       </div>
       ${dayHtml}
-      <div class="card"><h2>This week's focus</h2>
-        ${[0, 1, 2].map(i => `<input type="text" class="sy-top" data-sy="top" data-i="${i}" value="${esc(wk.top[i] || '')}" placeholder="${i + 1}. What matters most" aria-label="Focus ${i + 1}">`).join('')}
-        <textarea class="sy-note" data-sy="note" placeholder="Anything Omar needs to know, or you need from him" aria-label="Notes">${esc(wk.note)}</textarea>
-      </div>
+      ${focusHtml(mon, wk)}
       <div class="card sy-actions">
         <button class="btn-add" data-act="sy-share">Send summary to Omar</button>
         <button class="btn-secondary" data-act="sy-done">${wk.doneAt ? 'Undo "synced"' : 'Mark this week synced'}</button>
@@ -3576,7 +3962,7 @@ Rules:
       const el = e.target; if (!el.dataset || !el.dataset.sy) return;
       const mon = el.dataset.sy === 'meal' ? mondayOf(el.dataset.d) : syncWeekStart(), wk = syncWeekOf(mon);
       if (el.dataset.sy === 'meal') saveSync(mon, { meals: Object.assign({}, wk.meals, { [el.dataset.d]: el.value.trim() }) });
-      else if (el.dataset.sy === 'top') { const top = wk.top.slice(); top[+el.dataset.i] = el.value.trim(); saveSync(mon, { top }); }
+      else if (el.dataset.sy === 'top') { const f = focusOf(mon), k = +el.dataset.i, text = el.value.trim(); f[k] = { text, id: f[k].id && S.tasks[f[k].id] && S.tasks[f[k].id].title === text ? f[k].id : null }; weekPlan = null; saveFocus(mon, f); }
       else if (el.dataset.sy === 'note') saveSync(mon, { note: el.value });
     });
   }

@@ -63,6 +63,8 @@ export async function GET() {
               calendar: cal.summary || "",
               color,
               ...(e.location ? { location: String(e.location).slice(0, 200) } : {}),
+              // Blocks created by "Schedule it" point back at their task, so the page can show them once.
+              ...(e.extendedProperties?.private?.mydayTask ? { task: String(e.extendedProperties.private.mydayTask) } : {}),
               source: "google" as const,
             }));
         } catch {

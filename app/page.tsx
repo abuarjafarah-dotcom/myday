@@ -7,8 +7,14 @@ export default function Home() {
   const { data: session, status } = useSession();
 
   // Each person lands on their own dashboard: Farah on /dashboard, Omar on /omar.
+  // /?reauth=1 asks Google again, e.g. to grant calendar write access for "Schedule it".
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("reauth") === "1") signIn("google", { callbackUrl: "/" });
+  }, []);
+
   useEffect(() => {
     if (!session || session.error) return;
+    if (new URLSearchParams(window.location.search).get("reauth") === "1") return;
     fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((me) => window.location.replace(me?.home || "/dashboard"))
