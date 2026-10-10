@@ -440,7 +440,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-household { order: 4; } .h-reset { order: 3; } .h-today { order: 4; } .h-carry { order: 5; } .h-dump { order: 6; } .h-review { order: 7; } .h-waiting { order: 8; } .h-time { order: 9; } .h-more { order: 10; }
+.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-dump { order: 3; } .h-review { order: 3; } .h-waiting { order: 3; } .h-reset { order: 4; } .h-today { order: 5; } .h-carry { order: 6; } .h-time { order: 9; } .h-more { order: 10; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -563,6 +563,9 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* smart suggestion banner: boxed, quiet */
 .h-smart .card { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 12px 14px; margin-top: 16px; }
 .h-smart .card h2 { margin-bottom: 2px; }
+.h-smart:empty { display: none; }
+.h-smart .sg-line { font-size: 14px; line-height: 1.5; color: var(--text); padding: 4px 0; }
+.h-smart .sg-line .mini { margin-left: 6px; }
 /* Now */
 .cap-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--text); font-size: 13px; cursor: pointer; }
 .next-line { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; background: none; padding: 0; color: var(--muted); font-size: 14px; text-align: left; cursor: pointer; }
@@ -719,15 +722,6 @@ details.fold.sub > summary { min-height: 48px; }
     <div id="nowBox" class="h-now"></div>
     <div id="planBox" class="h-plan"></div>
     <div id="assistBox" class="h-assist"></div>
-    <div id="householdBox" class="h-household"></div>
-    <div id="resetBanner" class="h-reset"></div>
-    <div id="recapBanner" class="h-reset"></div>
-    <div class="card h-today">
-      <h2>Today</h2>
-      <div class="pri-filter" id="priFilter" role="group" aria-label="Filter by priority"></div>
-      <div id="todayList"></div>
-    </div>
-    <div id="carryBox" class="h-carry"></div>
     <div class="card dump h-dump">
       <h2 class="sr-only">Brain dump</h2>
       <div class="dump-field">
@@ -741,6 +735,14 @@ details.fold.sub > summary { min-height: 48px; }
     </div>
     <div id="reviewBox" class="h-review"></div>
     <div id="waitingBox" class="h-waiting"></div>
+    <div id="resetBanner" class="h-reset"></div>
+    <div id="recapBanner" class="h-reset"></div>
+    <div class="card h-today">
+      <h2>Today</h2>
+      <div class="pri-filter" id="priFilter" role="group" aria-label="Filter by priority"></div>
+      <div id="todayList"></div>
+    </div>
+    <div id="carryBox" class="h-carry"></div>
   </div>
   <div class="home-side">
     <details class="card fold h-time" data-fold="timer">
@@ -764,19 +766,6 @@ details.fold.sub > summary { min-height: 48px; }
         <details class="fold sub" data-fold="anytime">
           <summary><span>Anytime</span><span class="count" id="anyCount"></span></summary>
           <div class="fold-body"><div id="anytimeBox"></div></div>
-        </details>
-        <details class="fold sub" data-fold="keytimes">
-          <summary><span>Key times</span></summary>
-          <div class="fold-body">
-            <div id="keyTimes"></div>
-            <div class="add-row">
-              <input type="text" id="ktAdd" data-enter="kt-add" placeholder="3:00 PM pickup">
-            </div>
-          </div>
-        </details>
-        <details class="fold sub" data-fold="heads">
-          <summary><span>Heads up</span></summary>
-          <div class="fold-body"><div id="suggestBox"></div></div>
         </details>
         <details class="fold sub" data-fold="reminders">
           <summary><span>Reminders &amp; work day</span></summary>
@@ -883,7 +872,7 @@ details.fold.sub > summary { min-height: 48px; }
   </div>
 </section>
 
-<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 7, calm home</span></footer>
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 10, QA fixes</span></footer>
 
 <script>
 (() => {
@@ -1108,7 +1097,7 @@ details.fold.sub > summary { min-height: 48px; }
     if (!live.authed) mh = signInHtml('Gmail');
     else if (live.mailErr) mh = `<div class="empty">${esc(live.mailErr)}</div>`;
     else if (!live.mail) mh = '<div class="empty">Loading recent email…</div>';
-    else if (!live.mail.length) mh = '<div class="empty">No recent email in Primary.</div>';
+    else if (!live.mail.length) mh = '<div class="empty">No unread email in the last 24 hours.</div>';
     else mh = live.mail.map(mailRowHtml).join('');
     $('gmailList').innerHTML = mh;
     const evs = eventsOn(today());
@@ -1297,6 +1286,8 @@ details.fold.sub > summary { min-height: 48px; }
     if (patch.status === 'done' && t.status !== 'done') n.completedAt = Date.now();
     if (patch.status && patch.status !== 'done') n.completedAt = null;
     if (!opts.noCal && t.calEventId) calFollow(t, n);    // keep its Google Calendar block in step
+    if (t.sharedId && patch.status && (patch.status === 'done') !== (t.status === 'done'))
+      calFetch('POST', '/api/household', { op: 'update', id: t.sharedId, patch: { status: patch.status === 'done' ? 'done' : 'todo' } }).catch(() => {});
     put('tasks', n);
   }
   function moveTo(id, date) {
@@ -1323,9 +1314,9 @@ details.fold.sub > summary { min-height: 48px; }
     materializeOnce();
     const keep = rememberFocus();
     renderHeader(); renderTabs(); renderHint(); renderSync();
-    renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest(); renderKeyTimes();
+    renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderAssist(); renderHousehold(); renderResetBanner(); renderReset();
+    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
@@ -1475,6 +1466,7 @@ details.fold.sub > summary { min-height: 48px; }
     if (t.routineId) facts.push('repeats');
     if (t.status === 'doing') facts.push('in progress');
     if (t.projectId && S.projects[t.projectId]) facts.push(esc(projName(t.projectId)));
+    if (t.sharedBy === 'omar') facts.push('from Omar');
     if (t.source === 'gmail') facts.push('from an email'); else if (t.source === 'brain-dump') facts.push('from a brain dump');
     const acts = [];
     if (!done && opts.today) acts.push(`<button class="mini" data-act="to-today" data-id="${id}">Today</button>`);
@@ -1486,11 +1478,11 @@ details.fold.sub > summary { min-height: 48px; }
           ${!done && t.status !== 'doing' ? `<button class="toggle-line" data-act="now-start" data-id="${id}">Start timer</button>` : ''}
           ${t.status === 'doing' ? `<button class="toggle-line" data-act="task-todo" data-id="${id}">Move back to To do</button>` : ''}
           ${!done ? `<button class="toggle-line" data-act="sched-open" data-id="${id}">${t.calEventId ? '📅 On your calendar · Move' : '📅 Schedule it'}</button>` : ''}
-          ${!done ? `<button class="toggle-line" data-act="hh-hand" data-id="${id}">👥 Hand to Omar</button>` : ''}
           ${!done ? `<button class="toggle-line" data-act="drop" data-id="${id}">Let this go</button>` : ''}
           ${opts.board ? `<span class="ti-reorder">${dragHandle(t, opts.board)}<span>Drag to reorder</span></span>` : ''}
         </div>
         ${!done ? `<label class="set-chk"><input type="checkbox" data-act="outdoor" data-id="${id}" ${isOutdoor(t) ? 'checked' : ''}>Outdoors (plan around the weather)</label>` : ''}
+        ${!done && !t.sharedId ? `<label class="set-chk"><input type="checkbox" data-act="hh-hand" data-id="${id}">Omar's task (moves it to his dashboard)</label>` : ''}
         ${!done && sched && sched.id === t.id ? schedHtml(t) : ''}</div>` : '';
     return `<div class="task-item ${done ? 'done' : ''} ${open ? 'open' : ''}" ${opts.board ? `data-drag-id="${id}"` : ''}>
       <div class="ti-main"><input type="checkbox" data-act="toggle" data-id="${id}" ${done ? 'checked' : ''} aria-label="Done">
@@ -1579,20 +1571,15 @@ details.fold.sub > summary { min-height: 48px; }
     else if (st.length === 1) out.push(`Shopping: ${byStore[st[0]]} item${byStore[st[0]] > 1 ? 's' : ''} waiting at ${esc(st[0])}.`);
     const errands = todayOpen.filter(t => t.category === 'errands');
     if (errands.length >= 2) out.push(`${errands.length} errands today could go in one outing.`);
+    const mailAsks = (live.mail || []).filter(m => m.action && !mailTask(m)).length;
+    if (mailAsks) out.push(`${mailAsks} unread email${mailAsks === 1 ? ' asks' : 's ask'} you to do something. <button class="mini" data-act="open-mail">Review</button>`);
     if (!todayOpen.length && anytime.length) out.push(`Nothing is scheduled, and ${anytime.length} anytime ${anytime.length === 1 ? 'task is' : 'tasks are'} ready if you get a window.`);
     setHeads(out);
   }
-  function setHeads(out) {
-    const sig = out.join('|'); const hh = ui.headsHide;
-    const hidden = hh && hh.day === today() && hh.sig === sig;
-    $('suggestBox').innerHTML = out.length && !hidden ? `<div class="suggestions" role="status"><strong>Heads up<button class="mini ghost" data-act="heads-dismiss" data-sig="${esc(sig)}" aria-label="Dismiss heads up">✕</button></strong>${out.map(s => `<div>${s}</div>`).join('')}</div>` : '';
-  }
+  // Heads-up lines feed the single alert at the top of Home (renderSmart). They show only when there are no smart suggestions.
+  let headsLines = [];
+  function setHeads(out) { headsLines = out; renderSmart(); }
 
-  function renderKeyTimes() {
-    const kt = Array.isArray(meta().keyTimes) ? meta().keyTimes : [];
-    $('keyTimes').innerHTML = kt.length ? kt.map((k, i) => `<div class="key-row"><span>${esc(k)}</span><button class="mini ghost" data-act="kt-del" data-i="${i}" aria-label="Remove">✕</button></div>`).join('')
-      : '<div class="empty">Add the anchors of your day: naps, pickup, bedtime.</div>';
-  }
 
   // ---------- review ----------
   function renderReview() {
@@ -1999,7 +1986,7 @@ Rules:
     render();
   }
   // ---------- smart time tracker + smart suggestions ----------
-  // Reads only the existing state (S.tasks, meta().keyTimes, live.cal) and writes only through setTask().
+  // Reads only the existing state (S.tasks, live.cal) and writes only through setTask().
   // The timer lives on the task itself (task.timer = { startedAt, elapsedMs }), so it syncs like any other edit
   // and there is no second task system. Starting sets status 'doing' (shows in Kanban "In Progress");
   // Complete sets status 'done' on the same task.
@@ -2074,12 +2061,6 @@ Rules:
       const st = new Date(ev.start).getTime(), en = ev.end ? new Date(ev.end).getTime() : st;
       if (st <= now && en > now) { const e = new Date(en); busy = { title: ev.title || 'an event', until: e.getHours() * 60 + e.getMinutes() }; }
       const m = evMin(ev); if (m > nowMin) commitments.push({ min: m, title: ev.title || 'Calendar event', source: 'calendar' });
-    });
-    (Array.isArray(meta().keyTimes) ? meta().keyTimes : []).forEach(k => {
-      const hit = String(k).match(/(\d{1,2}(?::\d{2})?\s*[ap]\.?\s*m\.?)/i); if (!hit) return;
-      const m = timeMin(hit[1].replace(/\s+/g, ' ')); if (m >= 9000 || m <= nowMin) return;
-      const label = String(k).replace(hit[1], '').replace(/[:\-–@]+\s*$/, '').replace(/\bat\s*$/i, '').trim();
-      commitments.push({ min: m, title: label || 'Key time', source: 'keyTime' });
     });
     commitments.sort((a, b) => a.min - b.min);
     const next = commitments[0] || null;
@@ -2273,7 +2254,7 @@ Rules:
 
   function renderSmart() {
     const box = $('smartBox'); if (!box) return;
-    if (isResting()) { box.innerHTML = `<div class="card"><h2>Smart Suggestions</h2><div class="empty">Nothing needs you tonight. Rest counts.</div></div>`; return; }
+    if (isResting()) { box.innerHTML = ''; return; }
     const c = smartContext();
     const td = today();
     const out = [];
@@ -2287,7 +2268,11 @@ Rules:
           <button class="mini" data-act="sg-dismiss" data-key="${esc(s.key)}">Dismiss</button>
         </div></div>`).join('');
     const gentle = capMode() === 'survival' ? '<div class="cap-note" style="margin:0 0 8px">Survival mode: essentials only. Rest counts as getting something done.</div>' : '';
-    box.innerHTML = `<div class="card"><h2>Smart Suggestions</h2>${gentle}${items || '<div class="empty">Nothing needs a nudge right now. Suggestions appear as your day and list change.</div>'}</div>`;
+    if (items) { box.innerHTML = `<div class="card" role="status"><h2>Heads up</h2>${gentle}${items}</div>`; return; }
+    // No suggestions: fall back to the heads-up lines, or hide the alert entirely.
+    const sig = headsLines.join('|'), hh = ui.headsHide;
+    const hidden = hh && hh.day === today() && hh.sig === sig;
+    box.innerHTML = headsLines.length && !hidden ? `<div class="card" role="status"><h2><span>Heads up</span><button class="mini ghost" data-act="heads-dismiss" data-sig="${esc(sig)}" aria-label="Dismiss heads up">✕</button></h2>${headsLines.map(x => `<div class="sg-line">${x}</div>`).join('')}</div>` : '';
   }
 
   function tickClock() {
@@ -2341,12 +2326,6 @@ Rules:
       if (t.date !== td || !t.time || !(isOpen(t) || t.status === 'done')) return;
       const m = timeMin(t.time); if (m >= 9000) return;
       items.push({ kind: 'task', start: m, end: m + taskMinutes(t), title: t.title, color: catColor(t.category), done: t.status === 'done', id: t.id });
-    });
-    (Array.isArray(meta().keyTimes) ? meta().keyTimes : []).forEach(k => {
-      const hit = String(k).match(/(\d{1,2}(?::\d{2})?\s*[ap]\.?\s*m\.?)/i); if (!hit) return;
-      const m = timeMin(hit[1].replace(/\s+/g, ' ')); if (m >= 9000) return;
-      const label = String(k).replace(hit[1], '').replace(/[:\-–@]+\s*$/, '').replace(/\bat\s*$/i, '').trim();
-      items.push({ kind: 'key', start: m, end: m, title: label || 'Key time' });
     });
     return items.sort((a, b) => a.start - b.start || a.end - b.end);
   }
@@ -2815,6 +2794,10 @@ Rules:
         case 'auto-undo': undoAutoSort(id); break;
         case 'omar-hint-hide': ui.omarHintHide = true; saveUi(); renderOmar(); break;
         case 'auto-ok': { const d = S.dumps[id]; if (d) put('dumps', Object.assign({}, d, { autoSeen: true })); break; }
+        case 'open-mail': {
+          document.querySelectorAll('details[data-fold="more"], details[data-fold="inbox"]').forEach(d => { d.open = true; });
+          const g = $('gmailList'); if (g) g.scrollIntoView({ behavior: 'smooth', block: 'start' }); break;
+        }
         case 'heads-dismiss': ui.headsHide = { day: today(), sig: el.dataset.sig || '' }; saveUi(); renderSuggest(); break;
         case 'toggle': { const t = S.tasks[id]; if (t) setTask(id, { status: t.status === 'done' ? 'todo' : 'done' }); break; }
         case 'status': setTask(id, { status: el.dataset.to }); break;
@@ -2841,7 +2824,6 @@ Rules:
         case 'rv-inc': { const arr = review && review[el.dataset.kind]; if (arr) { arr[+el.dataset.i].include = el.checked; render(); } break; }
         case 'rv-commit': commitReview(); break;
         case 'rv-cancel': review = null; render(); break;
-        case 'kt-del': { const kt = (meta().keyTimes || []).slice(); kt.splice(+el.dataset.i, 1); setMeta({ keyTimes: kt }); break; }
         case 'dress-edit': {
           if (editDress) {
             const big = ($('dcBig') || {}).value || ''; const baby = ($('dcBaby') || {}).value || '';
@@ -2873,7 +2855,6 @@ Rules:
       switch (act) {
         case 'add-task': addTaskFromForm(); break;
         case 'add-project': addProject(); break;
-        case 'kt-add': if (v) { setMeta({ keyTimes: [...(meta().keyTimes || []), v] }); el.value = ''; } break;
         case 'add-idea': if (v) { el.value = ''; put('notes', { id: newId('n'), text: v, projectId: null, createdAt: Date.now() }); } break;
         case 'proj-add': if (v) { const p = S.projects[el.dataset.id]; el.value = ''; put('tasks', makeTask({ title: v, category: (p && p.category) || 'self', projectId: el.dataset.id })); } break;
         case 'groc-add': if (v) { el.value = ''; addGrocery(v, stores()[+el.dataset.si]); } break;
@@ -3037,21 +3018,48 @@ Rules:
     if (materializing) return;
     if (!(mode === 'cloud' || (mode === 'local' && cloudNote))) return;      // wait until this phone has the latest from the cloud
     materializing = true;
-    try { materializeRoutines(); } finally { materializing = false; }
+    try { materializeRoutines(); renderHousehold(); } finally { materializing = false; }
+  }
+  // School-day routines (pickup, drop-off) skip days the calendar marks as no school.
+  const SCHOOL_ROUTINE = /school|pick ?-?up|drop ?-?off|carpool/i;
+  const NO_SCHOOL_DAY = /\b(no school|schools? (?:is |are )?closed|no classes|teacher (?:work|in-?service|planning|prep)|in-?service|staff development|professional development|non-?student day|(?:fall|winter|spring|thanksgiving|mid-?winter|holiday) break|snow day|e-?learning day)\b/i;
+  function noSchoolOn(d) {
+    return (live.cal || []).some(ev => {
+      if (!NO_SCHOOL_DAY.test(`${ev.title || ''} ${ev.description || ''}`)) return false;
+      if (!ev.allDay) return evDate(ev) === d;
+      const st = String(ev.start).slice(0, 10), en = ev.end ? String(ev.end).slice(0, 10) : st;
+      return d >= st && (d < en || d === st);
+    });
+  }
+  // A weekday 2:30 PM school pickup routine is added once by default. Removing it keeps it removed.
+  function seedPickup() {
+    const m = meta(); if (m.pickupSeeded) return false;
+    const list = routinesList();
+    const r = list.some(x => /pick ?-?up/i.test(x.title)) ? null
+      : { id: 'r-pickup', title: '🚌 School pickup', category: 'kids', freq: 'weekdays', time: '2:30 PM', start: today(), dow: 1, dom: 1, active: true, createdAt: Date.now() };
+    setMetaStaged({ pickupSeeded: true, routines: r ? [...list, r] : list });
+    return true;
   }
   function materializeRoutines() {
-    const list = routinesList(); if (!list.length) return;
-    const td = today(); let changed = false;
+    let changed = seedPickup();
+    const list = routinesList(); if (!list.length) { if (changed) commit(); return; }
+    const td = today();
     const have = new Set(); Object.values(S.tasks).forEach(t => { if (t.routineId) have.add(t.routineId + '|' + t.date); });
     list.forEach(r => {
       if (r.active === false) return;
       for (let i = 0; i < 7; i++) {
         const d = addDays(td, i);
         if (!routineHits(r, d) || have.has(r.id + '|' + d)) continue;
+        if (SCHOOL_ROUTINE.test(r.title) && noSchoolOn(d)) continue;
         const t = makeTask({ title: r.title, category: r.category, date: d, time: r.time || null, source: 'routine' });
         t.id = `t-${r.id}-${d}`; t.routineId = r.id;
         stage('tasks', t); changed = true;
       }
+    });
+    Object.values(S.tasks).forEach(t => {     // already filled in, then the calendar says no school: clear it
+      if (!t.routineId || !isOpen(t) || !t.date || t.date < td) return;
+      const r = list.find(x => x.id === t.routineId);
+      if (r && SCHOOL_ROUTINE.test(r.title) && noSchoolOn(t.date)) { stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now(), noSchool: true })); changed = true; }
     });
     Object.values(S.tasks).forEach(t => {
       if (!t.routineId || !isOpen(t) || !t.date || t.date >= td) return;
@@ -3588,29 +3596,26 @@ Rules:
       ${done ? '' : `<button class="sy-pill ${t.to !== 'farah' ? 'on' : ''}" data-act="hh-who" data-id="${id}" aria-label="Who: ${HH_WHO[t.to]}. Tap to change.">${HH_WHO[t.to]}</button>`}
       <button class="mini ghost" data-act="hh-del" data-id="${id}" aria-label="Remove ${esc(t.title)}">${confirmKey === 'hh-' + t.id ? 'Sure?' : '✕'}</button></div>`;
   }
+  // No separate shared section: everything on this dashboard is Farah's. Anything Omar (or the old shared list)
+  // assigns to her or to "either" arrives as an ordinary task with a fixed id, so phones never duplicate it.
+  // Ticking it done here marks it done on the shared list too (see setTask).
   function renderHousehold() {
-    const el = $('householdBox'); if (!el) return;
-    if (hh.off || (!hh.items && !hh.me)) { el.innerHTML = ''; return; }
-    const items = hh.items || [], open = items.filter(t => t.status !== 'done');
-    const sortOpen = list => list.sort((a, b) => (a.date || a.due || '9999').localeCompare(b.date || b.due || '9999') || a.createdAt - b.createdAt);
-    const grp = (label, list) => list.length ? `<div class="grp-h"><span>${label}</span><span>${list.length}</span></div>${sortOpen(list).map(hhRow).join('')}` : '';
-    const recent = items.filter(t => t.status === 'done' && t.doneAt && Date.now() - t.doneAt < 3 * 86400000).sort((a, b) => b.doneAt - a.doneAt);
-    const doneOpen = !!ui.open.hhDone;
-    const toBtn = k => `<button type="button" data-act="hh-to" data-to="${k}" aria-pressed="${hh.to === k}">${k === 'farah' ? 'Me' : HH_WHO[k]}</button>`;
-    el.innerHTML = `<div class="card hh"><h2><span>Shared with Omar</span><span class="muted">${open.length ? open.length + ' open' : ''}</span></h2>
-      <div class="hh-add">
-        <input type="text" id="hhTitle" maxlength="160" value="${esc(hh.draft)}" placeholder="Add for the house, e.g. Take out recycling" aria-label="New shared task">
-        <div class="hh-opts"><div class="pri-filter hh-to" role="group" aria-label="Who does it">${toBtn('omar')}${toBtn('farah')}${toBtn('either')}</div>
-          <input type="date" id="hhDate" class="plan-time" value="${esc(hh.date)}" min="${today()}" aria-label="Day (optional)">
-          <button class="btn-add" data-act="hh-add">Add</button></div>
-        ${hh.err ? `<p class="muted" role="alert">${esc(hh.err)}</p>` : ''}
-      </div>
-      ${open.length ? grp("Omar's", open.filter(t => t.to === 'omar')) + grp('Yours', open.filter(t => t.to === 'farah')) + grp('Either of you', open.filter(t => t.to === 'either'))
-        : '<div class="empty">Nothing shared yet. Add something above, or open any task and tap "Hand to Omar".</div>'}
-      ${recent.length ? `<button class="toggle-line" data-act="hh-done-toggle" aria-expanded="${doneOpen}">${doneOpen ? 'Hide' : 'Show'} ${recent.length} done lately</button>
-        ${doneOpen ? recent.map(t => `<div class="hh-row done"><span class="hh-check">✓</span><span class="t">${esc(t.title)}<span class="muted">${t.doneBy === 'omar' ? 'Omar' : 'You'} · ${esc(new Date(t.doneAt).toLocaleDateString('en-US', { weekday: 'short' }))}</span></span>
-          <button class="mini ghost" data-act="hh-undo" data-id="${esc(t.id)}">Undo</button></div>`).join('') : ''}` : ''}
-    </div>`;
+    if (!hh.items || hh.me !== 'farah') return;
+    if (!(mode === 'cloud' || (mode === 'local' && cloudNote))) return;      // wait for the latest from the cloud first
+    let changed = false;
+    hh.items.forEach(x => {
+      if (x.id === 'pending' || x.to === 'omar') return;
+      const id = 't-hh-' + x.id, cur = S.tasks[id];
+      if (!cur) {
+        if (x.status === 'done') return;
+        const t = makeTask({ title: x.title, category: 'home', date: x.date || null, source: 'shared' });
+        t.id = id; t.sharedId = x.id; t.sharedBy = x.by; if (x.due) t.due = x.due; if (x.note) t.notes = x.note;
+        stage('tasks', t); changed = true;
+      } else if (x.status === 'done' && isOpen(cur)) {
+        stage('tasks', Object.assign({}, cur, { status: 'done', completedAt: x.doneAt || Date.now() })); changed = true;
+      }
+    });
+    if (changed) commit();
   }
   function hhAdd() {
     const title = ($('hhTitle') || {}).value ? $('hhTitle').value.trim() : '';
@@ -3625,6 +3630,7 @@ Rules:
     const t = S.tasks[id]; if (!t) return;
     const ok = await hhSend({ op: 'add', title: t.title, to: 'omar', date: t.date && t.date >= today() ? t.date : null, due: t.due || null, note: t.notes || '' }, `Handed to Omar: ${t.title}`);
     if (ok) { infoOpen.delete(id); setTask(id, { status: 'dropped', handedTo: 'omar' }); }   // not counted as "let go"; its calendar block is removed
+    else { calNote = { kind: 'err', text: hh.err || "Couldn't send that to Omar. Try again." }; render(); }
   }
   function wireHousehold() {
     document.addEventListener('click', e => {
@@ -3797,7 +3803,7 @@ Rules:
     const prevYm = shiftYm(ym, -1), [py, pm] = prevYm.split('-').map(Number);
     const prev = tasks.filter(t => t.status === 'done' && t.completedAt && new Date(t.completedAt).getFullYear() === py && new Date(t.completedAt).getMonth() + 1 === pm).length;
     const td = today(), inYm = d => d && d.slice(0, 7) === ym && d <= td;
-    const rt = tasks.filter(t => t.routineId && inYm(t.date));
+    const rt = tasks.filter(t => t.routineId && !t.noSchool && inYm(t.date));
     const rtKept = rt.filter(t => t.status === 'done').length;
     const peakHour = byHour.reduce((b, n, h) => h >= 4 && n > b.n ? { n, h } : b, { n: 0, h: -1 });
     const peakDow = byDow.reduce((b, n, i) => n > b.n ? { n, i } : b, { n: 0, i: -1 });
@@ -4165,7 +4171,6 @@ Rules:
     if (mail) bits.push(`Email ${mail}`);
     if (evs) bits.push(`${evs} event${evs === 1 ? '' : 's'}`);
     if (anytime.length) bits.push(`${anytime.length} anytime`);
-    if ($('suggestBox') && $('suggestBox').innerHTML.trim()) bits.push('Heads up');
     const mc = $('moreCount'); if (mc) mc.textContent = bits.join(' · ');
   }
   function wireCalm() {

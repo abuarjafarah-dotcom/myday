@@ -212,14 +212,6 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
       const m = toMin(t.time);
       if (m !== null && !quiet(t) && now.min >= m - 15 && now.min < m) push(`t-${String(t.id)}-${now.date}`, "In 15 minutes", `${t.title} at ${t.time}`);
     });
-    (Array.isArray(meta.keyTimes) ? (meta.keyTimes as unknown[]) : []).forEach((k) => {
-      const hit = String(k).match(/(\d{1,2}(?::\d{2})?\s*[ap]\.?\s*m\.?)/i);
-      const m = hit ? toMin(hit[1].replace(/\s+/g, " ")) : null;
-      if (hit && m !== null && now.min >= m - 15 && now.min < m) {
-        const label = String(k).replace(hit[1], "").replace(/[:\-–@]+\s*$/, "").replace(/\bat\s*$/i, "").trim() || "Key time";
-        push(`k-${createHash("md5").update(String(k)).digest("hex").slice(0, 8)}-${now.date}`, "In 15 minutes", `${label} at ${clock(m)}`);
-      }
-    });
   }
   return out;
 }

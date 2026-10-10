@@ -8,7 +8,7 @@ import { summarizeRecent, type MailIn } from "@/lib/mailSummary";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-// GET /api/gmail                  -> the 5 most recent Primary emails with a one-line summary and an optional suggested task.
+// GET /api/gmail                  -> unread inbox email from the last 24 hours with a one-line summary and an optional suggested task.
 // GET /api/gmail?mode=tasks       -> reads the last 7 days of email and suggests tasks (school forms, RSVPs, deadlines).
 //                                    Nothing is saved here. The dashboard shows the suggestions for review first.
 //   ?today=YYYY-MM-DD   the user's local date (so "by Friday" resolves correctly)
@@ -174,13 +174,15 @@ export async function GET(request: Request) {
       const seen = new Set((url.searchParams.get("seen") || "").split(",").filter(Boolean));
       return await scanForTasks(auth, today, seen, viewFor(session.user?.email) === "omar");
     }
-    // Default: the 5 most recent Primary emails, each with a one-line summary and,
-    // only when the email asks for something, a suggested task. Promotions, Social and Updates are left out.
+    // Default: every unread inbox email from the last 24 hours (up to 15), each with a one-line summary and,
+    // only when the email asks for something, a suggested task. Promotions and Social are left out.
+    // No "category:primary" filter: it returns nothing when Gmail's inbox tabs are turned off, and school
+    // emails often land in Updates.
     const t = url.searchParams.get("today") || "";
     const today = /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : fmtYmd(new Date());
-    const q = "in:inbox category:primary -category:promotions -category:social -category:updates -category:forums";
+    const q = "in:inbox is:unread newer_than:1d -category:promotions -category:social";
     const list = await fetch(
-      "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5&q=" + encodeURIComponent(q),
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=15&q=" + encodeURIComponent(q),
       { headers: auth, cache: "no-store" }
     );
     if (list.status === 401) return Response.json({ error: "Unauthorized" }, { status: 401 });
