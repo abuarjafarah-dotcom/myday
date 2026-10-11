@@ -4,11 +4,14 @@ import { viewFor } from "@/lib/users";
 import { omarExtract } from "@/lib/omarMail";
 import { findPart, stripHtml, parseDue, fmtYmd, parseYmd, type GmailPart } from "@/lib/mailText";
 import { summarizeRecent, type MailIn } from "@/lib/mailSummary";
+import { extractSchool, schoolQuery } from "@/lib/schoolRadar";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 // GET /api/gmail                  -> unread inbox email from the last 24 hours with a one-line summary and an optional suggested task.
+// GET /api/gmail?mode=school      -> school email radar: dated school events (no school, early release, picture day, dress-up,
+//                                    field trips, conferences, things to bring) from the last 30 days. ?senders=a@x.org,b@y.org
 // GET /api/gmail?mode=tasks       -> reads the last 7 days of email and suggests tasks (school forms, RSVPs, deadlines).
 //                                    Nothing is saved here. The dashboard shows the suggestions for review first.
 //   ?today=YYYY-MM-DD   the user's local date (so "by Friday" resolves correctly)
@@ -168,6 +171,28 @@ export async function GET(request: Request) {
   const auth = { Authorization: `Bearer ${session.accessToken}` };
   const url = new URL(request.url);
   try {
+    if (url.searchParams.get("mode") === "school") {
+      const t = url.searchParams.get("today") || "";
+      const today = /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : fmtYmd(new Date());
+      const senders = (url.searchParams.get("senders") || "").split(",").map((x) => x.trim().toLowerCase())
+        .filter((x) => /^[a-z0-9._%+-]*@?[a-z0-9.-]+\.[a-z]{2,}$/.test(x)).slice(0, 10);
+      const list = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=25&q=" + encodeURIComponent(schoolQuery(senders)), { headers: auth, cache: "no-store" });
+      if (list.status === 401) return Response.json({ error: "Unauthorized" }, { status: 401 });
+      if (list.status === 403) return Response.json({ error: "scope" }, { status: 403 });
+      const data = (await list.json()) as { messages?: { id: string }[] };
+      const mails = await Promise.all(
+        (data.messages || []).map(async ({ id }) => {
+          const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, { headers: auth, cache: "no-store" });
+          const m = (await r.json()) as GmailMessage;
+          const headers = m.payload?.headers || [];
+          const get = (n: string) => headers.find((h) => h.name.toLowerCase() === n.toLowerCase())?.value || "";
+          const plain = findPart(m.payload, "text/plain");
+          const body = (plain || stripHtml(findPart(m.payload, "text/html"))).slice(0, 12000);
+          return { id, subject: get("Subject") || "", from: get("From").replace(/\s*<[^>]+>\s*$/, "").replace(/^"|"$/g, ""), body };
+        })
+      );
+      return Response.json({ items: extractSchool(mails, today), scanned: mails.length }, { headers: { "Cache-Control": "no-store" } });
+    }
     if (url.searchParams.get("mode") === "tasks") {
       const t = url.searchParams.get("today") || "";
       const today = /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : fmtYmd(new Date());

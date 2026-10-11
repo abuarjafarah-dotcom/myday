@@ -690,6 +690,8 @@ details.fold.sub > summary { min-height: 48px; }
 .sick-log ul { list-style: none; margin: 4px 0; padding: 0; } .sick-log li { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--hair); }
 .sick-add { display: flex; gap: 6px; flex-wrap: wrap; } .sick-add input { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); min-height: 44px; }
 .sick-add #sickTemp { width: 80px; } .sick-add #sickNote { flex: 1 1 160px; min-width: 0; }
+#schoolBox .wr-row .t a, #adminBox .wr-row .t a { color: inherit; }
+.adm-add { margin-top: 8px; }
 .load-ref { padding: 4px 0 14px; font-size: 14px; } .load-h { display: flex; justify-content: space-between; gap: 8px; }
 .load-bar { height: 8px; border-radius: 999px; background: var(--hair); overflow: hidden; margin: 6px 0 4px; } .load-bar span { display: block; height: 100%; background: var(--accent); opacity: .7; }
 .load-k { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
@@ -785,6 +787,14 @@ details.fold.sub > summary { min-height: 48px; }
           <summary><span>Anytime</span><span class="count" id="anyCount"></span></summary>
           <div class="fold-body"><div id="anytimeBox"></div></div>
         </details>
+        <details class="fold sub" data-fold="school">
+          <summary><span>School radar</span></summary>
+          <div class="fold-body" id="schoolBox"></div>
+        </details>
+        <details class="fold sub" data-fold="admin">
+          <summary><span>Life admin</span></summary>
+          <div class="fold-body" id="adminBox"></div>
+        </details>
         <details class="fold sub" data-fold="reminders">
           <summary><span>Reminders &amp; work day</span></summary>
           <div class="fold-body" id="settingsBody"></div>
@@ -836,7 +846,7 @@ details.fold.sub > summary { min-height: 48px; }
     <div class="kanban" id="kanban"></div>
   </div>
   <div id="sub-week">
-    <p class="muted" style="margin-bottom:10px">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
+    <div class="row" style="margin-bottom:10px;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><p class="muted">Your dashboard tasks and Google Calendar events for the next 7 days.</p><button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button></div>
     <div id="weekList"></div>
   </div>
   <div id="sub-sync" class="hidden"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
@@ -1335,7 +1345,7 @@ details.fold.sub > summary { min-height: 48px; }
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderFamily(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
+    renderTracker(); renderSmart(); renderFamily(); renderSchoolAdmin(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
@@ -1903,7 +1913,8 @@ Rules:
       const d = addDays(td, i), sh = shiftsMap()[d] || '';
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
       const evs = eventsOn(d);
-      const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+      const schHtml = schoolOn(d).filter(i => i.kind === 'noschool').map(i => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${esc(i.icon)} ${esc(i.title)}</span></div>`).join('');
+      const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span>
           <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${(() => { const o = !sh && omarDay(d); return o ? `<span class="od-auto" title="Omar, from his calendar">${o.emoji} ${esc(o.kind === 'recovery' ? 'Recovery' : o.label)}</span>` : ''; })()}${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
@@ -2799,6 +2810,7 @@ Rules:
     wireAssist();
     wireHousehold();
     wireFamily();
+    wireRadar();
     wireCalm();
     wireRecap();
     wireSync();
@@ -3038,12 +3050,13 @@ Rules:
     if (materializing) return;
     if (!(mode === 'cloud' || (mode === 'local' && cloudNote))) return;      // wait until this phone has the latest from the cloud
     materializing = true;
-    try { materializeRoutines(); renderHousehold(); } finally { materializing = false; }
+    try { materializeRoutines(); adminMaterialize(); renderHousehold(); } finally { materializing = false; }
   }
   // School-day routines (pickup, drop-off) skip days the calendar marks as no school.
   const SCHOOL_ROUTINE = /school|pick ?-?up|drop ?-?off|carpool/i;
   const NO_SCHOOL_DAY = /\b(no school|schools? (?:is |are )?closed|no classes|teacher (?:work|in-?service|planning|prep)|in-?service|staff development|professional development|non-?student day|(?:fall|winter|spring|thanksgiving|mid-?winter|holiday) break|snow day|e-?learning day)\b/i;
   function noSchoolOn(d) {
+    if (schoolNoSchool(d)) return true;
     return (live.cal || []).some(ev => {
       if (!NO_SCHOOL_DAY.test(`${ev.title || ''} ${ev.description || ''}`)) return false;
       if (!ev.allDay) return evDate(ev) === d;
@@ -3913,6 +3926,259 @@ Rules:
     loadHandoff();
     setInterval(() => { if (!document.hidden) loadHandoff(); }, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) loadHandoff(); });
+  }
+
+  // ---------- school email radar, life admin, and the fridge sheet ----------
+  // School radar: /api/gmail?mode=school finds dated school events. New ones are added on their own (event on the day,
+  // a prep task the evening before); "Undo" removes them and they never come back. No-school days skip the pickup routine.
+  const schoolCfg = () => Object.assign({ senders: [], items: {}, scannedAt: 0 }, meta().school || {});
+  const school = { busy: false, err: '', added: 0 };
+  const schoolOn = d => Object.values(schoolCfg().items).filter(i => !i.undone && d >= i.date && d <= (i.end || i.date));
+  const schoolNoSchool = d => schoolOn(d).some(i => i.kind === 'noschool');
+  async function scanSchool(manual) {
+    if (school.busy) return; school.busy = true; school.err = ''; if (manual) renderSchoolAdmin();
+    const cfg = schoolCfg();
+    try {
+      const d = await getJson(`/api/gmail?mode=school&today=${today()}&senders=${encodeURIComponent(cfg.senders.join(','))}`);
+      const items = Object.assign({}, cfg.items), td = today(), added = [];
+      (d.items || []).forEach(it => {
+        if (items[it.id]) return;
+        const tasks = [];
+        if (it.kind !== 'noschool') {
+          const t = makeTask({ title: `${it.icon} ${it.title}`, category: 'kids', date: it.date, time: it.time || null, source: 'school' });
+          t.id = 't-sch-' + it.id; t.notes = `From school email: ${it.subject}`; stage('tasks', t); tasks.push(t.id);
+        }
+        const prep = it.kind === 'noschool'
+          ? { title: `🏠 No school ${shortDay(it.date)}${it.end ? '–' + shortDay(it.end) : ''}: plan care`, date: addDays(it.date, -3) < td ? td : addDays(it.date, -3) }
+          : it.prep;
+        if (prep && prep.date >= td && prep.date <= it.date) {
+          const p = makeTask({ title: prep.title, category: 'kids', date: prep.date, source: 'school' });
+          p.id = 't-schp-' + it.id; p.notes = `From school email: ${it.subject}`; if (it.kind === 'noschool') p.due = it.date; stage('tasks', p); tasks.push(p.id);
+        }
+        items[it.id] = Object.assign({}, it, { tasks, addedAt: Date.now() });
+        added.push(it);
+      });
+      Object.keys(items).forEach(k => { if ((items[k].end || items[k].date) < addDays(td, -14)) delete items[k]; });
+      setMetaStaged({ school: Object.assign(cfg, { items, scannedAt: Date.now() }) }); commit();
+      school.added = added.length;
+      if (added.length) calNote = { kind: 'ok', text: `From school: ${added.slice(0, 3).map(i => `${i.icon} ${i.title} (${shortDay(i.date)})`).join(', ')}${added.length > 3 ? ` +${added.length - 3} more` : ''}. Added to your days.` };
+      else if (manual) calNote = { kind: 'ok', text: `Checked ${d.scanned || 0} school emails. Nothing new.` };
+    } catch (e) { school.err = e.auth ? 'Sign in again to check school email.' : "Couldn't check email right now."; }
+    school.busy = false; render();
+  }
+  function undoSchool(id) {
+    const cfg = schoolCfg(), it = cfg.items[id]; if (!it) return;
+    (it.tasks || []).forEach(tid => { if (S.tasks[tid]) unstage('tasks', tid); });
+    const items = Object.assign({}, cfg.items, { [id]: Object.assign({}, it, { undone: true, tasks: [] }) });
+    setMetaStaged({ school: Object.assign(cfg, { items }) }); commit();
+  }
+  function schoolHtml() {
+    const cfg = schoolCfg(), td = today();
+    const list = Object.values(cfg.items).filter(i => (i.end || i.date) >= td).sort((a, b) => a.date.localeCompare(b.date));
+    const when = cfg.scannedAt ? new Date(cfg.scannedAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'not yet';
+    return `<p class="muted">Reads school emails for no-school days, early release, picture day, dress-up days, field trips and things to bring. Adds each to its day with a prep task the evening before. Last checked: ${esc(when)}.</p>
+      <label class="sched-mail">School email addresses (optional, makes it sharper)<input type="text" inputmode="email" id="schoolSenders" value="${esc(cfg.senders.join(', '))}" placeholder="teacher@school.org, office@school.org"></label>
+      ${list.length ? list.map(i => `<div class="wr-row ${i.undone ? 'off' : ''}"><span class="t">${esc(i.icon)} ${esc(i.title)}<span class="muted">${esc(shortDay(i.date))}${i.end ? ' – ' + esc(shortDay(i.end)) : ''}${i.time ? ' · ' + esc(i.time) : ''} · ${esc(i.subject || i.from || '')}</span></span>
+        <span class="as-acts">${i.undone ? '<span class="muted">Removed</span>' : `<button class="mini ghost" data-act="sch-undo" data-id="${esc(i.id)}">Undo</button>`}</span></div>`).join('')
+        : '<div class="empty">Nothing coming up from school yet.</div>'}
+      ${school.err ? `<p class="muted" role="alert">${esc(school.err)}</p>` : ''}
+      <div class="rv-actions"><button class="btn-secondary" data-act="sch-scan" ${school.busy ? 'disabled' : ''}>${school.busy ? 'Checking…' : 'Check school email now'}</button></div>`;
+  }
+
+  // Life admin: yearly (or twice-yearly) deadlines. Each becomes a task two weeks ahead (configurable), due on the day.
+  const ADMIN_DEFAULTS = [
+    { id: 'a-ptax2', icon: '🏡', title: 'Property tax, 2nd half', md: '10-15', every: 12, lead: 14, link: 'https://www.olmstedcounty.gov/residents/land-property/property-taxes/paying-property-taxes' },
+    { id: 'a-ptax1', icon: '🏡', title: 'Property tax, 1st half', md: '05-15', every: 12, lead: 14, link: 'https://www.olmstedcounty.gov/residents/land-property/property-taxes/paying-property-taxes' },
+    { id: 'a-income', icon: '🧾', title: 'File federal and Minnesota taxes', md: '04-15', every: 12, lead: 30, link: '' },
+    { id: 'a-taxdocs', icon: '📂', title: 'Gather W-2s and tax documents', md: '02-15', every: 12, lead: 7, link: '' },
+    { id: 'a-flu', icon: '💉', title: 'Flu shots for everyone', md: '10-15', every: 12, lead: 14, link: '' },
+    { id: 'a-enroll', icon: '🩺', title: 'Benefits open enrollment', md: '', every: 12, lead: 14, link: '' },
+    { id: 'a-car', icon: '🚗', title: 'Car registration renewal', md: '', every: 12, lead: 21, link: 'https://drive.mn.gov' },
+    { id: 'a-ins', icon: '🛡️', title: 'Home and auto insurance renewal', md: '', every: 12, lead: 21, link: '' },
+    { id: 'a-dent', icon: '🦷', title: 'Dentist cleanings', md: '', every: 6, lead: 21, link: '' },
+    { id: 'a-well', icon: '👶', title: 'Well-child checkups', md: '', every: 12, lead: 21, link: '' },
+    { id: 'a-school', icon: '🏫', title: 'School re-enrollment', md: '', every: 12, lead: 21, link: '' },
+  ];
+  const adminList = () => Array.isArray(meta().admin) ? meta().admin : ADMIN_DEFAULTS;
+  function adminNext(a, from = today()) {
+    if (!/^\d{2}-\d{2}$/.test(a.md || '')) return null;
+    const [m, d] = a.md.split('-').map(Number), y = parseYmd(from).getFullYear(), step = a.every === 6 ? 6 : 12;
+    for (let k = -12; k <= 24; k += step) {
+      const dt = new Date(y, m - 1 + k, 1); const last = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+      const s = ymd(new Date(dt.getFullYear(), dt.getMonth(), Math.min(d, last)));
+      if (s >= from) return s;
+    }
+    return null;
+  }
+  function adminMaterialize() {
+    const td = today(); let changed = false;
+    adminList().forEach(a => {
+      const due = adminNext(a, td); if (!due) return;
+      const lead = Math.max(0, Math.min(90, +a.lead || 14)), start = addDays(due, -lead);
+      if (start > td) return;
+      const id = `t-adm-${a.id}-${due}`; if (S.tasks[id]) return;
+      const t = makeTask({ title: `${a.icon} ${a.title}`, category: 'home', date: td, source: 'admin' });
+      t.id = id; t.due = due; t.priority = daysBetween(td, due) <= 3 ? 'high' : null; t.notes = a.link ? a.link : '';
+      stage('tasks', t); changed = true;
+    });
+    if (changed) commit();
+  }
+  let adminDraft = { title: '', md: '' };
+  function adminHtml() {
+    const td = today();
+    const rows = adminList().slice().sort((a, b) => (adminNext(a) || '9999').localeCompare(adminNext(b) || '9999')).map(a => {
+      const nx = adminNext(a), n = nx ? daysBetween(td, nx) : null, y = parseYmd(td).getFullYear();
+      return `<div class="wr-row adm-row"><span class="t">${esc(a.icon)} ${esc(a.title)}<span class="muted">${nx ? `${esc(shortDay(nx))} · ${n === 0 ? 'today' : `in ${n} day${n === 1 ? '' : 's'}`}${a.every === 6 ? ' · every 6 months' : ''}` : 'Add the date to get reminders'}${a.link ? ` · <a href="${esc(a.link)}" target="_blank" rel="noopener">link</a>` : ''}</span></span>
+        <span class="as-acts"><input type="date" class="plan-time" data-adm-date="${esc(a.id)}" value="${a.md ? `${y}-${a.md}` : ''}" aria-label="Date for ${esc(a.title)}">
+        <button class="mini ghost" data-act="adm-del" data-id="${esc(a.id)}" aria-label="Remove ${esc(a.title)}">${confirmKey === 'adm-' + a.id ? 'Sure?' : '✕'}</button></span></div>`;
+    }).join('');
+    return `<p class="muted">Yearly deadlines. Each shows up in your day ahead of time, with its due date.</p>${rows}
+      <div class="sick-add adm-add"><input id="admTitle" maxlength="60" placeholder="Add one, e.g. Passport renewal" aria-label="New life admin item" value="${esc(adminDraft.title)}">
+        <input type="date" id="admDate" aria-label="Date" value="${esc(adminDraft.md)}"><button class="mini primary" data-act="adm-add">Add</button></div>`;
+  }
+  function saveAdmin(list) { setMeta({ admin: list }); }
+
+  function renderSchoolAdmin() {
+    const s = $('schoolBox'); if (s) s.innerHTML = schoolHtml();
+    const a = $('adminBox'); if (a) a.innerHTML = adminHtml();
+  }
+
+  // Fridge sheet: the week as pictures for the boys (swim, school, soccer, no school, Baba's shifts), printed for the mud room.
+  const ACTS = [
+    [/no school|school closed|\bbreak\b|in-?service|snow day/i, '🏠', 'No school'],
+    [/picture day|photo day|picture retake/i, '📸', 'Photos'],
+    [/field trip/i, '🎒', 'Field trip'],
+    [/pajama|\bpj day/i, '🛌', 'PJ day'],
+    [/crazy hair|hat day|spirit|dress up|costume|jersey day|\bwear\b/i, '👕', 'Dress up'],
+    [/early (?:release|dismissal|out)|half day/i, '🕛', 'Early out'],
+    [/swim/i, '🏊', 'Swim'],
+    [/soccer/i, '⚽', 'Soccer'],
+    [/gymnast|tumbl/i, '🤸', 'Gym'],
+    [/ballet|dance/i, '💃', 'Dance'],
+    [/music|piano|violin/i, '🎵', 'Music'],
+    [/art class|painting/i, '🎨', 'Art'],
+    [/library|story ?time/i, '📚', 'Library'],
+    [/quran|mosque|masjid|islamic school|sunday school/i, '🕌', 'Quran'],
+    [/dentist/i, '🦷', 'Dentist'],
+    [/doctor|pediatric|well[- ]child|check-?up|\bshots?\b|vaccin/i, '🩺', 'Doctor'],
+    [/haircut|barber/i, '💇', 'Haircut'],
+    [/birthday/i, '🎂', 'Birthday'],
+    [/party|fest|celebration|concert|recital|parade|performance/i, '🎉', 'Party'],
+    [/playdate|play date/i, '🧸', 'Playdate'],
+    [/park|playground|zoo|museum|apple|pumpkin|outing|hike/i, '🌳', 'Outing'],
+    [/flight|airport|\btrip\b|travel/i, '✈️', 'Trip'],
+    [/school|pick ?-?up|drop ?-?off|preschool|daycare|montessori/i, '🏫', 'School'],
+  ];
+  const KID_COLOR = { Hamad: '#2F6FB5', Talal: '#C4714A', Yousef: '#3E8E5A' };
+  function fridgeDay(d) {
+    const seen = new Map();
+    const add = (text, time) => {
+      const a = ACTS.find(x => x[0].test(text)); if (!a) return;
+      const kids = KIDS.filter(k => new RegExp(`\\b${k}\\b`, 'i').test(text));
+      const key = a[2], cur = seen.get(key);
+      if (cur) { kids.forEach(k => { if (!cur.kids.includes(k)) cur.kids.push(k); }); if (!cur.time && time) cur.time = time; return; }
+      seen.set(key, { icon: a[1], label: a[2], kids, time: time || '' });
+    };
+    const noSchool = noSchoolOn(d) || schoolNoSchool(d);
+    if (noSchool && parseYmd(d).getDay() % 6) add('no school');
+    schoolOn(d).forEach(i => add(i.title, i.time));
+    eventsOn(d).forEach(ev => add(`${ev.title || ''}`, ev.allDay ? '' : evTime(ev)));
+    Object.values(S.tasks).filter(t => t.date === d && t.status !== 'dropped' && !/^t-schp-/.test(t.id) && ['kids', 'activity', 'home', 'omar'].includes(t.category))
+      .forEach(t => add(t.title, t.time || ''));
+    if (noSchool) seen.delete('School');
+    const first = a => (a.label === 'School' || a.label === 'No school' ? 0 : 1);
+    return [...seen.values()].sort((a, b) => first(a) - first(b) || timeMin(a.time || '11:59 PM') - timeMin(b.time || '11:59 PM'));
+  }
+  function babaOf(d) {
+    const o = omarDay(d); if (!o) return null;
+    if (o.kind === 'night') return ['🌙', 'Baba works tonight'];
+    if (o.kind === 'day' || o.kind === 'oncall') return ['🏥', 'Baba at work'];
+    if (o.kind === 'travel') return ['✈️', 'Baba away'];
+    if (o.sleepUntil) return ['😴', 'Baba sleeps in'];
+    if (o.kind === 'off') return ['🏠', 'Baba home'];
+    return null;
+  }
+  function fridgeSheet() {
+    const mon = syncWeekStart(), meals = syncWeekOf(mon).meals || {};
+    const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(mon, i));
+    const cols = days.map(d => {
+      const dt = parseYmd(d), acts = fridgeDay(d), baba = babaOf(d), meal = meals[d] || '';
+      const weekend = dt.getDay() % 6 === 0;
+      return `<section class="day ${weekend ? 'wk' : ''}"><header><b>${dt.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}</b><span>${dt.getDate()}</span></header>
+        <div class="acts" contenteditable="true">${acts.map(a => `<div class="act"><span class="ic">${a.icon}</span><span class="lb">${esc(a.label)}</span>${a.kids.length ? `<span class="kids">${a.kids.map(k => `<i style="background:${KID_COLOR[k]}">${k[0]}</i>`).join('')}</span>` : ''}${a.time ? `<span class="tm">${esc(a.time)}</span>` : ''}</div>`).join('')}</div>
+        <footer>${baba ? `<div class="baba"><span>${baba[0]}</span>${esc(baba[1])}</div>` : '<div class="baba"></div>'}<div class="meal" contenteditable="true">${meal ? '🍽️ ' + esc(meal) : ''}</div></footer></section>`;
+    }).join('');
+    const range = `${parseYmd(mon).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} – ${parseYmd(addDays(mon, 6)).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Our week</title><style>
+      @page { size: letter landscape; margin: .35in; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: "Avenir Next", "Nunito", system-ui, sans-serif; color: #2b2622; background: #fff; padding: 16px; }
+      .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+      h1 { font-size: 28px; letter-spacing: .02em; } .top .r { font-size: 15px; color: #7a716a; }
+      .legend { display: flex; gap: 14px; font-size: 14px; align-items: center; } .legend i, .kids i { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-style: normal; font-weight: 700; font-size: 13px; }
+      .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; min-height: 6.6in; }
+      .day { border: 2px solid #2b2622; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
+      .day.wk { background: #faf6ef; }
+      .day header { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; border-bottom: 2px solid #2b2622; }
+      .day header b { font-size: 22px; letter-spacing: .04em; } .day header span { font-size: 22px; font-weight: 300; }
+      .acts { flex: 1; padding: 8px 6px; display: flex; flex-direction: column; gap: 10px; outline: none; }
+      .act { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
+      .act .ic { font-size: 46px; line-height: 1.05; } .act .lb { font-size: 17px; font-weight: 700; }
+      .act .tm { font-size: 13px; color: #7a716a; } .kids { display: flex; gap: 3px; }
+      .day footer { border-top: 1.5px dashed #b9afa6; padding: 6px 8px; min-height: 70px; font-size: 13px; }
+      .baba { display: flex; align-items: center; gap: 6px; font-weight: 600; } .baba span { font-size: 26px; }
+      .meal { margin-top: 4px; color: #4e4640; outline: none; min-height: 16px; }
+      .bar { margin-top: 12px; display: flex; gap: 10px; justify-content: center; } .bar button { font: inherit; font-size: 16px; padding: 10px 22px; border-radius: 999px; border: 0; background: #2b2622; color: #fff; }
+      .bar p { align-self: center; color: #7a716a; font-size: 14px; }
+      @media print { .bar { display: none; } body { padding: 0; } }
+      @media (max-width: 700px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    </style></head><body>
+      <div class="top"><h1>Our week</h1><div class="legend">${KIDS.map(k => `<span><i style="background:${KID_COLOR[k]}">${k[0]}</i> ${k}</span>`).join('')}<span class="r">${esc(range)}</span></div></div>
+      <div class="grid">${cols}</div>
+      <div class="bar"><p>Tap any day to add or remove something before printing.</p><button onclick="window.print()">Print</button></div>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { calNote = { kind: 'err', text: 'Allow pop-ups for this site to open the fridge sheet.' }; render(); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+
+  function wireRadar() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'sch-scan': scanSchool(true); break;
+        case 'sch-undo': undoSchool(id); break;
+        case 'fridge': fridgeSheet(); break;
+        case 'adm-add': {
+          const title = (adminDraft.title || '').trim(), d = adminDraft.md;
+          if (!title) { $('admTitle') && $('admTitle').focus(); break; }
+          adminDraft = { title: '', md: '' };
+          saveAdmin([...adminList(), { id: newId('a'), icon: '📌', title: title.slice(0, 60), md: /^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(5) : '', every: 12, lead: 14, link: '' }]);
+          break;
+        }
+        case 'adm-del':
+          if (confirmKey !== 'adm-' + id) { armConfirm('adm-' + id); renderSchoolAdmin(); return; }
+          confirmKey = null; saveAdmin(adminList().filter(a => a.id !== id)); break;
+      }
+    });
+    document.addEventListener('input', e => {
+      if (e.target.id === 'admTitle') adminDraft.title = e.target.value;
+    });
+    document.addEventListener('change', e => {
+      const el = e.target;
+      if (el.id === 'admDate') adminDraft.md = el.value;
+      if (el.id === 'schoolSenders') {
+        const senders = el.value.split(/[,\s]+/).map(x => x.trim().toLowerCase()).filter(x => /@|\./.test(x)).slice(0, 10);
+        setMeta({ school: Object.assign(schoolCfg(), { senders }) });
+      }
+      const aid = el.dataset && el.dataset.admDate;
+      if (aid) saveAdmin(adminList().map(a => a.id === aid ? Object.assign({}, a, { md: /^\d{4}-\d{2}-\d{2}$/.test(el.value) ? el.value.slice(5) : '' }) : a));
+    });
+    // Check school email twice a day, quietly.
+    const due = () => mode === 'cloud' && Date.now() - (schoolCfg().scannedAt || 0) > 12 * 3600000;
+    setTimeout(() => { if (due()) scanSchool(false); }, 4000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && due()) scanSchool(false); });
   }
 
   // ---------- reminders (installable app + notifications) and work-day settings ----------
