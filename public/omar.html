@@ -105,6 +105,10 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 .chk { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: -11px -6px -11px -11px; flex: 0 0 auto; }
 
 /* Task groups */
+.ho-read { margin: 6px 0; font-size: 15px; } .ho-read b { font-size: 13px; color: var(--muted); }
+.ho-read ul { margin: 2px 0 0 18px; } .ho-in { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; margin: 6px 0 10px; }
+#hoFields label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+#hoForm .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .seg { display: flex; background: var(--soft); border-radius: 8px; padding: 3px; gap: 3px; }
 .seg button { flex: 1; min-height: 38px; border: 0; border-radius: 6px; background: none; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
@@ -211,6 +215,20 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 <section class="card" aria-labelledby="todayH">
   <h2 id="todayH">Today's priorities <span class="count" id="todayCount"></span></h2>
   <ul class="today-list" id="todayList"></ul>
+</section>
+
+<section class="card hidden" aria-labelledby="hoH" id="hoCard">
+  <h2 id="hoH">Handoff <button class="btn small" type="button" id="hoToggle" aria-expanded="false">Send one to Farah</button></h2>
+  <p class="dayline" id="hoShift"></p>
+  <div id="hoIn"></div>
+  <form class="form hidden" id="hoForm">
+    <div class="seg" role="group" aria-label="How the day went" id="hoStatus">
+      <button type="button" data-k="smooth" aria-pressed="false">🟢 Smooth</button><button type="button" data-k="busy" aria-pressed="false">🟡 Busy</button><button type="button" data-k="rough" aria-pressed="false">🔴 Rough</button>
+    </div>
+    <div id="hoFields"></div>
+    <div class="result hidden" id="hoMsg" role="status" aria-live="polite"></div>
+    <div class="acts"><button class="btn ghost" type="button" id="hoCancel">Cancel</button><button class="btn primary" type="submit" id="hoSend">Send to Farah</button></div>
+  </form>
 </section>
 
 <section class="card hidden" aria-labelledby="hhH" id="hhCard">
@@ -979,6 +997,71 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     hhSend({ op: 'update', id: t.id, patch: { to: t.to } });
   });
 
+  // ---------- evening handoff with Farah (/api/handoff) ----------
+  const HO = { inbox: null, mine: null, days: [], status: null, text: null };
+  const HO_SECTIONS = [['kids', 'Kids'], ['done', 'Done'], ['open', 'Still open'], ['tomorrow', 'Tomorrow'], ['foryou', 'For you']];
+  const HO_LABEL = { smooth: '🟢 Smooth', busy: '🟡 Busy', rough: '🔴 Rough' };
+  const clockShort = min => { const h = Math.floor(min / 60) % 24, m = min % 60; return `${((h + 11) % 12) + 1}${m ? ':' + pad(m) : ''} ${h >= 12 ? 'PM' : 'AM'}`; };
+  async function loadHandoff() {
+    try {
+      const r = await fetch('/api/handoff', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { if (r.status === 403 || r.status === 503) $('hoCard').classList.add('hidden'); return; }
+      const d = await r.json(); HO.inbox = d.inbox; HO.mine = d.mine; HO.days = d.days || [];
+      $('hoCard').classList.remove('hidden'); renderHandoff();
+    } catch (e) { /* offline */ }
+  }
+  function hoDraft() {
+    const td = new Date().getHours() < 4 ? addDays(today(), -1) : today(), next = addDays(td, 1);
+    const doneOn = ts => ts && ymdOf(new Date(ts)) === td;
+    const done = [...tasks().filter(t => !isOpen(t) && t.source !== 'calendar' && doneOn(t.doneAt)).map(t => t.title),
+      ...(HH.items || []).filter(t => t.status === 'done' && t.doneBy === 'omar' && doneOn(t.doneAt)).map(t => '🏠 ' + t.title)];
+    const open = hhMine().filter(t => (t.date && t.date <= td) || (t.due && t.due <= td)).map(t => '🏠 ' + t.title);
+    const tmrw = calEvents.filter(e => dayOf(e) === next).map(e => `${e.allDay ? '' : timeOf(e.start) + ' '}${e.title || 'Event'}`);
+    const forYou = (HH.items || []).filter(t => t.status !== 'done' && t.by === 'omar' && (t.to === 'farah' || t.to === 'either') && (Date.now() - (t.createdAt || 0) < 36 * 3600000 || (t.date && t.date <= next))).map(t => t.title + (t.to === 'either' ? ' (either of us)' : ''));
+    return { date: td, kids: '', done: done.slice(0, 8).join('\n'), open: open.slice(0, 8).join('\n'), tomorrow: tmrw.slice(0, 8).join('\n'), foryou: forYou.join('\n'), note: '' };
+  }
+  function renderHandoff() {
+    const td = today(), d = HO.days.find(x => x.date === td), n = new Date().getHours() * 60 + new Date().getMinutes();
+    $('hoShift').textContent = d && d.sleepUntil && n < d.sleepUntil ? `😴 Recovery morning. Notifications wait until about ${clockShort(d.sleepUntil)}.`
+      : d && d.sleepUntil ? '😴 Recovery day. Take it easy.' : d && d.kind === 'night' ? '🌙 Nights tonight.' : '';
+    const h = HO.inbox;
+    $('hoIn').innerHTML = h ? `<div class="ho-in"><div class="muted">From Farah · ${esc(new Date(h.sentAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))}${h.status ? ' · ' + HO_LABEL[h.status] : ''}${h.readAt ? '' : ' · new'}</div>
+      ${h.sections.filter(s => s.lines.length).map(s => `<div class="ho-read"><b>${esc(s.label)}</b><ul>${s.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`).join('')}
+      ${h.note ? `<p>${esc(h.note)}</p>` : ''}${h.readAt ? '' : `<button class="btn small" type="button" data-horead="${esc(h.id)}">Got it</button>`}</div>`
+      : '<p class="empty">Farah’s evening handoff shows up here.</p>';
+    if (HO.mine && HO.mine.date === td) $('hoToggle').textContent = 'Sent ✓ · Update';
+  }
+  function hoOpen(open) {
+    $('hoForm').classList.toggle('hidden', !open); $('hoToggle').setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    HO.text = hoDraft(); HO.status = null;
+    [...$('hoStatus').children].forEach(b => b.setAttribute('aria-pressed', 'false'));
+    $('hoFields').innerHTML = HO_SECTIONS.map(([k, l]) => `<label for="ho-${k}">${l}</label><textarea id="ho-${k}" rows="${Math.min(8, Math.max(2, HO.text[k].split('\n').length + 1))}" placeholder="${k === 'foryou' ? 'Anything Farah should do or know' : 'One line per item'}">${esc(HO.text[k])}</textarea>`).join('')
+      + '<label for="ho-note">Note</label><textarea id="ho-note" rows="2" placeholder="Anything else"></textarea>';
+    $('hoMsg').classList.add('hidden');
+  }
+  $('hoToggle').addEventListener('click', () => hoOpen($('hoForm').classList.contains('hidden')));
+  $('hoCancel').addEventListener('click', () => hoOpen(false));
+  $('hoStatus').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; HO.status = HO.status === b.dataset.k ? null : b.dataset.k; [...$('hoStatus').children].forEach(x => x.setAttribute('aria-pressed', String(x.dataset.k === HO.status))); });
+  $('hoForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const sections = HO_SECTIONS.map(([key, label]) => ({ key, label, lines: $('ho-' + key).value.split('\n').map(x => x.trim()).filter(Boolean) }));
+    $('hoSend').disabled = true;
+    try {
+      const r = await fetch('/api/handoff', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'send', date: HO.text.date, status: HO.status, sections, note: $('ho-note').value }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { const m = $('hoMsg'); m.textContent = d.error && d.error.length < 60 ? d.error : 'Couldn’t send. Try again.'; m.className = 'result err'; return; }
+      HO.mine = d.handoff; hoOpen(false); renderHandoff();
+      const m = $('hoMsg'); m.textContent = 'Sent. Farah gets it on her phone (after her quiet hours if it’s late).'; m.className = 'result'; $('hoForm').before(m);
+    } catch (err) { const m = $('hoMsg'); m.textContent = 'No connection. Try again in a moment.'; m.className = 'result err'; }
+    finally { $('hoSend').disabled = false; }
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-horead]'); if (!b) return;
+    if (HO.inbox) HO.inbox.readAt = Date.now(); renderHandoff();
+    fetch('/api/handoff', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'read', id: b.dataset.horead }) }).catch(() => {});
+  });
+
   // ---------- start ----------
   (async () => {
     try {
@@ -988,13 +1071,14 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       if (me.view !== 'omar') { location.replace(me.home || '/dashboard'); return; }
     } catch (e) { /* offline: show the saved copy */ }
     render();
-    await load(); loadCalendar(); loadHousehold();
-    setInterval(() => { if (!document.hidden) loadHousehold(); }, 60000);
+    await load(); loadCalendar(); await loadHousehold(); loadHandoff();
+    if (new URLSearchParams(location.search).get('open') === 'handoff') { history.replaceState(null, '', location.pathname); setTimeout(() => $('hoCard').scrollIntoView({ block: 'start' }), 300); }
+    setInterval(() => { if (!document.hidden) { loadHousehold(); loadHandoff(); } }, 60000);
     const last = metaMain().mailScannedAt || 0;
     if (Date.now() - last > 6 * 3600 * 1000) scanMail(true);
     setInterval(() => { if (!document.hidden) load(); }, 30000);
     setInterval(() => { if (!document.hidden) loadCalendar(); }, 5 * 60000);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); render(); loadHousehold(); } });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); render(); loadHousehold(); loadHandoff(); } });
   })();
 })();
 </script>

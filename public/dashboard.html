@@ -440,7 +440,7 @@ details.fold > summary .count { font-size: 13px; letter-spacing: 0; text-transfo
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-dump { order: 3; } .h-review { order: 3; } .h-waiting { order: 3; } .h-reset { order: 4; } .h-today { order: 5; } .h-carry { order: 6; } .h-time { order: 9; } .h-more { order: 10; }
+.h-smart { order: 0; } .h-family { order: 1; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-dump { order: 3; } .h-review { order: 3; } .h-waiting { order: 3; } .h-reset { order: 4; } .h-today { order: 5; } .h-carry { order: 6; } .h-time { order: 9; } .h-more { order: 10; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
@@ -677,6 +677,23 @@ details.fold.sub > summary { min-height: 48px; }
 .hh-row.done > .t { text-decoration: line-through; }
 .hh-row.done > .t .muted { text-decoration: none; }
 .hh-check { width: 20px; text-align: center; color: var(--muted); }
+.fam-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 10px 0 4px; font-size: 14px; }
+.fam-line .fam-t { flex: 1 1 200px; min-width: 0; color: var(--text); }
+.ho-card .ho-status { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.ho-sec { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 13px; color: var(--muted); }
+.ho-sec textarea { width: 100%; font: inherit; font-size: 15px; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+.ho-read { margin: 6px 0; font-size: 15px; } .ho-read b { font-size: 13px; font-weight: 600; color: var(--muted); }
+.ho-read ul { margin: 2px 0 0 18px; } .ho-note { font-size: 15px; margin-top: 6px; }
+.ho-in { border-left: 3px solid var(--accent); padding-left: 12px; }
+.sick-step input[type=email] { margin-top: 4px; font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); max-width: 260px; }
+.sick-log { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 15px; } .sick-log .muted { font-size: 13px; }
+.sick-log ul { list-style: none; margin: 4px 0; padding: 0; } .sick-log li { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--hair); }
+.sick-add { display: flex; gap: 6px; flex-wrap: wrap; } .sick-add input { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); min-height: 44px; }
+.sick-add #sickTemp { width: 80px; } .sick-add #sickNote { flex: 1 1 160px; min-width: 0; }
+.load-ref { padding: 4px 0 14px; font-size: 14px; } .load-h { display: flex; justify-content: space-between; gap: 8px; }
+.load-bar { height: 8px; border-radius: 999px; background: var(--hair); overflow: hidden; margin: 6px 0 4px; } .load-bar span { display: block; height: 100%; background: var(--accent); opacity: .7; }
+.load-k { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.od-auto { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .wr-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--hair); }
 .wr-row.off .t { color: var(--muted); }
 .wr-row .t { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; font-size: 15px; }
@@ -719,6 +736,7 @@ details.fold.sub > summary { min-height: 48px; }
 <section id="home" class="tab-content">
   <div id="smartBox" class="h-smart"></div>
   <div class="home-main">
+    <div id="familyBox" class="h-family"></div>
     <div id="nowBox" class="h-now"></div>
     <div id="planBox" class="h-plan"></div>
     <div id="assistBox" class="h-assist"></div>
@@ -943,6 +961,7 @@ details.fold.sub > summary { min-height: 48px; }
   // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
   try {
     const q = new URLSearchParams(location.search);
+    if (q.get('open') === 'handoff') { ui.tab = 'home'; ui.handoffOpen = true; ui.hoScroll = true; history.replaceState(null, '', location.pathname); }
     if (q.get('open') === 'wrapup') { ui.tab = 'home'; ui.wrapAsk = Date.now(); ui.wrapScroll = true; history.replaceState(null, '', location.pathname); }
     if (q.get('open') === 'reset') { ui.tab = 'schedule'; ui.sub = 'sync'; history.replaceState(null, '', location.pathname); }
     if (q.get('tab') === 'grocery') {
@@ -1316,7 +1335,7 @@ details.fold.sub > summary { min-height: 48px; }
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest();
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
-    renderTracker(); renderSmart(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
+    renderTracker(); renderSmart(); renderFamily(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
@@ -1879,7 +1898,7 @@ Rules:
       if ((info.failed || []).length) status += ` Couldn't load: ${info.failed.map(f => `${f.name} (error ${f.status || 'offline'})`).join(', ')}.`;
       if (info.icloudFailed) status += " An iCloud feed didn't load.";
     } else status = `${n} event${n === 1 ? '' : 's'} loaded.`;
-    let html = `<div class="week-status muted" role="status">${esc(status)}<br>Omar's shift: moon is nights, sun is days, house is off. Tap a day's icon to set it.</div>`;
+    let html = `${loadRefHtml()}<div class="week-status muted" role="status">${esc(status)}<br>Omar's shifts come from his calendar. Tap a day's icon to set one by hand (moon nights, sun days, house off).</div>`;
     for (let i = 0; i < 7; i++) {
       const d = addDays(td, i), sh = shiftsMap()[d] || '';
       const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
@@ -1887,7 +1906,7 @@ Rules:
       const evHtml = evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
       const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
       html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span>
-          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
+          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${(() => { const o = !sh && omarDay(d); return o ? `<span class="od-auto" title="Omar, from his calendar">${o.emoji} ${esc(o.kind === 'recovery' ? 'Recovery' : o.label)}</span>` : ''; })()}${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
         ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
         ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}"><span class="dot" style="background:${catColor(t.category)}"></span><span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
         <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
@@ -2779,6 +2798,7 @@ Rules:
     wireFeatures();
     wireAssist();
     wireHousehold();
+    wireFamily();
     wireCalm();
     wireRecap();
     wireSync();
@@ -3300,7 +3320,7 @@ Rules:
         <label>Minutes<input type="number" data-sched="mins" min="5" max="600" step="5" value="${s.mins}"></label>
       </div>${warn}
       <label class="set-chk"><input type="checkbox" data-sched="toCal" ${(s.toCal ?? (c.toCal || !!t.calEventId)) ? 'checked' : ''}>Block it on my Google Calendar</label>
-      <label class="set-chk"><input type="checkbox" data-sched="omar" ${(s.omar ?? (t.calOmar ?? c.inviteOmar)) ? 'checked' : ''}>Invite Omar</label>
+      <label class="set-chk"><input type="checkbox" data-sched="omar" ${(s.omar ?? (t.calOmar ?? (c.inviteOmar && !omarBusy(s.date, s.start, s.mins)))) ? 'checked' : ''}>Invite Omar</label>${omarBusy(s.date, s.start, s.mins) ? `<p class="muted">${esc(omarBusy(s.date, s.start, s.mins))}</p>` : ''}
       <label class="sched-mail">Invite others<input type="text" inputmode="email" id="schedMail" data-sched="emails" value="${esc(s.emails ?? guests)}" placeholder="name@email.com, another@email.com"></label>
       <div class="rv-actions"><button class="btn-add" data-act="sched-save" data-id="${id}">${t.calEventId ? 'Save' : 'Schedule'}</button>
         <button class="btn-secondary" data-act="sched-cancel">Cancel</button>
@@ -3383,7 +3403,7 @@ Rules:
           <button class="mini ghost" data-act="drop" data-id="${id}">Let go</button></span></div>`;
     }).join('');
     return `<div class="card as-wrap" id="wrapCard"><h2><span>Evening wrap-up</span><span class="muted">${plan.length} left</span></h2>
-      <p class="muted">Each one has a spot in your free time. Change anything, then rest.</p>${rows}
+      <p class="muted">Each one has a spot in your free time. Change anything, then rest.${(() => { const o = omarDay(next); return o && (o.sleepUntil || o.kind === 'night' || o.kind === 'day') ? ` Omar tomorrow: ${o.emoji} ${o.sleepUntil ? `recovering, up around ${clockShort(o.sleepUntil)}` : o.label.toLowerCase()}.` : ''; })()}</p>${rows}
       <label class="set-chk"><input type="checkbox" id="wrapToCal" ${calCfg().toCal ? 'checked' : ''}>Block them on my Google Calendar</label>
       <div class="rv-actions"><button class="btn-add" data-act="wr-commit" ${on.length ? '' : 'disabled'}>Move ${on.length || ''}</button>
         <button class="btn-secondary" data-act="wr-tmrw" ${on.length ? '' : 'disabled'}>Tomorrow, no times</button>
@@ -3655,6 +3675,244 @@ Rules:
     loadHousehold();
     setInterval(() => { if (!document.hidden) loadHousehold(); }, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) loadHousehold(); });
+  }
+
+  // ---------- family autopilot: Omar's shifts, the evening handoff, sick days, and a private load reference ----------
+  const KIDS = ['Hamad', 'Talal', 'Yousef'];
+  const BH_URL = 'https://clients.brighthorizons.com/mayoclinic';     // Mayo Clinic back-up care (Bright Horizons)
+  const fam = { inbox: null, mine: null, off: false, compose: null, sending: false, err: '', temp: '', note: '' };
+  const clockShort = min => { const h = Math.floor(min / 60) % 24, m = min % 60; return `${((h + 11) % 12) + 1}${m ? ':' + pad(m) : ''} ${h >= 12 ? 'PM' : 'AM'}`; };
+
+  // Omar's day. What Farah sets by hand in Week View wins; otherwise his calendar ("Days", "Nights", "Trip", "Recovery"),
+  // which he shares from his page. A recovery day carries the time he's expected up (sleepUntil, minutes).
+  const OD_MANUAL = { night: ['night', 'Nights', '🌙'], day: ['day', 'Days', '☀️'], off: ['off', 'Off', '🏠'] };
+  function omarDay(d) {
+    const man = shiftsMap()[d], prev = shiftsMap()[addDays(d, -1)];
+    const cal = live.omar && live.omar.shared ? (live.omar.days || []).find(x => x.date === d) : null;
+    let sleepUntil = (cal && cal.sleepUntil) || null;
+    if (prev === 'night') sleepUntil = sleepUntil || 14 * 60;
+    else if (prev) sleepUntil = null;                       // set by hand: no night shift the evening before
+    if (man) { const [kind, label, emoji] = OD_MANUAL[man]; return { kind, label, emoji, sleepUntil }; }
+    if (cal && cal.kind !== 'free' && cal.kind !== 'postnight' && cal.kind !== 'meetings') return { kind: cal.kind, label: cal.label, emoji: cal.emoji, place: cal.place, sleepUntil };
+    if (sleepUntil) return { kind: 'recovery', label: 'Recovery day', emoji: '😴', sleepUntil };
+    return null;
+  }
+  // Why Omar can't take something at this time, or '' when he's free.
+  function omarBusy(d, start, mins) {
+    const o = omarDay(d); if (!o) return '';
+    const end = start + (mins || 30);
+    if (o.sleepUntil && start < o.sleepUntil && end > 5 * 60) return `Omar is sleeping until about ${clockShort(o.sleepUntil)} after his night shift.`;
+    if (o.kind === 'night' && end > 18 * 60 + 30) return 'Omar is at work that night.';
+    if ((o.kind === 'day' || o.kind === 'oncall') && start < 19 * 60 + 30 && end > 6 * 60 + 30) return `Omar is on ${o.kind === 'day' ? 'days' : 'call'} then.`;
+    if (o.kind === 'travel') return 'Omar is traveling that day.';
+    return '';
+  }
+  function omarLine() {
+    const td = today(), n = nowMinutes(), o = omarDay(td), tm = omarDay(addDays(td, 1));
+    if (o && o.sleepUntil && n < o.sleepUntil && n >= 5 * 60) return `😴 Omar is sleeping until about ${clockShort(o.sleepUntil)}. Kid tasks before then are yours.`;
+    if (o && o.kind === 'night') return `🌙 Omar works tonight${tm && tm.sleepUntil ? `, then sleeps until about ${clockShort(tm.sleepUntil)} tomorrow` : ''}.`;
+    if (o && o.sleepUntil) return '😴 Recovery day for Omar. Keep his plans light.';
+    if (o && (o.kind === 'day' || o.kind === 'oncall')) return `☀️ Omar is on ${o.kind === 'day' ? 'days' : 'call'} today.`;
+    if (o && o.kind === 'travel') return `✈️ Omar is traveling${o.place ? ` (${o.place})` : ''}.`;
+    if (o && o.kind === 'off') return `🏠 Omar is off today.${tm && tm.kind === 'night' ? ' Nights start tomorrow.' : ''}`;
+    if (tm && tm.kind === 'night') return '🌙 Omar starts nights tomorrow.';
+    return '';
+  }
+
+  // ----- evening handoff (ICU-style sign-out): how the day went, kids, done, open, tomorrow, for Omar -----
+  const HO_SECTIONS = [['kids', 'Kids today'], ['done', 'Done'], ['open', 'Still open'], ['tomorrow', 'Tomorrow'], ['foryou', 'For you']];
+  const HO_STATUS = [['smooth', '🟢 Smooth'], ['busy', '🟡 Busy'], ['rough', '🔴 Rough']];
+  const eveningOf = () => nowMinutes() < 4 * 60 ? addDays(today(), -1) : today();
+  async function loadHandoff() {
+    try { const d = await getJson('/api/handoff'); fam.inbox = d.inbox; fam.mine = d.mine; fam.off = false; }
+    catch (e) { if (!e.auth && /http 40[34]|http 503/.test(String(e.message))) fam.off = true; }
+    renderFamily();
+  }
+  function handoffDraft() {
+    const d = eveningOf(), next = addDays(d, 1);
+    const doneOn = t => t.status === 'done' && t.completedAt && ymd(new Date(t.completedAt)) === d;
+    const clean = s => String(s || '').trim();
+    const done = Object.values(S.tasks).filter(doneOn).sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
+    const kids = done.filter(t => t.category === 'kids').map(t => clean(t.title));
+    const other = done.filter(t => t.category !== 'kids' && t.category !== 'omar').map(t => clean(t.title)).slice(0, 8);
+    const open = Object.values(S.tasks).filter(t => isOpen(t) && capVisible(t) && t.category !== 'omar' && t.date && t.date <= d && !(t.time && t.category === 'kids'))
+      .sort(byTime).map(t => clean(t.title)).slice(0, 8);
+    const tmrw = [
+      ...eventsOn(next).map(ev => `${ev.allDay ? '' : evTime(ev) + ' '}${clean(ev.title) || 'Event'}`),
+      ...Object.values(S.tasks).filter(t => isOpen(t) && t.date === next && t.time).sort(byTime).map(t => `${t.time} ${clean(t.title)}`),
+    ].slice(0, 8);
+    const forYou = (hh.items || []).filter(x => x.status !== 'done' && x.by === 'farah' && (x.to === 'omar' || x.to === 'either')
+      && (Date.now() - (x.createdAt || 0) < 36 * 3600000 || (x.date && x.date <= next))).map(x => clean(x.title) + (x.to === 'either' ? ' (either of us)' : ''));
+    const sick = (meta().sick || {}).active;
+    if (sick) kids.unshift(`🤒 ${sick.kids.join(' & ')} sick${sick.log && sick.log.length ? ` (last: ${sickEntry(sick.log[sick.log.length - 1])})` : ''}`);
+    return { date: d, status: null, note: '', text: { kids: kids.join('\n'), done: other.join('\n'), open: open.join('\n'), tomorrow: tmrw.join('\n'), foryou: forYou.join('\n') } };
+  }
+  function handoffShow() {
+    if (fam.off || hh.me !== 'farah') return false;
+    if (ui.handoffOpen) return true;
+    const n = nowMinutes(), d = eveningOf();
+    return (n >= 20 * 60 || n < 4 * 60) && !(fam.mine && fam.mine.date === d) && ui.hoSkip !== d;
+  }
+  function handoffHtml() {
+    if (!fam.compose || fam.compose.date !== eveningOf()) fam.compose = handoffDraft();
+    const c = fam.compose, resend = fam.mine && fam.mine.date === c.date;
+    const rows = n => Math.min(8, Math.max(2, (c.text[n] || '').split('\n').length + 1));
+    return `<div class="card ho-card" id="handoffCard"><h2><span>Handoff to Omar</span><span class="muted">${resend ? 'Sent · send again to update' : 'One line per item'}</span></h2>
+      <div class="ho-status" role="group" aria-label="How the day went">${HO_STATUS.map(([k, l]) => `<button class="sy-pill ${c.status === k ? 'on' : ''}" data-act="ho-status" data-k="${k}" aria-pressed="${c.status === k}">${l}</button>`).join('')}</div>
+      ${HO_SECTIONS.map(([k, l]) => `<label class="ho-sec"><span>${l}</span><textarea id="hoT-${k}" data-ho="${k}" rows="${rows(k)}" placeholder="${k === 'foryou' ? 'Anything Omar should do or know' : 'Nothing yet'}">${esc(c.text[k] || '')}</textarea></label>`).join('')}
+      <label class="ho-sec"><span>Note</span><textarea id="hoT-note" data-ho="note" rows="2" placeholder="Anything else">${esc(c.note || '')}</textarea></label>
+      ${fam.err ? `<p class="muted" role="alert">${esc(fam.err)}</p>` : ''}
+      <div class="rv-actions"><button class="btn-add" data-act="ho-send" ${fam.sending ? 'disabled' : ''}>${fam.sending ? 'Sending…' : 'Send to Omar'}</button>
+        <button class="btn-secondary" data-act="ho-reset">Refill</button>
+        <button class="mini ghost" data-act="ho-x">Not tonight</button></div></div>`;
+  }
+  function handoffInboxHtml() {
+    const h = fam.inbox; if (!h || h.readAt) return '';
+    const st = HO_STATUS.find(x => x[0] === h.status);
+    const when = new Date(h.sentAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `<div class="card ho-card ho-in" id="handoffIn"><h2><span>Handoff from Omar</span><span class="muted">${esc(when)}${st ? ' · ' + st[1] : ''}</span></h2>
+      ${h.sections.filter(s => s.lines.length).map(s => `<div class="ho-read"><b>${esc(s.label)}</b><ul>${s.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>`).join('')}
+      ${h.note ? `<p class="ho-note">${esc(h.note)}</p>` : ''}
+      <div class="rv-actions"><button class="btn-add" data-act="ho-read" data-id="${esc(h.id)}">Got it</button></div></div>`;
+  }
+  async function handoffSend() {
+    const c = fam.compose; if (!c || fam.sending) return;
+    const sections = HO_SECTIONS.map(([key, label]) => ({ key, label, lines: (c.text[key] || '').split('\n').map(s => s.trim()).filter(Boolean) }));
+    fam.sending = true; fam.err = ''; renderFamily();
+    const res = await calFetch('POST', '/api/handoff', { op: 'send', date: c.date, status: c.status, sections, note: c.note });
+    fam.sending = false;
+    if (!res.ok) { fam.err = res.data && res.data.error && res.data.error.length < 60 ? res.data.error : "Couldn't send. Try again."; renderFamily(); return; }
+    fam.mine = res.data.handoff; fam.compose = null; ui.handoffOpen = false; saveUi();
+    calNote = { kind: 'ok', text: 'Handoff sent. Omar gets it on his phone.' };
+    render();
+  }
+
+  // ----- sick day: Mayo back-up care request, school and work notes, telling Omar, and a symptom log -----
+  const sickCfg = () => meta().sick || {};
+  const sickEntry = e => [new Date(e.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), e.temp ? `${e.temp}°` : '', e.note].filter(Boolean).join(' · ');
+  function saveSick(patch) { setMeta({ sick: Object.assign({}, sickCfg(), patch) }); }
+  function saveActive(patch) { const a = sickCfg().active; if (a) saveSick({ active: Object.assign({}, a, patch) }); }
+  function sickStart() {
+    if (!sickCfg().active) saveSick({ active: { kids: [], date: nowMinutes() >= 17 * 60 ? addDays(today(), 1) : today(), steps: {}, log: [], startedAt: Date.now() } });
+    ui.sickOpen = true; saveUi(); render();
+  }
+  const gmailCompose = (to, subject, body) => `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  function sickHtml() {
+    const cfg = sickCfg(), a = cfg.active; if (!a) return '';
+    const who = a.kids.length ? a.kids.join(' & ') : 'my child';
+    const day = a.date === today() ? 'today' : a.date === addDays(today(), 1) ? 'tomorrow' : shortDay(a.date);
+    const step = (k, title, action, sub) => `<div class="wr-row sick-step ${a.steps[k] ? 'off' : ''}"><input type="checkbox" data-act="sick-step" data-k="${k}" ${a.steps[k] ? 'checked' : ''} aria-label="Done: ${esc(title)}">
+      <span class="t">${esc(title)}${sub ? `<span class="muted">${sub}</span>` : ''}</span><span class="as-acts">${action}</span></div>`;
+    const school = gmailCompose(cfg.schoolEmail, `${who} home sick ${day}`, `Hi,\n\n${who} is sick and will stay home ${day}. I'll let you know when we're back.\n\nThank you,\nFarah`);
+    const work = gmailCompose(cfg.workEmail, `Out ${day}: sick child`, `Hi,\n\n${who === 'my child' ? 'My child is' : who + ' is'} sick, so I'm arranging care for ${day}. I'll share my availability as soon as I can.\n\nThanks,\nFarah`);
+    const log = a.log || [];
+    return `<div class="card ho-card sick-card" id="sickCard"><h2><span>🤒 Sick day</span><span class="muted">${esc(day)}</span></h2>
+      <div class="ho-status" role="group" aria-label="Who is sick">${KIDS.map(k => `<button class="sy-pill ${a.kids.includes(k) ? 'on' : ''}" data-act="sick-kid" data-k="${k}" aria-pressed="${a.kids.includes(k)}">${k}</button>`).join('')}
+        <button class="sy-pill" data-act="sick-day" aria-label="Switch the day">${a.date === today() ? 'Today' : 'Tomorrow'} ⇄</button></div>
+      ${step('bh', 'Request Mayo back-up care', `<a class="mini primary" href="${BH_URL}" target="_blank" rel="noopener">Open Bright Horizons</a><button class="mini" data-act="sick-copy" data-what="bh">Copy details</button>`, 'Ask for in-home care if the center can\'t take a sick child. 20 back-up days a year.')}
+      ${step('school', 'Tell school', `<a class="mini" href="${esc(school)}" target="_blank" rel="noopener">Draft email</a>`, cfg.schoolEmail ? esc(cfg.schoolEmail) : `<input type="email" id="sickSchool" data-sick-mail="schoolEmail" placeholder="School email (saved)" aria-label="School email">`)}
+      ${step('work', 'Tell work', `<a class="mini" href="${esc(work)}" target="_blank" rel="noopener">Draft email</a>`, cfg.workEmail ? esc(cfg.workEmail) : `<input type="email" id="sickWork" data-sick-mail="workEmail" placeholder="Manager email (saved)" aria-label="Work email">`)}
+      ${step('omar', 'Let Omar know', `<button class="mini" data-act="sick-omar" ${a.steps.omar ? 'disabled' : ''}>Send to Omar</button>`, 'Arrives on his dashboard and phone.')}
+      <div class="sick-log"><b>Symptom log</b><span class="muted">Times and temperatures, ready for the pediatrician.</span>
+        ${log.length ? `<ul>${log.map((e, i) => `<li><span>${esc(sickEntry(e))}</span><button class="mini ghost" data-act="sick-del" data-i="${i}" aria-label="Remove entry">✕</button></li>`).join('')}</ul>` : ''}
+        <div class="sick-add"><input id="sickTemp" inputmode="decimal" maxlength="6" placeholder="Temp" aria-label="Temperature" value="${esc(fam.temp)}">
+          <input id="sickNote" maxlength="140" placeholder="What you noticed or gave" aria-label="Note" value="${esc(fam.note)}">
+          <button class="mini primary" data-act="sick-log">Add</button></div></div>
+      <div class="rv-actions">${log.length ? '<button class="btn-secondary" data-act="sick-copy" data-what="log">Copy log</button>' : ''}
+        <button class="btn-secondary" data-act="sick-hide">Hide for now</button><button class="mini ghost" data-act="sick-end">All better</button></div></div>`;
+  }
+  function sickCopy(what) {
+    const a = sickCfg().active; if (!a) return;
+    const who = a.kids.length ? a.kids.join(' & ') : 'my child';
+    const txt = what === 'bh'
+      ? `Back-up care request\nChild: ${who}\nDate: ${shortDay(a.date)}\nReason: child is sick, needs in-home care\nParent: Farah`
+      : `${who}, sick since ${shortDay(ymd(new Date(a.startedAt || Date.now())))}\n` + (a.log || []).map(e => `${shortDay(ymd(new Date(e.at)))} ${sickEntry(e)}`).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { calNote = { kind: 'ok', text: what === 'bh' ? 'Details copied. Paste them into the request.' : 'Log copied.' }; render(); }).catch(() => {});
+  }
+
+  // ----- private load reference for Week View: who carried the household this week (never shown to Omar) -----
+  function loadRefHtml() {
+    const mon = weekStart(), td = today();
+    const inWeek = ts => { if (!ts) return false; const d = ymd(new Date(ts)); return d >= mon && d <= td; };
+    const mine = Object.values(S.tasks).filter(t => t.status === 'done' && t.category !== 'omar' && inWeek(t.completedAt)).length;
+    const his = (hh.items || []).filter(x => x.status === 'done' && x.doneBy === 'omar' && inWeek(x.doneAt)).length;
+    let shifts = 0;
+    for (let d = mon; d <= td; d = addDays(d, 1)) { const o = omarDay(d); if (o && ['night', 'day', 'oncall'].includes(o.kind)) shifts++; }
+    if (!mine && !his) return '';
+    const pct = Math.round(100 * mine / (mine + his));
+    return `<div class="load-ref" role="img" aria-label="This week at home: you finished ${mine} tasks, Omar finished ${his} household tasks${shifts ? ` and worked ${shifts} shift${shifts === 1 ? '' : 's'}` : ''}.">
+      <div class="load-h"><span>This week at home</span><span class="muted">Only you see this</span></div>
+      <div class="load-bar"><span style="width:${pct}%"></span></div>
+      <div class="load-k muted"><span>You · ${mine}</span><span>Omar · ${his} household${shifts ? ` · ${shifts} shift${shifts === 1 ? '' : 's'}` : ''}</span></div></div>`;
+  }
+
+  function familyHtml() {
+    const parts = [], line = omarLine();
+    const buttons = `<span class="as-acts">${!fam.off && hh.me === 'farah' ? '<button class="mini" data-act="ho-open">📋 Handoff</button>' : ''}<button class="mini" data-act="sick-open">🤒 Kid sick</button></span>`;
+    parts.push(`<div class="fam-line">${line ? `<span class="fam-t">${esc(line)}</span>` : '<span></span>'}${buttons}</div>`);
+    parts.push(handoffInboxHtml());
+    if (sickCfg().active && ui.sickOpen !== false) parts.push(sickHtml());
+    if (handoffShow()) parts.push(handoffHtml());
+    return parts.join('');
+  }
+  function renderFamily() {
+    const el = $('familyBox'); if (!el) return;
+    el.innerHTML = familyHtml();
+    if (ui.hoScroll && $('handoffCard')) { ui.hoScroll = false; saveUi(); $('handoffCard').scrollIntoView({ block: 'start' }); }
+  }
+  function wireFamily() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const k = el.dataset.k;
+      switch (el.dataset.act) {
+        case 'ho-open': { const showing = handoffShow(); ui.handoffOpen = !showing; if (showing) ui.hoSkip = eveningOf(); else { ui.hoSkip = null; ui.hoScroll = true; } saveUi(); render(); break; }
+        case 'ho-status': if (fam.compose) { fam.compose.status = fam.compose.status === k ? null : k; renderFamily(); } break;
+        case 'ho-send': handoffSend(); break;
+        case 'ho-reset': fam.compose = null; render(); break;
+        case 'ho-x': ui.handoffOpen = false; ui.hoSkip = eveningOf(); saveUi(); render(); break;
+        case 'ho-read': if (fam.inbox) fam.inbox.readAt = Date.now(); renderFamily(); calFetch('POST', '/api/handoff', { op: 'read', id: el.dataset.id }); break;
+        case 'sick-open': if (sickCfg().active && ui.sickOpen !== false) { $('sickCard') && $('sickCard').scrollIntoView({ block: 'start' }); break; } sickStart(); break;
+        case 'sick-hide': ui.sickOpen = false; saveUi(); render(); break;
+        case 'sick-kid': { const a = sickCfg().active; if (!a) break; const kids = a.kids.includes(k) ? a.kids.filter(x => x !== k) : KIDS.filter(x => x === k || a.kids.includes(x)); saveActive({ kids }); break; }
+        case 'sick-day': { const a = sickCfg().active; if (a) saveActive({ date: a.date === today() ? addDays(today(), 1) : today() }); break; }
+        case 'sick-step': { const a = sickCfg().active; if (a) saveActive({ steps: Object.assign({}, a.steps, { [k]: el.checked }) }); break; }
+        case 'sick-copy': sickCopy(el.dataset.what); break;
+        case 'sick-omar': {
+          const a = sickCfg().active; if (!a) break;
+          const who = a.kids.length ? a.kids.join(' & ') : 'One of the kids';
+          hhSend({ op: 'add', title: `🤒 ${who} home sick ${a.date === today() ? 'today' : 'tomorrow'}`, to: 'omar', date: a.date }, 'Omar has it on his dashboard.')
+            .then(ok => { if (ok) saveActive({ steps: Object.assign({}, a.steps, { omar: true }) }); });
+          break;
+        }
+        case 'sick-log': {
+          const a = sickCfg().active; if (!a) break;
+          const temp = (fam.temp || '').replace(/[^\d.]/g, '').slice(0, 5), note = (fam.note || '').trim().slice(0, 140);
+          if (!temp && !note) { $('sickTemp') && $('sickTemp').focus(); break; }
+          fam.temp = ''; fam.note = '';
+          saveActive({ log: [...(a.log || []), { at: Date.now(), temp, note }].slice(-40) }); break;
+        }
+        case 'sick-del': { const a = sickCfg().active; if (!a) break; const log = (a.log || []).slice(); log.splice(+el.dataset.i, 1); saveActive({ log }); break; }
+        case 'sick-end': {
+          const cfg = sickCfg(), a = cfg.active; if (!a) break;
+          saveSick({ active: null, history: [Object.assign({}, a, { endedAt: Date.now() }), ...(cfg.history || [])].slice(0, 6) });
+          ui.sickOpen = true; saveUi(); calNote = { kind: 'ok', text: 'Glad everyone is better.' }; render(); break;
+        }
+      }
+    });
+    document.addEventListener('input', e => {
+      const el = e.target;
+      if (el.dataset && el.dataset.ho && fam.compose) { if (el.dataset.ho === 'note') fam.compose.note = el.value; else fam.compose.text[el.dataset.ho] = el.value; }
+      if (el.id === 'sickTemp') fam.temp = el.value;
+      if (el.id === 'sickNote') fam.note = el.value;
+    });
+    document.addEventListener('change', e => {
+      const el = e.target, f = el.dataset && el.dataset.sickMail;
+      if (f && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim())) saveSick({ [f]: el.value.trim() });
+    });
+    document.addEventListener('keydown', e => { if ((e.target.id === 'sickNote' || e.target.id === 'sickTemp') && e.key === 'Enter') { e.preventDefault(); const b = document.querySelector('[data-act="sick-log"]'); if (b) b.click(); } });
+    loadHandoff();
+    setInterval(() => { if (!document.hidden) loadHandoff(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadHandoff(); });
   }
 
   // ---------- reminders (installable app + notifications) and work-day settings ----------

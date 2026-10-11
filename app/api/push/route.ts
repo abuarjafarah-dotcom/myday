@@ -3,9 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { homePath, viewFor, type View } from "@/lib/users";
-import { isFarah, partnerDays } from "@/lib/partner";
+import { partnerDays } from "@/lib/partner";
 import { statusLine, type DayStatus } from "@/lib/dayStatus";
 import { householdMessages, listShared, whoIs, type Shared } from "@/lib/household";
+import { handoffMessages, listHandoffs, type Handoff } from "@/lib/handoff";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -155,7 +156,7 @@ function remindOnMessages(now: { date: string }, tasks: Doc[], trips: Doc[], pus
 
 const isHigh = (t: Doc) => { const v = String(t.priority ?? "").toLowerCase(); return v === "1" || v.startsWith("h") || v === "urgent"; };
 
-function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], meta: Doc, sent: Record<string, number>, view: View = "farah", trips: Doc[] = [], partner: DayStatus[] = []): Out[] {
+function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], meta: Doc, sent: Record<string, number>, view: View = "farah", trips: Doc[] = [], partner: DayStatus[] = [], wakeMin = 0, handoffSent = false): Out[] {
   const cfg = (meta.notify || {}) as Doc;
   if (cfg.on === false || !cfg.on) return [];
   if (now.min >= BED_MIN || now.min < WAKE_MIN) return [];
@@ -164,7 +165,7 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
   const push = (key: string, title: string, body: string) => {
     if (!sent[key]) out.push({ key, title, body, url, tag: key });
   };
-  if (view === "omar") return omarMessages(now, tasks, trips, cfg, push, out);
+  if (view === "omar") return omarMessages(now, tasks, trips, cfg, push, out, wakeMin);
   const inWindow = (at: number, width = 25) => now.min >= at && now.min < at + width;
   const work = workActive(meta.work, now);
   const open = tasks.filter(isOpen);
@@ -195,6 +196,13 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
     else if (!sent[key]) out.push({ key, tag: key, url: `${url}?open=wrapup`, title: "Evening wrap-up",
       body: `${left.length} left: ${names(left, 2)}. Tap to sort them for tomorrow, then rest.` });
   }
+  // Evening handoff prompt (default 8 PM): tapping opens the handoff, already filled in from the day.
+  const ho = cfg.handoff === false ? null : toMin(typeof cfg.handoff === "string" ? cfg.handoff : "20:00");
+  if (ho !== null && inWindow(ho) && !handoffSent) {
+    const key = `handoff-${now.date}`;
+    if (!sent[key]) out.push({ key, tag: key, url: `${url}?open=handoff`, title: "Handoff to Omar",
+      body: "Today's handoff is ready. Tap to check it and send it to Omar." });
+  }
   if (cfg.due !== false && inWindow(18 * 60)) {
     const tomorrow = open.filter((t) => t.due === addDays(now.date, 1));
     if (tomorrow.length) push(`dueeve-${now.date}`, "Due tomorrow", names(tomorrow));
@@ -217,10 +225,13 @@ function dueMessages(now: { date: string; min: number; dow: number }, tasks: Doc
 }
 
 // Omar's page has its own rhythm: high priorities in the morning, reminders, and due-tomorrow in the evening.
-function omarMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], trips: Doc[], cfg: Doc, push: (key: string, title: string, body: string) => void, out: Out[]): Out[] {
+// wakeMin: on a recovery morning after nights, nothing goes out before he's expected up; the morning note waits until then.
+function omarMessages(now: { date: string; min: number; dow: number }, tasks: Doc[], trips: Doc[], cfg: Doc, push: (key: string, title: string, body: string) => void, out: Out[], wakeMin = 0): Out[] {
   const inWindow = (at: number, width = 25) => now.min >= at && now.min < at + width;
+  if (wakeMin && now.min < wakeMin) return out;
   const open = tasks.filter(isOpen);
-  const morning = toMin(cfg.morning || "07:00");
+  const set = toMin(cfg.morning || "07:00");
+  const morning = set !== null && wakeMin > set ? wakeMin : set;
   if (morning !== null && inWindow(morning)) {
     const top = open
       .filter((t) => Number(t.priority || 2) === 1 && (!t.due || String(t.due) <= now.date))
@@ -245,6 +256,7 @@ async function tick(db: Db): Promise<Response> {
   ((subRows || []) as Row[]).forEach((r) => byOwner.set(r.owner, [...(byOwner.get(r.owner) || []), { ...r, kind: "push-sub" }]));
   let sentCount = 0;
   let household: Shared[] | null = null;
+  let handoffs: Handoff[] | null = null;
   for (const [owner, subs] of byOwner) {
     const view = viewFor(owner);
     const { data: rows } = await db.from(TABLE).select("kind,id,data").eq("owner", owner).in("kind", view === "omar" ? ["tasks", "meta", "trips"] : ["tasks", "meta"]);
@@ -258,13 +270,22 @@ async function tick(db: Db): Promise<Response> {
     const sent = { ...((state.sent as Record<string, number>) || {}) };
     const cutoff = Date.now() - 3 * 86400000;
     Object.keys(sent).forEach((k) => { if (sent[k] < cutoff) delete sent[k]; });
-    const partner = isFarah(owner) ? (await partnerDays(db, 2).catch(() => ({ days: [] as DayStatus[] }))).days : [];
-    const due = dueMessages(now, tasks, meta, sent, view, trips, partner);
-    // Shared household tasks: what the other person added for you, and what they finished for you.
+    // Omar's shift days (only when he shares his day): Farah sees them in her notes; Omar's own phone stays quiet
+    // on a recovery morning until he's expected up.
     const me = whoIs(owner), cfg = (meta.notify || {}) as Doc;
-    if (me && cfg.on && (me === "omar" || (now.min >= WAKE_MIN && now.min < BED_MIN))) {
+    const days = me ? (await partnerDays(db, 2).catch(() => ({ days: [] as DayStatus[] }))).days : [];
+    const partner = me === "farah" ? days : [];
+    const todayOmar = me === "omar" ? days.find((d) => d.date === now.date) : undefined;
+    const wakeMin = todayOmar?.sleepUntil && now.min >= WAKE_MIN ? todayOmar.sleepUntil : 0;
+    const asleep = !!wakeMin && now.min < wakeMin;
+    if (me && handoffs === null) handoffs = await listHandoffs(db).catch(() => []);
+    const handoffSent = !!(me === "farah" && handoffs && handoffs.some((h) => h.from === "farah" && h.date === now.date));
+    const due = dueMessages(now, tasks, meta, sent, view, trips, partner, wakeMin, handoffSent);
+    // Shared household tasks and handoffs from the other person. Farah's quiet hours apply; Omar's wait while he sleeps.
+    if (me && cfg.on && !asleep && (me === "omar" || (now.min >= WAKE_MIN && now.min < BED_MIN))) {
       if (household === null) household = await listShared(db).catch(() => []);
       householdMessages(me, household, sent).forEach((m) => due.push({ ...m, url: homePath(view), tag: m.key }));
+      handoffMessages(me, handoffs || [], sent).forEach((m) => due.push({ ...m, url: `${homePath(view)}?open=handoff`, tag: m.key }));
     }
     for (const m of due) {
       sent[m.key] = Date.now();

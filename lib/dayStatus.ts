@@ -4,11 +4,15 @@
 export type Ev = { title: string; start: string; end?: string; allDay?: boolean; location?: string };
 export type Trip = { destination?: string; start?: string | null; end?: string | null };
 export type DayKind = "night" | "postnight" | "oncall" | "day" | "admin" | "travel" | "off" | "meetings" | "free";
-export type DayStatus = { date: string; kind: DayKind; label: string; emoji: string; meetings: number; place?: string };
+// sleepUntil: on a recovery (post-night) day, the minute of the day Omar is expected to be up (e.g. 840 = 2 PM).
+export type DayStatus = { date: string; kind: DayKind; label: string; emoji: string; meetings: number; place?: string; sleepUntil?: number };
 
 const TZ = process.env.CALENDAR_TIMEZONE || "America/Chicago";
 
 const NIGHT = /\b(night|nights|noc|overnight|nocturnist|night float)\b/i;
+// Omar's own words on his phone calendar: "Days", "Nights", "Trip" / "Trip day", "Recovery".
+const RECOVERY = /\b(recovery|post[- ]?nights?|post[- ]?call|sleep day)\b/i;
+const DAYS = /^\s*(icu\s+)?days?\b(?!\s*off)/i;
 const ONCALL = /\b(on[- ]?call|call night|home call|backup call)\b/i;
 const SHIFT = /\b(shift|service|icu|micu|sicu|ccu|cvicu|nicu|picu|ward|wards|clinic|attending|rounds|hospital|inpatient|consults?|or day|procedure day|cath lab|ed shift)\b/i;
 const ADMIN = /\b(admin|administrative|academic|research day|non[- ]?clinical|office day|cme|protected time)\b/i;
@@ -17,7 +21,7 @@ const TRAVEL = /(✈|\bflight\b|\bfly(ing)?\b|\btravel|\btrip\b|\bconference\b|\
 
 const LABEL: Record<DayKind, [string, string]> = {
   night: ["Night shift", "🌙"],
-  postnight: ["Post-night (sleeping)", "😴"],
+  postnight: ["Recovery day", "😴"],
   oncall: ["On call", "📟"],
   day: ["Day shift", "☀️"],
   admin: ["Admin day", "🗂️"],
@@ -39,6 +43,15 @@ function addDays(ymd: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// A night shift usually ends around 7 AM; he sleeps about six and a half hours after that.
+const NIGHT_END_MIN = 7 * 60;
+const SLEEP_MIN = 6.5 * 60;
+const wakeAfter = (endMin: number) => Math.min(17 * 60, Math.round((Math.max(endMin, 5 * 60) + 30 + SLEEP_MIN) / 30) * 30);
+function minIn(ts: number): number {
+  const p = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ts));
+  return (Number(p.find((x) => x.type === "hour")?.value || 0) % 24) * 60 + Number(p.find((x) => x.type === "minute")?.value || 0);
+}
+
 function place(title: string, location?: string): string | undefined {
   const m = title.match(/\b(?:to|in)\s+([A-Z][\p{L}'’.-]*(?:\s+[A-Z][\p{L}'’.-]*){0,2})/u);
   if (m) return m[1];
@@ -51,6 +64,7 @@ export function dayStatuses(events: Ev[], trips: Trip[], days = 7, from: string 
   const kinds = new Map<string, Set<DayKind>>();
   const meetings = new Map<string, number>();
   const places = new Map<string, string>();
+  const nightEnds = new Map<string, number>();   // recovery day -> minute the night shift ended
   const add = (d: string, k: DayKind) => { if (!kinds.has(d)) kinds.set(d, new Set()); kinds.get(d)!.add(k); };
 
   for (const e of events) {
@@ -59,11 +73,12 @@ export function dayStatuses(events: Ev[], trips: Trip[], days = 7, from: string 
       const s = String(e.start).slice(0, 10), en = String(e.end || e.start).slice(0, 10);
       for (let d = s; d < (en > s ? en : addDays(s, 1)); d = addDays(d, 1)) {
         if (TRAVEL.test(title)) { add(d, "travel"); const p = place(title, e.location); if (p) places.set(d, p); }
-        else if (NIGHT.test(title)) add(d, "night");
+        else if (RECOVERY.test(title)) add(d, "postnight");
+        else if (NIGHT.test(title)) { add(d, "night"); add(addDays(d, 1), "postnight"); }
         else if (ONCALL.test(title)) add(d, "oncall");
         else if (ADMIN.test(title)) add(d, "admin");
         else if (OFF.test(title)) add(d, "off");
-        else if (SHIFT.test(title)) add(d, "day");
+        else if (SHIFT.test(title) || DAYS.test(title)) add(d, "day");
       }
       continue;
     }
@@ -71,11 +86,18 @@ export function dayStatuses(events: Ev[], trips: Trip[], days = 7, from: string 
     if (isNaN(s)) continue;
     const d = ymdIn(s), hours = Math.max(0, (en - s) / 3600000), h = hourIn(s);
     if (TRAVEL.test(title) && /✈|\bflight\b|\bfly/i.test(title)) { add(d, "travel"); const p = place(title, e.location); if (p) places.set(d, p); continue; }
-    if (NIGHT.test(title) || (h >= 17 && hours >= 8)) { add(d, "night"); add(addDays(d, 1), "postnight"); continue; }
+    if (RECOVERY.test(title)) { add(d, "postnight"); continue; }
+    if (NIGHT.test(title) || (h >= 17 && hours >= 8)) {
+      add(d, "night");
+      const after = ymdIn(en) > d ? ymdIn(en) : addDays(d, 1);
+      add(after, "postnight");
+      if (ymdIn(en) > d) nightEnds.set(after, minIn(en));
+      continue;
+    }
     if (ONCALL.test(title)) { add(d, "oncall"); continue; }
     if (ADMIN.test(title)) { add(d, "admin"); continue; }
     if (OFF.test(title) && hours >= 6) { add(d, "off"); continue; }
-    if (SHIFT.test(title) || hours >= 7) { add(d, "day"); continue; }
+    if (SHIFT.test(title) || DAYS.test(title) || hours >= 7) { add(d, "day"); continue; }
     meetings.set(d, (meetings.get(d) || 0) + 1);
   }
   for (const t of trips) {
@@ -93,15 +115,21 @@ export function dayStatuses(events: Ev[], trips: Trip[], days = 7, from: string 
     // A night shift that starts the same evening after a post-night morning still reads "Night shift".
     if (kind === "postnight" && ks.has("night")) kind = "night";
     const [label, emoji] = LABEL[kind];
-    out.push({ date, kind, label, emoji, meetings: n, ...(kind === "travel" && places.get(date) ? { place: places.get(date) } : {}) });
+    // A recovery morning (even when another night starts that evening) carries the time he should be up.
+    const recovering = ks.has("postnight") && !(ks.has("travel"));
+    const sleepUntil = recovering ? wakeAfter(nightEnds.get(date) ?? NIGHT_END_MIN) : undefined;
+    out.push({ date, kind, label, emoji, meetings: n, ...(kind === "travel" && places.get(date) ? { place: places.get(date) } : {}), ...(sleepUntil ? { sleepUntil } : {}) });
   }
   return out;
 }
 
+const clock = (min: number) => `${((Math.floor(min / 60) + 11) % 12) + 1}${min % 60 ? ":" + String(min % 60).padStart(2, "0") : ""} ${min >= 720 ? "PM" : "AM"}`;
+
 export function statusLine(s: DayStatus): string {
   const extra = s.kind === "travel" && s.place ? ` (${s.place})` : "";
   const m = s.meetings && s.kind !== "meetings" ? ` + ${s.meetings} meeting${s.meetings === 1 ? "" : "s"}` : s.kind === "meetings" ? ` (${s.meetings})` : "";
-  return `${s.emoji} ${s.label}${extra}${m}`;
+  const up = s.sleepUntil ? `, up around ${clock(s.sleepUntil)}` : "";
+  return `${s.emoji} ${s.label}${extra}${up}${m}`;
 }
 
 // Reduces an event to what the day label needs. Titles are replaced by a generic word, so nothing private is stored.
@@ -109,10 +137,11 @@ export function sanitize(e: Ev): Ev {
   const t = String(e.title || "");
   let title = "meeting";
   if (TRAVEL.test(t)) title = `${/✈|\bflight\b|\bfly/i.test(t) ? "Flight" : "Trip"}${place(t, e.location) ? ` to ${place(t, e.location)}` : ""}`;
+  else if (RECOVERY.test(t)) title = "Recovery";
   else if (NIGHT.test(t)) title = "Night";
   else if (ONCALL.test(t)) title = "On call";
   else if (ADMIN.test(t)) title = "Admin";
   else if (OFF.test(t)) title = "Off";
-  else if (SHIFT.test(t)) title = "Shift";
+  else if (SHIFT.test(t) || DAYS.test(t)) title = "Shift";
   return { title, start: e.start, end: e.end, allDay: !!e.allDay };
 }
