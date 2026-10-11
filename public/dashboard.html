@@ -701,6 +701,142 @@ details.fold.sub > summary { min-height: 48px; }
 .wr-row .t { flex: 1 1 180px; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; font-size: 15px; }
 .wr-row .t .muted { font-size: 13px; }
 .wr-row .plan-time[type="date"] { width: 150px; min-height: 36px; }
+
+/* ===================== v2: one-hand layout, bottom dock, decisions, timeline, swipe, command bar ===================== */
+:root { --ok: #3E7D5A; --ok-soft: #E3F0E7; --move: #4A6E95; --move-soft: #E2EAF3; --om-soft: #F1E8E0; --dock-h: 124px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ok: #7CC096; --ok-soft: #1F3328; --move: #8DB1D8; --move-soft: #1D2A38; --om-soft: #33291F; } }
+:root[data-theme="dark"] { --ok: #7CC096; --ok-soft: #1F3328; --move: #8DB1D8; --move-soft: #1D2A38; --om-soft: #33291F; }
+body { padding-bottom: calc(var(--dock-h) + 32px + env(safe-area-inset-bottom, 0px)); }
+.page-foot { margin-bottom: 8px; }
+/* 48px targets everywhere a finger lands */
+.mini, .btn-add, .btn-secondary, .tab-btn, .sub-tab-btn, .toggle-line, .link-btn, .cap button { min-height: 48px; }
+.mini { min-width: 48px; padding: 6px 12px; border-radius: 10px; }
+.btn-add, .btn-secondary { border-radius: 10px; padding: 12px 16px; font-size: 14px; }
+input[type="checkbox"] { width: 24px; height: 24px; margin: 12px 6px; }
+
+/* bottom dock: command pill + 4 tabs, in the thumb zone */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 92%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px);
+  border-top: 1px solid var(--border); padding: 8px max(12px, calc((100vw - 736px) / 2)) calc(4px + env(safe-area-inset-bottom, 0px)); }
+.cmd-pill { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 15px; cursor: text; text-align: left; }
+.cmd-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock .tabs { position: static; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 4px 0 0; border: 0; background: none; overflow: visible; }
+.dock .tab-btn { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: 4px 0; border: 0; letter-spacing: .02em; font-size: 12px; font-weight: 600; color: var(--muted); }
+.dock .tab-btn.active { color: var(--text); border: 0; }
+.dock .tab-btn.active::after { content: ''; position: absolute; top: 2px; width: 20px; height: 3px; border-radius: 3px; background: var(--text); }
+.dock .tab-btn .count { position: absolute; top: 4px; left: calc(50% + 8px); margin: 0; font-size: 11px; min-width: 18px; line-height: 18px; padding: 0 5px; background: var(--accent); color: var(--on-accent); }
+body.cmd-open { overflow: hidden; }
+
+/* toast with Undo, just above the dock */
+.toast { position: fixed; left: 50%; bottom: calc(var(--dock-h) + 12px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 8px); z-index: 35; display: flex; align-items: center; gap: 12px;
+  max-width: min(92vw, 520px); padding: 6px 6px 6px 16px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-size: 14px; box-shadow: 0 6px 24px rgba(0,0,0,.18); opacity: 0; transition: opacity .18s, transform .18s; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.toast[hidden] { display: none; }
+.toast span { flex: 1; min-width: 0; padding: 10px 0; }
+.toast button { min-height: 44px; padding: 0 14px; border-radius: 10px; border: 0; background: color-mix(in srgb, var(--on-accent) 16%, transparent); color: var(--on-accent); font-weight: 700; font-size: 14px; cursor: pointer; }
+
+/* command sheet */
+.cmd-sheet { position: fixed; inset: 0; z-index: 40; background: var(--bg); display: flex; flex-direction: column; padding: calc(10px + env(safe-area-inset-top, 0px)) max(12px, calc((100vw - 736px) / 2)) env(safe-area-inset-bottom, 0px); }
+.cmd-sheet[hidden] { display: none; }
+.cmd-top { display: flex; gap: 8px; align-items: center; }
+.cmd-top input { flex: 1; min-width: 0; min-height: 52px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); font-size: 17px; }
+.cmd-x { min-height: 48px; padding: 0 8px; border: 0; background: none; color: var(--text); font-size: 15px; font-weight: 600; cursor: pointer; }
+.cmd-list { flex: 1; overflow-y: auto; padding: 8px 0 24px; -webkit-overflow-scrolling: touch; }
+.cmd-h { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 16px 4px 6px; }
+.cmd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cmd-chips .fc-chip { min-height: 44px; }
+.cmd-r { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 56px; padding: 10px 14px; margin-bottom: 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; position: relative; font-size: 15px; }
+.cmd-r span, .cmd-rt span { font-size: 13px; color: var(--muted); }
+.cmd-r.top { border-color: var(--text); }
+.cmd-r kbd { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: inherit; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+.cmd-r.find { flex-direction: row; align-items: center; gap: 8px; cursor: default; }
+.cmd-rt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cmd-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.cmd-say { padding: 12px 14px; border-radius: 12px; background: var(--soft); margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+.cmd-say .task-item { background: var(--card); margin: 4px 0 0; }
+
+/* decisions */
+.dec-card { padding: 4px 14px 8px; border-radius: 14px; }
+.dec-card h2 { margin: 10px 0 2px; }
+.dec { padding: 12px 0; border-top: 1px solid var(--hair); }
+.dec:first-of-type { border-top: 0; }
+.dec-h { display: flex; gap: 12px; align-items: flex-start; }
+.dec-i { flex: 0 0 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: var(--soft); font-size: 17px; }
+.dec-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dec-t b { font-size: 15px; line-height: 1.35; color: var(--text); overflow-wrap: anywhere; }
+.dec-t span { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.dec-acts { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0 44px; }
+.dec-b { min-height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
+.dec-b.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.h-smart .dec-card { margin-top: 16px; }
+
+/* Today timeline */
+.h-today { order: 2; } .h-dump { order: 3; } .h-carry { display: none; } .h-oldtoday { display: none; }
+.tl-card { border-radius: 14px; }
+.tl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.tl-chip { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
+.tl-list { position: relative; }
+.tl-row { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 6px; align-items: start; }
+.tl-row.past { opacity: .55; }
+.tl-when { font-size: 13px; color: var(--muted); padding-top: 17px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tl-body .task-item { margin-bottom: 6px; }
+.tl-ev { display: flex; flex-direction: column; gap: 1px; min-height: 56px; justify-content: center; padding: 8px 12px; margin-bottom: 6px; border-radius: 10px; border: 1px solid var(--border); border-left: 3px solid var(--cal); background: var(--card); }
+.tl-ev-t { font-size: 14px; color: var(--body); overflow-wrap: anywhere; }
+.tl-band { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 12px; margin-bottom: 6px; border-radius: 10px; background: var(--om-soft); font-size: 13px; color: var(--text); }
+.tl-band.work { background: var(--soft); }
+.tl-band .muted { margin-left: auto; }
+.tl-row.band .tl-when { padding-top: 12px; }
+.tl-row.gap .tl-when { padding-top: 12px; }
+.tl-gap { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 10px; margin-bottom: 6px; border-radius: 10px; border: 1px dashed var(--border); font-size: 13px; color: var(--muted); }
+.tl-gap > span:first-child { font-weight: 600; color: var(--text); }
+.tl-fit { flex: 1 1 160px; color: var(--body); }
+.tl-gap .mini { min-height: 44px; }
+.tl-now { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; font-size: 12px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.tl-now span { width: 52px; }
+.tl-now i { flex: 1; height: 2px; background: var(--text); border-radius: 2px; position: relative; }
+.tl-now i::before { content: ''; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--text); }
+.tl-sub { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 6px; padding-top: 10px; border-top: 1px solid var(--hair); font-size: 13px; font-weight: 700; color: var(--text); }
+.tl-hint { font-size: 13px; color: var(--muted); background: var(--soft); border-radius: 10px; padding: 4px 4px 4px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tl-hint .link-btn { margin-left: auto; padding: 0 10px; }
+.tl-earlier { display: block; margin-bottom: 4px; }
+
+/* swipe: right = done, left = tomorrow, far left = Omar */
+.task-item[data-swipe] { touch-action: pan-y; position: relative; overflow: hidden; }
+.task-item[data-swipe] .ti-main { position: relative; z-index: 1; background: inherit; transition: transform .18s ease; }
+.task-item.swiping .ti-main { transform: translateX(var(--sx, 0)); transition: none; }
+.task-item.swiping::before { content: attr(data-swipe-label); position: absolute; inset: 0; display: flex; align-items: center; padding: 0 16px; font-size: 13px; font-weight: 700; }
+.task-item.swiping[data-dir^="done"] { background: var(--ok-soft); }
+.task-item.swiping[data-dir^="done"]::before { content: '✓ Done'; color: var(--ok); justify-content: flex-start; }
+.task-item.swiping[data-dir^="tmrw"] { background: var(--move-soft); }
+.task-item.swiping[data-dir^="tmrw"]::before { content: 'Tomorrow →'; color: var(--move); justify-content: flex-end; }
+.task-item.swiping[data-dir="omar"] { background: var(--om-soft); }
+.task-item.swiping[data-dir="omar"]::before { content: 'To Omar →'; color: var(--omar); justify-content: flex-end; }
+.task-item.swiping[data-dir$="-pre"]::before { opacity: .45; }
+.task-item.swiping .ti-main { background: var(--card); }
+.cmd-say .task-item.swiping .ti-main { background: var(--soft); }
+
+/* task panel: short toggles instead of long checkbox labels */
+.ti-tgls { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.tgl { min-height: 48px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 14px; font-weight: 600; cursor: pointer; }
+.tgl[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* Plan ritual */
+.rit-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 4px; margin-bottom: 14px; border-radius: 14px; background: var(--soft); border: 1px solid var(--border); }
+.rit-mode { min-height: 56px; border: 0; border-radius: 10px; background: none; color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 4px; }
+.rit-mode b { font-size: 15px; color: inherit; }
+.rit-mode span { font-size: 11px; }
+.rit-mode.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.rit-panel[hidden] { display: none; }
+.rit-brief p { font-size: 15px; line-height: 1.5; color: var(--body); margin: 0 0 4px; }
+#sub-plan.hidden { display: none; }
+.sub-tabs { position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
+.tl-card .toggle-line { display: block; }
+.tl-gap.quiet { border-style: dotted; padding: 4px 10px; min-height: 0; }
+.tl-gap.quiet > span:first-child { font-weight: 400; color: var(--muted); }
+.plan-row .plan-time { min-width: 128px; }
+body:not([data-tab="home"]) .info-strip, body:not([data-tab="home"]) #dressPanel, body:not([data-tab="home"]) .omar-card, body:not([data-tab="home"]) .dayline { display: none; }
+body:not([data-tab="home"]) .headline { font-size: 26px; }
+body:not([data-tab="home"]) .header { gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .toast, .task-item[data-swipe] .ti-main { transition: none; } }
 </style>
 </head>
 <body>
@@ -727,12 +863,6 @@ details.fold.sub > summary { min-height: 48px; }
   </div>
 </header>
 
-<nav class="tabs" id="tabs">
-  <button class="tab-btn" data-act="tab" data-tab="home">HOME</button>
-  <button class="tab-btn" data-act="tab" data-tab="schedule">SCHEDULE</button>
-  <button class="tab-btn" data-act="tab" data-tab="projects">PROJECTS</button>
-  <button class="tab-btn" data-act="tab" data-tab="grocery">GROCERY<span class="count hidden" id="groceryCount"></span></button>
-</nav>
 
 <!-- ======== HOME ======== -->
 <section id="home" class="tab-content">
@@ -740,8 +870,8 @@ details.fold.sub > summary { min-height: 48px; }
   <div class="home-main">
     <div id="familyBox" class="h-family"></div>
     <div id="nowBox" class="h-now"></div>
-    <div id="planBox" class="h-plan"></div>
     <div id="assistBox" class="h-assist"></div>
+    <div id="timelineBox" class="h-today"></div>
     <div class="card dump h-dump">
       <h2 class="sr-only">Brain dump</h2>
       <div class="dump-field">
@@ -757,7 +887,7 @@ details.fold.sub > summary { min-height: 48px; }
     <div id="waitingBox" class="h-waiting"></div>
     <div id="resetBanner" class="h-reset"></div>
     <div id="recapBanner" class="h-reset"></div>
-    <div class="card h-today">
+    <div class="card h-oldtoday" hidden>
       <h2>Today</h2>
       <div class="pri-filter" id="priFilter" role="group" aria-label="Filter by priority"></div>
       <div id="todayList"></div>
@@ -807,10 +937,20 @@ details.fold.sub > summary { min-height: 48px; }
 <!-- ======== SCHEDULE ======== -->
 <section id="schedule" class="tab-content">
   <div class="sub-tabs">
-    <button class="sub-tab-btn" data-act="sub" data-sub="today">Today Kanban</button>
-    <button class="sub-tab-btn" data-act="sub" data-sub="week">Week View</button>
-    <button class="sub-tab-btn" data-act="sub" data-sub="sync">Weekly sync</button>
-    <button class="sub-tab-btn" data-act="sub" data-sub="recap">Monthly recap</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="plan">Plan</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="week">Week</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="today">Board</button>
+    <button class="sub-tab-btn" data-act="sub" data-sub="recap">Recap</button>
+  </div>
+  <div id="sub-plan">
+    <div class="rit-modes" role="tablist" aria-label="Plan">
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="day"><b>Day</b><span>Morning plan</span></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="evening"><b>Evening</b><span>Wrap-up + handoff</span></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b><span>Sunday sync</span></button>
+    </div>
+    <div id="ritualDay" class="rit-panel"><div id="ritualDayBrief"></div><div id="planBox"></div></div>
+    <div id="ritualEve" class="rit-panel"></div>
+    <div id="ritualWeek" class="rit-panel"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
   </div>
   <div id="sub-today">
     <div class="donut-container">
@@ -849,7 +989,6 @@ details.fold.sub > summary { min-height: 48px; }
     <div class="row" style="margin-bottom:10px;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><p class="muted">Your dashboard tasks and Google Calendar events for the next 7 days.</p><button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button></div>
     <div id="weekList"></div>
   </div>
-  <div id="sub-sync" class="hidden"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
 
@@ -900,7 +1039,21 @@ details.fold.sub > summary { min-height: 48px; }
   </div>
 </section>
 
-<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 10, QA fixes</span></footer>
+<div class="dock" id="dock">
+  <button type="button" class="cmd-pill" data-act="cmd-open" aria-label="Ask or do anything"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Ask or do… “move swim to Thursday”</span></button>
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <button class="tab-btn" data-act="tab" data-tab="home"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Today</span></button>
+    <button class="tab-btn" data-act="tab" data-tab="schedule"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Plan</span></button>
+    <button class="tab-btn" data-act="tab" data-tab="projects"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg><span>Projects</span></button>
+    <button class="tab-btn" data-act="tab" data-tab="grocery"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.5l2.2 11h10.6L20.5 7.5H7"/><circle cx="9.5" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/></svg><span>Grocery</span><span class="count hidden" id="groceryCount"></span></button>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="cmd-sheet" id="cmdSheet" hidden role="dialog" aria-modal="true" aria-label="Ask or do anything">
+  <div class="cmd-top"><input id="cmdInput" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Move swim to Thursday, buy milk at Costco…" aria-label="Ask or do anything" aria-controls="cmdList"><button type="button" class="cmd-x" data-act="cmd-close">Cancel</button></div>
+  <div class="cmd-list" id="cmdList" role="listbox"></div>
+</div>
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 11, v2 Home</span></footer>
 
 <script>
 (() => {
@@ -967,13 +1120,16 @@ details.fold.sub > summary { min-height: 48px; }
   KINDS.forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   let pending = lsGet(LS.pending, {});           // "kind/id" -> object | null (delete), survives reloads until synced
   let ui = Object.assign({ tab: 'home', sub: 'today', open: {}, showDone: false }, lsGet(LS.ui, {}));
-  if (ui.sub === 'reset') ui.sub = 'sync';
+  if (ui.sub === 'reset' || ui.sub === 'sync') { ui.sub = 'plan'; ui.ritual = 'week'; }
+  if (!['plan', 'week', 'today', 'recap'].includes(ui.sub)) ui.sub = 'plan';
   // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
   try {
     const q = new URLSearchParams(location.search);
-    if (q.get('open') === 'handoff') { ui.tab = 'home'; ui.handoffOpen = true; ui.hoScroll = true; history.replaceState(null, '', location.pathname); }
-    if (q.get('open') === 'wrapup') { ui.tab = 'home'; ui.wrapAsk = Date.now(); ui.wrapScroll = true; history.replaceState(null, '', location.pathname); }
-    if (q.get('open') === 'reset') { ui.tab = 'schedule'; ui.sub = 'sync'; history.replaceState(null, '', location.pathname); }
+    if (q.get('open') === 'handoff') { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'evening'; ui.ritualAt = Date.now(); ui.handoffOpen = true; ui.hoScroll = true; history.replaceState(null, '', location.pathname); }
+    if (q.get('open') === 'wrapup') { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'evening'; ui.ritualAt = Date.now(); ui.wrapAsk = Date.now(); history.replaceState(null, '', location.pathname); }
+    if (q.get('open') === 'reset' || q.get('open') === 'sync') { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'week'; ui.ritualAt = Date.now(); history.replaceState(null, '', location.pathname); }
+    if (q.get('open') === 'plan') { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = null; history.replaceState(null, '', location.pathname); }
+    if (q.get('open') === 'cmd') { ui.cmdOnLoad = true; history.replaceState(null, '', location.pathname); }
     if (q.get('tab') === 'grocery') {
       ui.tab = 'grocery';
       const st = q.get('store');
@@ -1145,6 +1301,7 @@ details.fold.sub > summary { min-height: 48px; }
     wireNow();
     wireFolds();
     wireExtras();
+    wireV2();
     render();
     loadLive();
     setInterval(loadLive, 10 * 60000);
@@ -1347,7 +1504,7 @@ details.fold.sub > summary { min-height: 48px; }
     renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderLive();
     renderTracker(); renderSmart(); renderFamily(); renderSchoolAdmin(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
-    if (ui.tab === 'schedule' && ui.sub === 'sync') renderSync();
+    renderTimeline(); renderRitual(); publishWidgetSoon();
     if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
     restoreFocus(keep);
   }
@@ -1462,15 +1619,16 @@ details.fold.sub > summary { min-height: 48px; }
     }).join('');
   }
   function renderTabs() {
-    if (ui.sub === 'reset') ui.sub = 'sync';                      // Weekly reset now lives under Weekly sync
+    if (ui.sub === 'reset' || ui.sub === 'sync') { ui.sub = 'plan'; ui.ritual = 'week'; }   // the weekly sync lives in Plan → Week
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === ui.tab));
     document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
     $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
-    $('sub-sync').classList.toggle('hidden', ui.sub !== 'sync');
+    $('sub-plan').classList.toggle('hidden', ui.sub !== 'plan');
     $('sub-recap').classList.toggle('hidden', ui.sub !== 'recap');
     document.body.dataset.cap = capMode();
+    document.body.dataset.tab = ui.tab;
     if (capMode() === 'survival' && ui.tab === 'projects') { ui.tab = 'home'; saveUi(); return renderTabs(); }
     const gc = Object.values(S.grocery).filter(g => !g.archived && !g.checked).length;
     const c = $('groceryCount'); c.textContent = gc; c.classList.toggle('hidden', !gc);
@@ -1510,10 +1668,11 @@ details.fold.sub > summary { min-height: 48px; }
           ${!done ? `<button class="toggle-line" data-act="drop" data-id="${id}">Let this go</button>` : ''}
           ${opts.board ? `<span class="ti-reorder">${dragHandle(t, opts.board)}<span>Drag to reorder</span></span>` : ''}
         </div>
-        ${!done ? `<label class="set-chk"><input type="checkbox" data-act="outdoor" data-id="${id}" ${isOutdoor(t) ? 'checked' : ''}>Outdoors (plan around the weather)</label>` : ''}
-        ${!done && !t.sharedId ? `<label class="set-chk"><input type="checkbox" data-act="hh-hand" data-id="${id}">Omar's task (moves it to his dashboard)</label>` : ''}
+        ${!done ? `<div class="ti-tgls">
+          <button type="button" class="tgl" role="switch" aria-checked="${isOutdoor(t)}" data-act="outdoor-tgl" data-id="${id}" title="Planned around the weather">${isOutdoor(t) ? '☀︎' : '⌂'} Outdoors</button>
+          ${!t.sharedId && hh.me === 'farah' && !fam.off ? `<button type="button" class="tgl" role="switch" aria-checked="false" data-act="hh-hand" data-id="${id}" title="Moves it to Omar's dashboard">Omar</button>` : ''}</div>` : ''}
         ${!done && sched && sched.id === t.id ? schedHtml(t) : ''}</div>` : '';
-    return `<div class="task-item ${done ? 'done' : ''} ${open ? 'open' : ''}" ${opts.board ? `data-drag-id="${id}"` : ''}>
+    return `<div class="task-item ${done ? 'done' : ''} ${open ? 'open' : ''}" ${opts.board ? `data-drag-id="${id}"` : ''} ${!done && !opts.board ? `data-swipe="${id}"` : ''}>
       <div class="ti-main"><input type="checkbox" data-act="toggle" data-id="${id}" ${done ? 'checked' : ''} aria-label="Done">
         <span class="text">${!done && priLevel(t.priority) !== 'none' ? `<span class="pri-badge ${priLevel(t.priority)}">${PRI_NAME[priLevel(t.priority)]}</span>` : ''}<span class="t">${esc(t.title)}</span></span>
         ${acts.join('')}<button class="icon-btn ti-i ${hot ? 'hot' : ''}" data-act="task-info" data-id="${id}" aria-expanded="${open}" aria-controls="ti-${id}" aria-label="Details for ${esc(t.title)}">${ICON.info}</button></div>
@@ -1539,6 +1698,7 @@ details.fold.sub > summary { min-height: 48px; }
   }
 
   function renderToday() {
+    if ($('todayList').closest('[hidden]')) { $('todayList').innerHTML = ''; return; }
     const b = board();
     if (!b.todo.length && !b.doing.length && !b.done.length) {
       $('todayList').innerHTML = (capMode() === 'survival' ? '<div class="empty">Nothing essential left today. Rest counts.</div>' : '<div class="empty">Nothing scheduled for today yet. Dump a thought below or add one in Schedule.</div>') + pausedHtml();
@@ -2282,7 +2442,8 @@ Rules:
     }
   ];
 
-  function renderSmart() {
+  function renderSmart() { renderDecide(); }
+  function renderSmartLegacy() {
     const box = $('smartBox'); if (!box) return;
     if (isResting()) { box.innerHTML = ''; return; }
     const c = smartContext();
@@ -2474,8 +2635,7 @@ Rules:
     box.innerHTML = `<div class="card now-card">
       <div class="now-head"><h2>Now <span class="now-clock">${esc(clockLabel(nowMin))}</span></h2>${capChip()}</div>${ui.capOpen ? capToggle() : ''}
       ${hero}${workNote}
-      <div class="now-links">${nextBtn}${resting ? '' : '<button class="toggle-line now-toggle" data-act="plan-open">Plan my day</button>'}</div>
-      ${day}</div>`;
+      ${resting ? '' : '<div class="now-links"><button class="toggle-line now-toggle" data-act="plan-open">Plan my day</button></div>'}</div>`;
   }
   // ---------- capacity modes ----------
   const CAP = {
@@ -2606,7 +2766,7 @@ Rules:
         case 'paused-toggle': ui.open.paused = !ui.open.paused; saveUi(); renderToday(); break;
         case 'dress-auto': { const dc = Object.assign({}, meta().dress || {}); delete dc.date; editDress = false; setMeta({ dress: dc }); break; }
         case 'mail-task': makeMailTask(id); break;
-        case 'reset-open': ui.tab = 'schedule'; ui.sub = 'sync'; saveUi(); render(); { const r = $('resetView'); if (r && r.scrollIntoView) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break;
+        case 'reset-open': ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'week'; ui.ritualAt = Date.now(); saveUi(); render(); { const r = $('resetView'); if (r && r.scrollIntoView) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break;
         case 'reset-hide': ui.resetHidden = weekStart(); saveUi(); renderResetBanner(); break;
         case 'reset-done': setMeta({ resetDone: weekStart() }); ui.tab = 'home'; saveUi(); render(); window.scrollTo({ top: 0 }); break;
         case 'rs-commit': { const t = S.tasks[id]; if (t) { moveTo(id, today()); setTask(id, { priority: 'high', reviewedOn: weekStart() }); } break; }
@@ -3444,7 +3604,6 @@ Rules:
   function renderAssist() {
     const el = $('assistBox'); if (!el) return;
     const parts = [];
-    if (wrapShow()) parts.push(wrapHtml());
     if (calNote) {
       if (calNote.kind === 'scope') parts.push(`<div class="card as-note"><span>To add blocks to Google Calendar, allow calendar access once. Sign in again and approve the new permission.</span><span class="as-acts"><a class="mini primary" href="/?reauth=1">Allow</a><button class="mini ghost" data-act="cal-note-x" aria-label="Dismiss">✕</button></span></div>`);
       else parts.push(`<div class="card as-note ${calNote.kind}" role="status"><span>${esc(calNote.text)}</span><button class="mini ghost" data-act="cal-note-x" aria-label="Dismiss">✕</button></div>`);
@@ -3457,7 +3616,7 @@ Rules:
           <span class="t">${esc(t.title)}</span><span class="muted">${t.date ? esc(t.date === today() ? 'Today' : shortDay(t.date)) + (t.time ? ' · ' + esc(t.time) : '') : ''}${t.calEventId ? ' 📅' : ''}</span></div>`
           : `<div class="as-top-row"><span class="fc-dot" aria-hidden="true">•</span><span class="t">${esc(x.text)}</span></div>`; }).join('')}</div>`);
     }
-    const moves = weatherMoves();
+    const moves = [];   // weather moves and nice-day outings are decisions now (renderDecide)
     moves.slice(0, 3).forEach(({ t, w, alt }) => {
       const aw = alt ? wxDay(alt) : null;
       parts.push(`<div class="card as-wx"><div class="as-wx-t">${wxIcon(w)} <b>${esc(t.title)}</b> is ${esc(dayName(t.date))}: ${esc(wxWhy(w))}.${alt ? ` ${esc(dayName(alt).replace(/^./, c => c.toUpperCase()))} looks better (${esc(wxShort(aw).trim())}).` : ''}</div>
@@ -3465,11 +3624,10 @@ Rules:
         <button class="mini" data-act="wx-keep" data-id="${esc(t.id)}" data-d="${t.date}">Keep</button>
         <button class="mini ghost" data-act="wx-indoor" data-id="${esc(t.id)}" title="Not weather-dependent">Indoors anyway</button></div></div>`);
     });
-    const nice = niceDay();
+    const nice = null;
     if (nice) parts.push(`<div class="card as-wx nice"><div class="as-wx-t">${wxIcon(nice.w)} <b>${esc(dayName(nice.d).replace(/^./, c => c.toUpperCase()))}</b> looks lovely: ${esc(nice.w.condition.toLowerCase() || 'clear')}, ${deg(nice.w.hi)}°. A good day for a family outing.</div>
       <div class="as-acts"><button class="mini primary" data-act="nice-add" data-d="${nice.d}">Add a family outing</button><button class="mini ghost" data-act="nice-x" data-d="${nice.d}">Not this time</button></div></div>`);
     el.innerHTML = parts.join('');
-    if (ui.wrapScroll && $('wrapCard')) { ui.wrapScroll = false; $('wrapCard').scrollIntoView({ block: 'start' }); }
   }
 
   // ----- Weekly focus (in the Sunday sync): pick up to 3 from your list or type them, then plan them into free time -----
@@ -3865,20 +4023,19 @@ Rules:
     parts.push(`<div class="fam-line">${line ? `<span class="fam-t">${esc(line)}</span>` : '<span></span>'}${buttons}</div>`);
     parts.push(handoffInboxHtml());
     if (sickCfg().active && ui.sickOpen !== false) parts.push(sickHtml());
-    if (handoffShow()) parts.push(handoffHtml());
     return parts.join('');
   }
   function renderFamily() {
     const el = $('familyBox'); if (!el) return;
     el.innerHTML = familyHtml();
-    if (ui.hoScroll && $('handoffCard')) { ui.hoScroll = false; saveUi(); $('handoffCard').scrollIntoView({ block: 'start' }); }
+
   }
   function wireFamily() {
     document.addEventListener('click', e => {
       const el = e.target.closest('[data-act]'); if (!el) return;
       const k = el.dataset.k;
       switch (el.dataset.act) {
-        case 'ho-open': { const showing = handoffShow(); ui.handoffOpen = !showing; if (showing) ui.hoSkip = eveningOf(); else { ui.hoSkip = null; ui.hoScroll = true; } saveUi(); render(); break; }
+        case 'ho-open': ui.handoffOpen = true; ui.hoSkip = null; ui.hoScroll = true; openRitual('evening'); break;
         case 'ho-status': if (fam.compose) { fam.compose.status = fam.compose.status === k ? null : k; renderFamily(); } break;
         case 'ho-send': handoffSend(); break;
         case 'ho-reset': fam.compose = null; render(); break;
@@ -4275,7 +4432,7 @@ Rules:
           Object.values(S.tasks).filter(t => t.routineId === id && isOpen(t) && t.date && t.date >= td).forEach(t => stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now(), missed: true })));
           setMetaStaged({ routines: routinesList().filter(r => r.id !== id) }); commit(); break;
         }
-        case 'plan-open': plan = buildPlan(); renderPlan(); { const pb = $('planBox'); if (pb && pb.scrollIntoView) pb.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } break;
+        case 'plan-open': plan = buildPlan(); openRitual('day'); break;
         case 'plan-cancel': plan = null; renderPlan(); break;
         case 'plan-commit': commitPlan(); break;
         case 'plan-inc': if (plan) { plan.items[+el.dataset.i].include = el.checked; renderPlan(); } break;
@@ -4590,7 +4747,7 @@ Rules:
     if (wk.note.trim()) lines.push('', wk.note.trim());
     return lines.join('\n');
   }
-  function renderSync() {
+  function renderWeekSync() {
     const el = $('syncView'); if (!el) return;
     const td = today(), mon = syncWeekStart(), wk = syncWeekOf(mon), sun = addDays(mon, 6), thisMon = mondayOf(td);
     const days = Array.from({ length: 7 }, (_, i) => {
@@ -4727,6 +4884,605 @@ Rules:
   function quickGrocery() {
     const el = $('gQuick'); const v = el.value.trim(); if (!v) return;
     el.value = ''; addGrocery(v, $('gStore').value);
+  }
+
+
+  // =====================================================================================================
+  // v2 Home (Oct 11): Today timeline, decisions, swipe, command bar, one Plan ritual, toast, widget feed.
+  // Everything here reads the same state (S, live, hh, fam) and writes through the same paths (setTask,
+  // moveTo, put, hhSend). Nothing new is stored except a few meta keys: care (who covers no-school days).
+  // =====================================================================================================
+
+  // ---------- toast with Undo ----------
+  let toastTimer = null, toastUndo = null;
+  function toast(text, undo) {
+    const el = $('toast'); if (!el) return;
+    toastUndo = typeof undo === 'function' ? undo : null;
+    el.innerHTML = `<span>${esc(text)}</span>${toastUndo ? '<button type="button" data-act="toast-undo">Undo</button>' : ''}`;
+    el.hidden = false; el.classList.add('on');
+    clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, toastUndo ? 6000 : 3500);
+  }
+  function hideToast() { const el = $('toast'); if (!el) return; el.classList.remove('on'); el.hidden = true; toastUndo = null; }
+  // Snapshot tasks before a change so Undo can put them back exactly.
+  // Undo goes back through setTask, so calendar blocks and shared-list status follow the task back.
+  function snapTasks(ids) {
+    const before = ids.map(id => S.tasks[id] && clone(S.tasks[id])).filter(Boolean);
+    return () => { before.forEach(t => { if (S.tasks[t.id]) setTask(t.id, t); else put('tasks', t); }); };
+  }
+
+  // ---------- Today timeline: calendar, timed tasks and routines, Omar's shift, work hours, weather, free time ----------
+  const TL_SHOW = 5;
+  function omarBand(d) {
+    const o = omarDay(d); if (!o) return { chips: [], items: [] };
+    const chips = [], items = [];
+    if (o.sleepUntil) items.push({ kind: 'omar', start: Math.max(DAY_START_MIN, 6 * 60), end: o.sleepUntil, title: `Omar sleeping until about ${clockShort(o.sleepUntil)}`, icon: '😴' });
+    if (o.kind === 'night') items.push({ kind: 'omar', start: 18 * 60 + 30, end: BED_MIN, title: 'Omar leaves for his night shift', icon: '🌙' });
+    else if (o.kind === 'day' || o.kind === 'oncall') items.push({ kind: 'omar', start: 6 * 60 + 30, end: 19 * 60 + 30, title: `Omar ${o.kind === 'day' ? 'at work' : 'on call'}`, icon: '☀️' });
+    else if (o.kind === 'travel') chips.push(`✈️ Omar away${o.place ? ' · ' + o.place : ''}`);
+    else if (o.kind === 'off') chips.push('🏠 Omar off');
+    else if (o.kind === 'recovery' && !o.sleepUntil) chips.push('😴 Omar recovering');
+    return { chips, items };
+  }
+  function timelineItems(td, nowMin) {
+    const items = dayItems(td, nowMin).map(i => Object.assign({}, i));
+    const ob = omarBand(td); ob.items.forEach(i => items.push(i));
+    const wh = workHours(td); if (wh) items.push({ kind: 'work', start: wh.start, end: wh.end, title: 'Work', icon: '💼' });
+    return { items: items.sort((a, b) => a.start - b.start || (a.kind === 'task') - (b.kind === 'task')), chips: ob.chips };
+  }
+  function tlRow(i, nowMin) {
+    const when = `<span class="tl-when">${esc(clockShort(i.start))}</span>`;
+    const past = i.end <= nowMin || (i.done && i.start < nowMin);
+    if (i.kind === 'task' && S.tasks[i.id]) {
+      const t = S.tasks[i.id];
+      return `<div class="tl-row ${past ? 'past' : ''}">${when}<div class="tl-body">${taskRow(t, { tomorrow: false })}</div></div>`;
+    }
+    if (i.kind === 'omar' || i.kind === 'work') {
+      return `<div class="tl-row band ${past ? 'past' : ''}">${when}<div class="tl-body"><div class="tl-band ${i.kind}"><span aria-hidden="true">${i.icon}</span><span>${esc(i.title)}</span><span class="muted">${i.kind === 'work' ? 'until ' + esc(clockShort(i.end)) : ''}</span></div></div></div>`;
+    }
+    const ev = i;   // calendar
+    return `<div class="tl-row ${past ? 'past' : ''}">${when}<div class="tl-body"><div class="tl-ev"><span class="tl-ev-t">${esc(tidyTitle(ev.title))}</span><span class="muted">${ev.end > ev.start ? 'until ' + esc(clockShort(ev.end)) : ''}</span></div></div></div>`;
+  }
+  function renderTimeline() {
+    const box = $('timelineBox'); if (!box) return;
+    const td = today(), nowMin = nowMinutes();
+    const { items, chips } = timelineItems(td, nowMin);
+    const allDay = eventsOn(td).filter(ev => ev.allDay).map(ev => esc(ev.title || 'All day'));
+    if (noSchoolOn(td) && !allDay.some(a => /no school|break|closed/i.test(a))) allDay.unshift('🏠 No school');
+    const w = wxDay(td);
+    if (w && wxBad(w)) allDay.push(`${wxIcon(w)} ${esc(wxWhy(w))}`);
+    chips.forEach(c => allDay.push(esc(c)));
+    // Earlier items fold away; what's next stays in view.
+    const earlier = items.filter(i => i.end <= nowMin && i.start < nowMin && !(i.kind === 'task' && S.tasks[i.id] && isOpen(S.tasks[i.id])));
+    const ahead = items.filter(i => !earlier.includes(i));
+    const gaps = isResting(nowMin) ? [] : freeGaps(dayItems(td, nowMin), td, nowMin).filter(g => g.end - g.start >= 30);
+    const seq = ahead.map(i => ({ at: i.start, html: tlRow(i, nowMin) }));
+    gaps.forEach((g, gi) => seq.push({ at: g.start + 0.5, html: `<div class="tl-row gap"><span class="tl-when">${esc(clockShort(g.start))}</span><div class="tl-body"><div class="tl-gap ${gi < 2 && g.fit ? '' : 'quiet'}">
+        <span>Free · ${esc(minLabel(g.end - g.start))}</span>
+        ${gi < 2 && g.fit ? `<span class="tl-fit"><span class="muted">Fits:</span> ${esc(g.fit.t.title)} <span class="muted">~${g.fit.mins} min</span></span><button class="mini" data-act="tl-slot" data-id="${esc(g.fit.t.id)}" data-min="${Math.ceil(g.start / 5) * 5}">Do it then</button>` : ''}</div></div></div>` }));
+    if (!isResting(nowMin)) seq.push({ at: nowMin + 0.25, html: `<div class="tl-now" aria-label="Now"><span>${esc(clockShort(nowMin))}</span><i></i></div>` });
+    seq.sort((a, b) => a.at - b.at);
+    const earlierOpen = !!ui.open.tlEarlier;
+    const earlierHtml = earlier.length ? `<button class="toggle-line tl-earlier" data-act="tl-earlier" aria-expanded="${earlierOpen}">${earlierOpen ? 'Hide' : 'Show'} earlier (${earlier.length})</button>${earlierOpen ? earlier.map(i => tlRow(i, nowMin)).join('') : ''}` : '';
+
+    // Untimed: today's and carried-over tasks. Kid routines with a time are in the timeline above.
+    const { carry, todayOpen, doneToday } = views();
+    const untimed = carry.concat(todayOpen.filter(t => !(t.time && timeMin(t.time) < 9000)))
+      .sort((a, b) => priorityScore(b.priority) - priorityScore(a.priority) || (a.date || '').localeCompare(b.date || '') || (a.createdAt || 0) - (b.createdAt || 0));
+    const all = !!ui.open.tlAll, shown = all ? untimed : untimed.slice(0, TL_SHOW), more = untimed.length - shown.length;
+    const doneOpen = !!ui.open.doneToday;
+    const left = untimed.length + ahead.filter(i => i.kind === 'task' && !i.done).length;
+    const hint = !ui.swipeHint && untimed.length ? `<div class="tl-hint" role="note">Swipe a task right to finish it, left for tomorrow${hh.me === 'farah' && !fam.off ? ', far left to give it to Omar' : ''}. <button class="link-btn" data-act="swipe-hint-x">Got it</button></div>` : '';
+    box.innerHTML = `<div class="card tl-card">
+      <h2><span>Today</span><span class="muted">${left ? `${left} left` : 'All clear'}${w ? ` · ${esc(wxShort(w).trim())}` : ''}</span></h2>
+      ${allDay.length ? `<div class="tl-chips">${allDay.map(a => `<span class="tl-chip">${a}</span>`).join('')}</div>` : ''}
+      ${earlierHtml}
+      <div class="tl-list">${seq.map(x => x.html).join('') || '<div class="empty">Nothing timed today.</div>'}</div>
+      <div class="tl-sub"><span>Anytime today</span><span class="muted">${untimed.length}</span></div>
+      ${hint}
+      ${shown.map(t => taskRow(t, { tomorrow: true })).join('') || `<div class="empty">${capMode() === 'survival' ? 'Nothing essential left. Rest counts.' : 'Nothing waiting. Dump a thought below.'}</div>`}
+      ${more > 0 ? `<button class="toggle-line" data-act="tl-all">Show ${more} more</button>` : all && untimed.length > TL_SHOW ? '<button class="toggle-line" data-act="tl-all">Show fewer</button>' : ''}
+      ${doneToday.length ? `<button class="toggle-line" data-act="done-toggle" aria-expanded="${doneOpen}">${doneOpen ? 'Hide' : 'Show'} ${doneToday.length} done</button>${doneOpen ? doneToday.map(t => taskRow(t, {})).join('') : ''}` : ''}
+      ${pausedHtml()}
+    </div>`;
+  }
+
+  // ---------- decisions: everything the system surfaces arrives as a choice with one-tap answers ----------
+  let decList = [];
+  const decHidden = () => (ui.dec = ui.dec || {});
+  const decSnoozed = k => { const v = decHidden()[k]; return v === 'never' || v === today(); };
+  const careOf = () => meta().care || {};
+  function setCare(d, who) { const c = Object.assign({}, careOf()); if (who) c[d] = who; else delete c[d]; Object.keys(c).forEach(k => { if (k < addDays(today(), -7)) delete c[k]; }); setMeta({ care: c }); }
+  const capFirst = s => String(s).replace(/^./, c => c.toUpperCase());
+  function decisions() {
+    const td = today(), nowMin = nowMinutes(), out = [];
+    const fam_ok = hh.me === 'farah' && !fam.off;
+
+    // No school coming up: who covers it?
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(td, i), dow = parseYmd(d).getDay();
+      if (dow === 0 || dow === 6 || !noSchoolOn(d) || careOf()[d]) continue;
+      if (i === 0 && nowMin > 15 * 60) continue;
+      const busy = omarBusy(d, 8 * 60, 9 * 60), o = omarDay(d);
+      out.push({ key: 'care-' + d, w: i <= 3 ? 96 - i : 70, icon: '🏠',
+        title: `No school ${dayName(d)}${i > 1 ? ` (${shortDay(d)})` : ''}`,
+        sub: busy ? `${busy} Who covers the kids?` : o && o.kind === 'off' ? 'Omar is off that day. Who covers the kids?' : 'Who covers the kids?',
+        acts: [
+          { label: 'Book back-up care', primary: true, run: () => { window.open(BH_URL, '_blank', 'noopener'); setCare(d, 'bh'); toast(`Back-up care for ${dayName(d)}: marked as booked.`, () => setCare(d, null)); } },
+          ...(fam_ok ? [{ label: 'Ask Omar', run: () => { setCare(d, 'omar'); hhSend({ op: 'add', title: `👦 Cover the kids: no school ${shortDay(d)}`, to: 'omar', date: d }, `Asked Omar to cover ${dayName(d)}.`); } }] : []),
+          { label: 'Handle later', run: () => snooze('care-' + d) }
+        ] });
+    }
+
+    // Evening: wrap-up, then the handoff.
+    if (wrapShow()) {
+      const left = wrapLeft();
+      out.push({ key: 'wrap-' + wrapKey(), w: 92, icon: '🌙', title: `${left.length} left from today`,
+        sub: left.slice(0, 2).map(t => t.title).join(', ') + (left.length > 2 ? ` +${left.length - 2}` : '') + '. Give each a spot, or let it go.',
+        acts: [
+          { label: 'Sort them', primary: true, run: () => openRitual('evening') },
+          { label: 'All to tomorrow', run: () => { const undo = snapTasks(left.map(t => t.id)); wrapCommit(false); toast(`${left.length} moved to tomorrow.`, undo); } },
+          { label: 'Not tonight', run: () => { ui.wrapAsk = null; saveUi(); setMeta({ wrapDone: wrapKey() }); } }
+        ] });
+    }
+    const hoDue = (() => { const n = nowMinutes(), d = eveningOf(); return (n >= 20 * 60 || n < 4 * 60) && !(fam.mine && fam.mine.date === d) && ui.hoSkip !== d; })();
+    if (fam_ok && hoDue && !(ui.tab === 'schedule' && ui.sub === 'plan')) {
+      out.push({ key: 'ho-' + eveningOf(), w: 90, icon: '📋', title: 'Send Omar tonight’s handoff?', sub: 'Pre-filled from your day. About a minute.',
+        acts: [
+          { label: 'Review and send', primary: true, run: () => { ui.handoffOpen = true; ui.hoScroll = true; openRitual('evening'); } },
+          { label: 'Not tonight', run: () => { ui.hoSkip = eveningOf(); saveUi(); render(); } }
+        ] });
+    }
+
+    // Weather against outdoor plans; a lovely free weekend day.
+    weatherMoves().slice(0, 2).forEach(({ t, w, alt }) => {
+      const altName = alt ? (alt === td ? 'today' : alt === addDays(td, 1) ? 'tomorrow' : parseYmd(alt).toLocaleDateString('en-US', { weekday: 'long' })) : '';
+      out.push({ key: `wx-${t.id}-${t.date}`, w: 80, icon: wxIcon(w) || '🌧️', title: `${t.title}: ${wxWhy(w)} ${dayName(t.date)}`,
+        sub: alt ? `${capFirst(altName)} looks better (${wxShort(wxDay(alt)).trim()}).` : 'No better day this week yet.',
+        acts: [
+          ...(alt ? [{ label: `Move to ${altName}`, primary: true, run: () => { const undo = snapTasks([t.id]); moveTo(t.id, alt); toast(`Moved to ${altName}.`, undo); } }] : []),
+          { label: 'Keep', run: () => { assistHidden()['wx-' + t.id + '-' + t.date] = 1; saveUi(); render(); } },
+          { label: 'Indoors anyway', run: () => setTask(t.id, { outdoor: false }, { noCal: true }) }
+        ] });
+    });
+    const nice = niceDay();
+    if (nice) out.push({ key: 'nice-' + nice.d, w: 40, icon: wxIcon(nice.w) || '☀️', title: `${capFirst(dayName(nice.d))} looks lovely, ${deg(nice.w.hi)}°`,
+      sub: 'Nothing planned yet. A good day for a family outing.',
+      acts: [
+        { label: 'Add an outing', primary: true, run: () => { const t = makeTask({ title: 'Family outing', category: 'activity', date: nice.d }); put('tasks', t); assistHidden()['nice-' + nice.d] = 1; saveUi(); openSched(t.id); } },
+        { label: 'Not this time', run: () => { assistHidden()['nice-' + nice.d] = 1; saveUi(); render(); } }
+      ] });
+
+    // Carried over from earlier days.
+    const { carry } = views();
+    if (carry.length && !isResting(nowMin)) {
+      out.push({ key: 'carry-' + td + '-' + carry.length, w: 75, icon: '↻', title: `${carry.length} carried over`,
+        sub: carry.slice(0, 2).map(t => t.title).join(', ') + (carry.length > 2 ? ` +${carry.length - 2}` : '') + '. Still today?',
+        acts: [
+          { label: 'Keep for today', primary: true, run: () => { const undo = snapTasks(carry.map(t => t.id)); carry.forEach(t => stage('tasks', Object.assign({}, t, { date: td, originalDate: t.originalDate || t.date }))); commit(); toast(`${carry.length} kept for today.`, undo); } },
+          { label: 'Tomorrow', run: () => { const undo = snapTasks(carry.map(t => t.id)); const tm = addDays(td, 1); carry.forEach(t => stage('tasks', Object.assign({}, t, { date: tm, originalDate: t.originalDate || t.date }))); commit(); toast(`${carry.length} moved to tomorrow.`, undo); } },
+          { label: 'Let them go', run: () => { const undo = snapTasks(carry.map(t => t.id)); carry.forEach(t => stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now() }))); commit(); toast(`Let go of ${carry.length}.`, undo); } }
+        ] });
+    }
+
+    // Emails that ask for something.
+    (live.mail || []).filter(m => m.action && !mailTask(m)).slice(0, 2).forEach(m => {
+      out.push({ key: 'mail-' + m.id, w: 72, icon: '✉️', title: m.action.title, sub: `${m.from || 'Email'}${m.action.due ? ` · due ${fmtShortDate(m.action.due)}` : ''}`,
+        acts: [
+          { label: 'Add task', primary: true, run: () => { makeMailTask(m.id); toast('Added to your list.'); } },
+          { label: 'Open', run: () => window.open(mailUrl(m), '_blank', 'noopener') },
+          { label: 'Skip', run: () => { decHidden()['mail-' + m.id] = 'never'; saveUi(); render(); } }
+        ] });
+    });
+
+    // Sunday: plan the coming week.
+    const dow = parseYmd(td).getDay(), mon = syncWeekStart();
+    if ((dow === 0 && nowMin >= 11 * 60) || (dow === 6 && nowMin >= 15 * 60)) {
+      if (!syncWeekOf(mon).doneAt && !isResting(nowMin)) out.push({ key: 'week-' + mon, w: 60, icon: '🗓', title: 'Plan the week ahead?',
+        sub: 'Ten minutes: dinners, who covers what, and your top 3.',
+        acts: [{ label: 'Start', primary: true, run: () => openRitual('week') }, { label: 'Later', run: () => snooze('week-' + mon) }] });
+    }
+
+    // One suggestion from the smart rules, phrased as a choice.
+    if (!isResting(nowMin)) {
+      const c = smartContext(); const sug = [];
+      SMART_RULES.forEach(rule => { try { const s = rule(c); if (s && smartDismissed[s.key] !== td) sug.push(s); } catch (e) {} });
+      const s = sug.sort((a, b) => b.w - a.w)[0];
+      if (s) {
+        const kind = s.key.split(':')[0], t = s.task;
+        const TITLE = { short: t ? `Quick win: ${t.title}` : 'A short window', stale: t ? `Pick back up: ${t.title}` : 'Something in progress', pushed: 'Keeps moving', momentum: t ? `Next step: ${t.title}` : 'Keep going', deep: t ? `Focus block: ${t.title}` : 'A clear stretch', stuck: 'A project has stalled' };
+        out.push({ key: 'sg-' + s.key, w: Math.min(70, s.w * 0.6), icon: '✦', title: TITLE[kind] || 'Suggestion', sub: s.text, html: true,
+          acts: [
+            ...(t && !(c.active && c.active.id === t.id) ? [{ label: 'Start', primary: true, run: () => startTimer(t.id) }] : []),
+            ...(t ? [{ label: 'Tomorrow', run: () => { const undo = snapTasks([t.id]); moveTo(t.id, addDays(td, 1)); toast('Moved to tomorrow.', undo); } }] : []),
+            { label: 'Not now', run: () => { smartDismissed[s.key] = td; lsSet(SMART_LS, smartDismissed); render(); } }
+          ] });
+      }
+    }
+
+    const resting = isResting(nowMin);
+    return out.filter(d => !decSnoozed(d.key) && (!resting || /^(wrap|ho)-/.test(d.key))).sort((a, b) => b.w - a.w);
+  }
+  function snooze(key) { decHidden()[key] = today(); Object.keys(ui.dec).forEach(k => { if (ui.dec[k] !== 'never' && ui.dec[k] < today()) delete ui.dec[k]; }); saveUi(); render(); }
+  function renderDecide() {
+    const box = $('smartBox'); if (!box) return;
+    try { decList = decisions(); } catch (e) { console.warn('decisions', e); decList = []; }
+    if (!decList.length) { box.innerHTML = ''; return; }
+    const all = !!ui.decAll, shown = all ? decList : decList.slice(0, 3);
+    box.innerHTML = `<div class="card dec-card" role="region" aria-label="Needs you"><h2><span>Needs you</span><span class="muted">${decList.length}</span></h2>
+      ${shown.map(d => `<div class="dec" data-key="${esc(d.key)}"><div class="dec-h"><span class="dec-i" aria-hidden="true">${esc(d.icon)}</span><div class="dec-t"><b>${esc(d.title)}</b>${d.sub ? `<span>${d.html ? d.sub : esc(d.sub)}</span>` : ''}</div></div>
+        <div class="dec-acts">${d.acts.map((a, i) => `<button type="button" class="dec-b ${a.primary ? 'primary' : ''}" data-act="dec" data-key="${esc(d.key)}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div></div>`).join('')}
+      ${decList.length > 3 ? `<button class="toggle-line" data-act="dec-all">${all ? 'Show fewer' : `Show ${decList.length - 3} more`}</button>` : ''}</div>`;
+  }
+
+  // ---------- the Plan ritual: Day (morning plan), Evening (wrap-up + handoff), Week (Sunday sync) ----------
+  function autoRitual() {
+    const n = nowMinutes(), dow = parseYmd(today()).getDay();
+    if (n >= windMin() - 60 || n < 4 * 60) return 'evening';
+    if (dow === 0 || (dow === 6 && n >= 15 * 60)) return 'week';
+    return 'day';
+  }
+  const ritualMode = () => (ui.ritual && ui.ritualAt && Date.now() - ui.ritualAt < 45 * 60000) ? ui.ritual : autoRitual();
+  function openRitual(mode) {
+    ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = mode; ui.ritualAt = Date.now();
+    if (mode === 'evening') ui.wrapAsk = Date.now();
+    if (mode === 'day' && !plan) plan = buildPlan();
+    saveUi(); closeCmd(); render(); window.scrollTo({ top: 0 });
+  }
+  function dayBriefHtml() {
+    const td = today(), nowMin = nowMinutes(), w = wxDay(td), ol = omarLine(), wh = workHours(td);
+    const items = dayItems(td, nowMin).filter(i => !i.done && i.start >= nowMin);
+    const free = slotsOn(td, nowMin).reduce((s, g) => s + (g.end - g.start), 0);
+    const lines = [];
+    if (live.weather) lines.push(`${wxIcon(w) || ''} ${deg(live.weather.temperature)}°${unitLetter()} now${w ? `, high ${deg(w.hi)}°` : ''}${w && (w.precip ?? 0) >= 30 ? `, ${w.precip}% rain` : ''}.`);
+    if (ol) lines.push(ol);
+    if (wh) lines.push(`Work ${clockShort(wh.start)} to ${clockShort(wh.end)}.`);
+    lines.push(items.length ? `${items.length} timed thing${items.length === 1 ? '' : 's'} left, first: ${tidyTitle(items[0].title)} at ${clockShort(items[0].start)}.` : 'Nothing else timed today.');
+    if (free >= 20) lines.push(`About ${minLabel(Math.round(free / 15) * 15)} of free time before wind-down.`);
+    return `<div class="card rit-brief"><h2>Today at a glance</h2>${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
+  }
+  function eveningHtml() {
+    const parts = [];
+    const left = wrapLeft();
+    parts.push(left.length ? wrapHtml() : `<div class="card"><h2>Wrap-up</h2><p class="muted">Everything from today is done or has a day. Rest well.</p></div>`);
+    if (hh.me === 'farah' && !fam.off) {
+      const d = eveningOf(), sent = fam.mine && fam.mine.date === d, skipped = ui.hoSkip === d;
+      if (ui.handoffOpen || (!sent && !skipped)) parts.push(handoffHtml());
+      else parts.push(`<div class="card"><h2><span>Handoff to Omar</span><span class="muted">${sent ? `Sent ${esc(new Date(fam.mine.sentAt || Date.now()).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }))}` : 'Skipped tonight'}</span></h2><button class="btn-secondary" data-act="ho-again">${sent ? 'Edit and send again' : 'Write one anyway'}</button></div>`);
+    }
+    const next = nowMinutes() < 4 * 60 ? today() : addDays(today(), 1), o = omarDay(next);
+    const tm = dayItems(next, -1).filter(i => !i.done).slice(0, 4);
+    parts.push(`<div class="card"><h2><span>Tomorrow</span><span class="muted">${esc(shortDay(next))}${wxDay(next) ? ' · ' + esc(wxShort(wxDay(next)).trim()) : ''}</span></h2>
+      ${o ? `<p class="muted">${esc(o.emoji)} Omar: ${esc(o.sleepUntil ? `recovering, up around ${clockShort(o.sleepUntil)}` : o.label)}</p>` : ''}
+      ${tm.length ? tm.map(i => `<div class="now-row"><span class="when">${esc(clockLabel(i.start))}</span><span class="what">${esc(tidyTitle(i.title))}</span></div>`).join('') : '<div class="empty">Nothing timed yet.</div>'}</div>`);
+    return parts.join('');
+  }
+  function renderRitual() {
+    const wrap = $('sub-plan'); if (!wrap) return;
+    const mode = ritualMode();
+    document.querySelectorAll('.rit-mode').forEach(b => { const on = b.dataset.mode === mode; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    $('ritualDay').hidden = mode !== 'day'; $('ritualEve').hidden = mode !== 'evening'; $('ritualWeek').hidden = mode !== 'week';
+    if (!(ui.tab === 'schedule' && ui.sub === 'plan')) { $('ritualEve').innerHTML = ''; return; }   // keeps ids unique while hidden
+    if (mode === 'day') {
+      if (ui.planDismissed && ui.planDismissed !== today()) ui.planDismissed = null;
+      if (!plan && !ui.planDismissed) plan = buildPlan();
+      $('ritualDayBrief').innerHTML = dayBriefHtml() + (!plan ? '<div class="card"><button class="btn-add full" data-act="plan-open" style="margin:0">Suggest a plan for the rest of today</button></div>' : '');
+      renderPlan();
+    } else if (mode === 'evening') {
+      $('ritualEve').innerHTML = eveningHtml();
+      if (ui.hoScroll && $('handoffCard')) { ui.hoScroll = false; saveUi(); $('handoffCard').scrollIntoView({ block: 'start' }); }
+    } else {
+      renderWeekSync();
+    }
+  }
+
+  // ---------- swipe: right = done, left = tomorrow, far left = Omar ----------
+  const SW_COMMIT = 84, SW_FAR = 190;
+  let sw = null, swEatClick = 0;
+  function wireSwipe() {
+    document.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' || e.button) return;
+      const row = e.target.closest('.task-item[data-swipe]');
+      if (!row || e.target.closest('.ti-info, input[type="text"], input[type="time"], input[type="date"], textarea, select')) return;
+      sw = { row, id: row.dataset.swipe, x: e.clientX, y: e.clientY, dx: 0, on: false, pid: e.pointerId };
+    }, { passive: true });
+    document.addEventListener('pointermove', e => {
+      if (!sw || e.pointerId !== sw.pid) return;
+      const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+      if (!sw.on) {
+        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { sw = null; return; }
+        if (Math.abs(dx) < 14 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        sw.on = true; sw.row.classList.add('swiping');
+        try { sw.row.setPointerCapture(sw.pid); } catch (err) {}
+      }
+      const omarOk = hh.me === 'farah' && !fam.off && S.tasks[sw.id] && !S.tasks[sw.id].sharedId;
+      sw.dx = Math.max(-260, Math.min(160, dx));
+      const dir = sw.dx > SW_COMMIT ? 'done' : sw.dx < -SW_FAR && omarOk ? 'omar' : sw.dx < -SW_COMMIT ? 'tmrw' : '';
+      sw.row.dataset.dir = dir || (sw.dx > 0 ? 'done-pre' : 'tmrw-pre');
+      sw.row.style.setProperty('--sx', sw.dx + 'px');
+    }, { passive: true });
+    const end = cancel => {
+      if (!sw) return;
+      const s = sw; sw = null;
+      if (!s.on) return;
+      swEatClick = Date.now();
+      const dir = cancel ? '' : s.row.dataset.dir;
+      s.row.classList.remove('swiping'); s.row.style.removeProperty('--sx'); delete s.row.dataset.dir;
+      const t = S.tasks[s.id]; if (!t || !dir || dir.endsWith('-pre')) return;
+      if (navigator.vibrate) try { navigator.vibrate(8); } catch (err) {}
+      if (dir === 'done') { const undo = snapTasks([s.id]); setTask(s.id, { status: 'done' }); toast(`Done: ${t.title}`, undo); }
+      else if (dir === 'tmrw') { const undo = snapTasks([s.id]); moveTo(s.id, addDays(today(), 1)); toast('Moved to tomorrow.', undo); }
+      else if (dir === 'omar') { handToOmar(s.id); }
+    };
+    document.addEventListener('pointerup', () => end(false));
+    document.addEventListener('pointercancel', () => end(true));
+    document.addEventListener('click', e => { if (Date.now() - swEatClick < 350 && e.target.closest('.task-item')) { e.preventDefault(); e.stopPropagation(); } }, true);
+  }
+
+  // ---------- command bar: do, go, or find ----------
+  const DOW_FULL = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  // "thursday 3pm", "tomorrow", "next mon", "oct 15", "10/15", "in 3 days", "this weekend" → { date, time, rest }
+  function parseWhen(text) {
+    let s = ' ' + String(text).toLowerCase() + ' ', date = null, time = null;
+    const td = today(), cut = re => { s = s.replace(re, ' '); };
+    let m;
+    if ((m = s.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/))) { let h = +m[1] % 12; if (/^p/.test(m[3])) h += 12; time = h * 60 + (+m[2] || 0); cut(m[0]); }
+    else if ((m = s.match(/\bat\s+(\d{1,2})(?::(\d{2}))?\b/))) { let h = +m[1]; if (h < 8) h += 12; time = h * 60 + (+m[2] || 0); cut(m[0]); }
+    else if ((m = s.match(/\b(noon|midday)\b/))) { time = 12 * 60; cut(m[0]); }
+    if ((m = s.match(/\b(today|tonight)\b/))) { date = td; if (m[1] === 'tonight' && time == null) time = 19 * 60; cut(m[0]); }
+    else if ((m = s.match(/\b(tomorrow|tmrw|tmr)\b/))) { date = addDays(td, 1); cut(m[0]); }
+    else if ((m = s.match(/\bnext week\b/))) { const dow = parseYmd(td).getDay(); date = addDays(td, ((8 - dow) % 7) || 7); cut(m[0]); }
+    else if ((m = s.match(/\b(this )?weekend\b/))) { const dow = parseYmd(td).getDay(); date = dow === 6 || dow === 0 ? td : addDays(td, 6 - dow); cut(m[0]); }
+    else if ((m = s.match(/\bin (\d{1,2}) days?\b/))) { date = addDays(td, +m[1]); cut(m[0]); }
+    else if ((m = s.match(/\b(next |this |on )?(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat)(day|nesday|rsday|urday|sday)?\b/))) {
+      const idx = DOW_FULL.findIndex(d => d.startsWith(m[2].slice(0, 3))), dow = parseYmd(td).getDay();
+      let add = (idx - dow + 7) % 7; if (add === 0) add = 7; if (m[1] && m[1].trim() === 'next' && add < 7) add += 7;
+      date = addDays(td, add); cut(m[0]);
+    } else if ((m = s.match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/))) {
+      const mo = MONTHS.indexOf(m[1].slice(0, 3)), y = parseYmd(td).getFullYear();
+      let d = ymd(new Date(y, mo, +m[2])); if (d < td) d = ymd(new Date(y + 1, mo, +m[2])); date = d; cut(m[0]);
+    } else if ((m = s.match(/\b(\d{1,2})\/(\d{1,2})\b/))) {
+      const y = parseYmd(td).getFullYear(); let d = ymd(new Date(y, +m[1] - 1, +m[2])); if (d < td) d = ymd(new Date(y + 1, +m[1] - 1, +m[2])); date = d; cut(m[0]);
+    }
+    const rest = s.replace(/\s+(on|at|for|by)\s*$/, ' ').replace(/\s+/g, ' ').trim();
+    return { date, time, rest };
+  }
+  // Best open task for a phrase ("swim" → "🏊 Swim lesson"). Needs every typed word to appear.
+  function findTasks(phrase, n = 5) {
+    const q = norm(phrase).split(' ').filter(w => w && !['the', 'a', 'my', 'to'].includes(w)); if (!q.length) return [];
+    return Object.values(S.tasks).filter(t => t.status !== 'dropped').map(t => {
+      const tt = norm(t.title); if (!q.every(w => tt.includes(w))) return null;
+      let sc = 50 - Math.min(30, tt.length - q.join(' ').length);
+      if (tt === q.join(' ')) sc += 50;
+      if (isOpen(t)) sc += 40; if (t.date === today()) sc += 10; if (t.date && t.date < today() && isOpen(t)) sc += 5;
+      return { t, sc };
+    }).filter(Boolean).sort((a, b) => b.sc - a.sc).slice(0, n).map(x => x.t);
+  }
+  const whenText = w => `${w.date ? dayName(w.date) : ''}${w.time != null ? `${w.date ? ' at ' : 'at '}${clockLabel(w.time)}` : ''}`;
+  const NAV = [
+    [/^(today|home|my day|what'?s (on )?today|timeline)$/, 'Today', 'Your timeline', () => { ui.tab = 'home'; saveUi(); closeCmd(); render(); setTimeout(() => { const b = $('timelineBox'); if (b) b.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30); }],
+    [/^(plan( my)? day|plan today|morning( plan)?|day plan)$/, 'Plan my day', 'Plan → Day', () => openRitual('day')],
+    [/^(plan( my)? evening|wrap ?-?up|evening|tonight)$/, 'Evening wrap-up', 'Plan → Evening', () => openRitual('evening')],
+    [/^(plan( the)? week|sunday sync|weekly sync|week plan|sync)$/, 'Plan the week', 'Plan → Week', () => openRitual('week')],
+    [/^(handoff|hand ?off|sign ?out)$/, 'Handoff to Omar', 'Plan → Evening', () => { ui.handoffOpen = true; ui.hoScroll = true; openRitual('evening'); }],
+    [/^(week|week view|this week|calendar)$/, 'Week view', 'Plan → Week view', () => { ui.tab = 'schedule'; ui.sub = 'week'; saveUi(); closeCmd(); render(); }],
+    [/^(board|kanban)$/, 'Board', 'Plan → Board', () => { ui.tab = 'schedule'; ui.sub = 'today'; saveUi(); closeCmd(); render(); }],
+    [/^(recap|monthly recap)$/, 'Monthly recap', 'Plan → Recap', () => { ui.tab = 'schedule'; ui.sub = 'recap'; saveUi(); closeCmd(); render(); }],
+    [/^(fridge( sheet)?|print( the)? week)$/, 'Fridge sheet', 'Printable week for the boys', () => { closeCmd(); fridgeSheet(); }],
+    [/^(grocer(y|ies)|shopping( list)?|groceries list)$/, 'Grocery', 'Lists by store', () => { ui.tab = 'grocery'; saveUi(); closeCmd(); render(); }],
+    [/^(projects?|ideas)$/, 'Projects', 'Projects and ideas', () => { ui.tab = 'projects'; saveUi(); closeCmd(); render(); }],
+    [/^(sick|kid sick|sick day|.* (is )?sick)$/, 'Sick day', 'Back-up care, notes, symptom log', () => { ui.tab = 'home'; saveUi(); closeCmd(); sickStart(); }],
+    [/^(email|mail|inbox|gmail)$/, 'Email', 'Unread from the last day', () => openFold('inbox', 'gmailList')],
+    [/^(school( radar)?|school email)$/, 'School radar', 'From school emails', () => openFold('school', 'schoolBox')],
+    [/^(life admin|admin|taxes?|deadlines?)$/, 'Life admin', 'Yearly deadlines', () => openFold('admin', 'adminBox')],
+    [/^(settings|reminders|notifications|work( day| hours)?)$/, 'Reminders and work day', 'Settings', () => openFold('reminders', 'settingsBody')],
+    [/^(timer|time a task)$/, 'Time a task', 'Focus timer', () => openFold('timer', 'trackerBox')],
+    [/^(energy|survival( mode)?|light( mode)?|low energy)$/, 'Energy today', 'Full, light or survival', () => { ui.tab = 'home'; ui.capOpen = true; saveUi(); closeCmd(); render(); window.scrollTo({ top: 0 }); }],
+  ];
+  function openFold(name, target) {
+    ui.tab = 'home'; saveUi(); closeCmd(); render();
+    document.querySelectorAll(`details[data-fold="more"], details[data-fold="${name}"]`).forEach(d => { d.open = true; });
+    setTimeout(() => { const el = $(target); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
+  }
+  // Each result: { kind: 'do' | 'go' | 'find' | 'say', title, sub, run, acts }
+  function cmdResults(raw) {
+    const q = raw.trim(), lc = q.toLowerCase().replace(/[?.!]+$/, '').trim(), out = [];
+    if (!lc) return [];
+    const td = today();
+    NAV.forEach(([re, title, sub, run]) => { if (re.test(lc)) out.push({ kind: 'go', title, sub, run }); });
+    let m;
+    // Questions answered in place.
+    if ((m = lc.match(/^(what'?s|what is|show( me)?|list)?\s*(due|coming up|left)( this week| soon| today)?$/))) {
+      const end = addDays(td, /today/.test(lc) ? 0 : 7);
+      const list = Object.values(S.tasks).filter(t => isOpen(t) && capVisible(t) && ((t.due && t.due <= end) || (t.date && t.date <= end)))
+        .sort((a, b) => (a.due || a.date).localeCompare(b.due || b.date) || byTime(a, b)).slice(0, 12);
+      out.push({ kind: 'say', title: list.length ? `${list.length} due by ${dayName(end)}` : `Nothing due by ${dayName(end)}`, items: list });
+    }
+    if ((m = lc.match(/^(what'?s|what is)?\s*(on )?(tomorrow|tmrw)$/))) {
+      const d = addDays(td, 1), its = dayItems(d, -1).filter(i => !i.done);
+      out.push({ kind: 'say', title: its.length ? `Tomorrow: ${its.length} timed` : 'Nothing timed tomorrow', lines: its.map(i => `${clockLabel(i.start)} · ${tidyTitle(i.title)}`).concat(omarDay(d) ? [`Omar: ${omarDay(d).label}`] : []) });
+    }
+    if ((m = lc.match(/^(where'?s|where is|how'?s|what'?s) omar|^omar( today)?$/))) {
+      out.push({ kind: 'say', title: omarLine() || 'Nothing on Omar’s calendar today.' });
+    }
+    // Move / reschedule.
+    if ((m = lc.match(/^(?:move|push|reschedule|bump|shift|put)\s+(.+?)\s+(?:to|for|on|until|till)\s+(.+)$/)) || (m = lc.match(/^(.+?)\s+(?:to|→)\s+((?:next |this )?(?:today|tonight|tomorrow|tmrw|mon|tue|wed|thu|fri|sat|sun|next week|weekend)\w*.*)$/))) {
+      const w = parseWhen(m[2]);
+      if (w.date || w.time != null) findTasks(m[1], 2).forEach((t, k) => {
+        const date = w.date || (t.date && t.date >= td ? t.date : td);
+        out.push({ kind: 'do', title: `Move “${t.title}” to ${whenText({ date, time: w.time })}`, sub: t.date ? `Now ${dayLabel(t.date)}${t.time ? ' · ' + t.time : ''}` : 'No date yet', top: k === 0,
+          run: () => { const undo = snapTasks([t.id]); const patch = { date, originalDate: t.originalDate || t.date || null, status: t.status === 'dropped' ? 'todo' : t.status }; if (w.time != null) patch.time = clockLabel(w.time); setTask(t.id, patch); closeCmd(); toast(`Moved to ${whenText({ date, time: w.time })}.`, undo); } });
+      });
+    }
+    // Hand to Omar.
+    if ((m = lc.match(/^(?:give|hand|send|assign|pass)\s+(.+?)\s+to\s+omar$/)) || (m = lc.match(/^(.+?)\s+(?:to|for)\s+omar$/))) {
+      const t = findTasks(m[1], 1)[0];
+      if (t && hh.me === 'farah') out.push({ kind: 'do', title: `Give “${t.title}” to Omar`, sub: 'Moves it to his dashboard and phone', top: true, run: () => { closeCmd(); handToOmar(t.id); } });
+      else if (hh.me === 'farah') out.push({ kind: 'do', title: `Ask Omar: ${capFirst(m[1])}`, sub: 'New household task for Omar', top: true, run: () => { closeCmd(); hhSend({ op: 'add', title: capFirst(m[1]), to: 'omar', date: null }, `Sent to Omar: ${capFirst(m[1])}`); } });
+    }
+    // Done / let go.
+    if ((m = lc.match(/^(?:done|did|finish(?:ed)?|complete(?:d)?|check off|tick|mark)\s+(.+?)(?:\s+(?:as )?done)?$/))) {
+      findTasks(m[1], 2).filter(isOpen).forEach((t, k) => out.push({ kind: 'do', title: `Mark “${t.title}” done`, top: k === 0, run: () => { const undo = snapTasks([t.id]); setTask(t.id, { status: 'done' }); closeCmd(); toast(`Done: ${t.title}`, undo); } }));
+    }
+    if ((m = lc.match(/^(?:drop|let go(?: of)?|delete|remove|cancel|skip)\s+(.+)$/))) {
+      findTasks(m[1], 2).filter(isOpen).forEach((t, k) => out.push({ kind: 'do', title: `Let go of “${t.title}”`, top: k === 0, run: () => { const undo = snapTasks([t.id]); setTask(t.id, { status: 'dropped', droppedAt: Date.now() }); closeCmd(); toast('Let go.', undo); } }));
+    }
+    // Grocery.
+    if ((m = lc.match(/^(?:buy|get|grab|pick up|need|add)\s+(.+?)\s+(?:at|from|to)\s+(costco|target|trader ?joe'?s|tj'?s|walmart|aldi|amazon|[a-z' ]{3,20})$/)) || (m = lc.match(/^(costco|target|trader ?joe'?s|walmart|aldi|amazon)\s*[:,]\s*(.+)$/))) {
+      const storeTxt = /^(costco|target|trader|walmart|aldi|amazon)/.test(m[1]) && !/^(buy|get)/.test(lc) ? m[1] : m[2], items = storeTxt === m[1] ? m[2] : m[1];
+      const st = stores().find(x => norm(x).replace(/ /g, '').startsWith(norm(storeTxt).replace(/ /g, '').replace(/^tjs?$/, 'traderjoe').slice(0, 5)));
+      if (st) out.push({ kind: 'do', title: `Add ${items} to ${st}`, sub: 'Grocery list', top: true, run: () => { addGrocery(items, st); closeCmd(); toast(`Added to ${st}.`); } });
+    }
+    // Add a task (always offered for free text that isn't a pure question or navigation).
+    const isQuestion = /^(what|where|how|when|who|show|list)\b/.test(lc) || out.some(r => r.kind === 'say');
+    const isCommand = /^(move|push|reschedule|bump|shift|put|give|hand|send|assign|pass|done|did|finish|complete|check off|tick|mark|drop|let go|delete|remove|cancel|skip)\b/.test(lc) || out.some(r => r.kind === 'do');
+    if (!isQuestion && !isCommand && !out.some(r => r.kind === 'go' && NAV.some(([re]) => re.test(lc)))) {
+      const body = lc.replace(/^(add|new|todo|to do|remind me( to)?|task)\s*:?\s+/, '');
+      const w = parseWhen(body), title = capFirst((w.rest || body).replace(/\s+/g, ' ').trim());
+      if (title.length >= 2) {
+        const date = w.date || (w.time != null ? td : td);
+        out.push({ kind: 'do', title: `Add “${title}”`, sub: `${dayName(date) === 'today' ? 'Today' : capFirst(dayName(date))}${w.time != null ? ' at ' + clockLabel(w.time) : ''} · ${(CATS[guessCategory(title)] || {}).label || 'Home'}`, top: !out.some(r => r.top),
+          run: () => { const t = makeTask({ title, category: guessCategory(title), date, time: w.time != null ? clockLabel(w.time) : null, source: 'command' }); put('tasks', t); closeCmd(); toast(`Added: ${title}`, () => { unstage('tasks', t.id); commit(); }); } });
+      }
+    }
+    // Find: matching tasks, projects, notes, grocery.
+    const words = norm(lc).split(' ').filter(w => w.length > 1);
+    if (words.length && !/^(move|push|reschedule|give|hand|done|finish|drop|buy|get)\b/.test(lc)) {
+      const hit = s => { const n = norm(s); return words.every(w => n.includes(w)); };
+      findTasks(lc, 4).forEach(t => out.push({ kind: 'find', task: t, title: t.title, sub: [t.status === 'done' ? 'Done' : t.date ? dayLabel(t.date) : 'No date', t.time, t.projectId ? projName(t.projectId) : ''].filter(Boolean).join(' · ') }));
+      Object.values(S.projects).filter(p => p.status !== 'done' && hit(p.name)).slice(0, 2).forEach(p => out.push({ kind: 'find', title: p.name, sub: 'Project', run: () => { ui.tab = 'projects'; ui.open['p-' + p.id] = true; saveUi(); closeCmd(); render(); } }));
+      Object.values(S.notes).filter(n => hit(n.text)).slice(0, 2).forEach(n => out.push({ kind: 'find', title: n.text, sub: 'Idea', run: () => { ui.tab = 'projects'; saveUi(); closeCmd(); render(); } }));
+      Object.values(S.grocery).filter(g => !g.archived && !g.checked && hit(g.item)).slice(0, 2).forEach(g => out.push({ kind: 'find', title: g.item, sub: `On the ${g.store} list`, run: () => { ui.tab = 'grocery'; ui.open['g-' + g.store] = true; saveUi(); closeCmd(); render(); } }));
+    }
+    // Put the most likely action first.
+    return out.sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || ['say', 'do', 'go', 'find'].indexOf(a.kind) - ['say', 'do', 'go', 'find'].indexOf(b.kind));
+  }
+  let cmdRes = [];
+  const CMD_EXAMPLES = ['move swim to Thursday', 'what’s due this week', 'buy milk at Costco', 'give trash to Omar', 'call dentist tomorrow 10am', 'plan my evening', 'school radar'];
+  function renderCmd() {
+    const list = $('cmdList'); if (!list) return;
+    const q = $('cmdInput').value;
+    cmdRes = cmdResults(q);
+    if (!q.trim()) {
+      list.innerHTML = `<div class="cmd-h">Try</div><div class="cmd-chips">${CMD_EXAMPLES.map(x => `<button type="button" class="fc-chip" data-act="cmd-try" data-q="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+        <div class="cmd-h">Go to</div>${['Plan my day', 'Evening wrap-up', 'Plan the week', 'Grocery', 'School radar', 'Life admin', 'Email'].map(t => { const i = NAV.findIndex(n => n[1] === t); return `<button type="button" class="cmd-r" data-act="cmd-nav" data-i="${i}"><b>${esc(t)}</b><span>${esc(NAV[i][2])}</span></button>`; }).join('')}`;
+      return;
+    }
+    if (!cmdRes.length) { list.innerHTML = '<div class="empty">No match. Try “move … to Friday” or “add …”.</div>'; return; }
+    const LABEL = { do: 'Do', go: 'Go to', find: 'Found', say: '' };
+    let last = '';
+    list.innerHTML = cmdRes.map((r, i) => {
+      const head = r.kind !== last && LABEL[r.kind] ? `<div class="cmd-h">${LABEL[r.kind]}</div>` : ''; last = r.kind;
+      if (r.kind === 'say') return head + `<div class="cmd-say"><b>${esc(r.title)}</b>${(r.lines || []).map(l => `<div class="muted">${esc(l)}</div>`).join('')}${(r.items || []).map(t => taskRow(t, { showDate: true, tomorrow: false })).join('')}</div>`;
+      if (r.kind === 'find' && r.task) {
+        const t = r.task, open = isOpen(t);
+        return head + `<div class="cmd-r find"><div class="cmd-rt"><b>${esc(r.title)}</b><span>${esc(r.sub)}</span></div>${open ? `<span class="cmd-acts"><button class="mini" data-act="cmd-task" data-do="done" data-id="${esc(t.id)}">Done</button><button class="mini" data-act="cmd-task" data-do="today" data-id="${esc(t.id)}">Today</button><button class="mini" data-act="cmd-task" data-do="tmrw" data-id="${esc(t.id)}">Tmrw</button></span>` : ''}</div>`;
+      }
+      return head + `<button type="button" class="cmd-r ${r.top && i === 0 ? 'top' : ''}" data-act="cmd-run" data-i="${i}" role="option"><b>${esc(r.title)}</b>${r.sub ? `<span>${esc(r.sub)}</span>` : ''}${r.top && i === 0 ? '<kbd>↵</kbd>' : ''}</button>`;
+    }).join('');
+  }
+  function openCmd(q) {
+    const sh = $('cmdSheet'); if (!sh) return;
+    sh.hidden = false; document.body.classList.add('cmd-open');
+    const inp = $('cmdInput'); inp.value = q || ''; renderCmd(); inp.focus();
+  }
+  function closeCmd() { const sh = $('cmdSheet'); if (!sh || sh.hidden) return; sh.hidden = true; document.body.classList.remove('cmd-open'); $('cmdInput').blur(); }
+  function wireCmd() {
+    const inp = $('cmdInput');
+    inp.addEventListener('input', renderCmd);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.preventDefault(); closeCmd(); return; }
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const r = cmdRes.find(x => x.run && (x.kind === 'do' || x.kind === 'go')) || cmdRes.find(x => x.run);
+      if (r) r.run();
+    });
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmd(); }
+      else if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); openCmd(); }
+    });
+    if (ui.cmdOnLoad) { ui.cmdOnLoad = false; setTimeout(() => openCmd(), 300); }
+  }
+
+  // ---------- widget feed: a small snapshot of what only the browser knows (calendar, Omar, weather, decisions) ----------
+  // The phone widget reads /api/widget, which combines this snapshot with the live task list on the server.
+  let widgetLast = '', widgetAt = 0, widgetTimer = null;
+  function widgetSnapshot() {
+    const td = today(), tm = addDays(td, 1);
+    const ev = d => eventsOn(d).map(e => ({ date: d, title: tidyTitle(e.title || 'Event'), allDay: !!e.allDay, start: e.allDay ? null : evMin(e),
+      end: e.allDay || !e.end ? null : (x => x.getHours() * 60 + x.getMinutes())(new Date(e.end)) }));
+    const od = d => { const o = omarDay(d); return o ? { kind: o.kind, label: o.label, emoji: o.emoji, sleepUntil: o.sleepUntil || null } : null; };
+    const w = live.weather, wd = d => { const x = wxDay(d); return x ? { hi: x.hi, lo: x.lo, precip: x.precip, icon: wxIcon(x), bad: wxBad(x) } : null; };
+    return {
+      v: 1, date: td, tz: TZ, units: useC() ? 'C' : 'F',
+      events: live.cal ? ev(td).concat(ev(tm)) : null,
+      omar: { [td]: od(td), [tm]: od(tm), line: omarLine() },
+      weather: w ? { temp: w.temperature, feels: w.feelsLike, condition: w.condition || '', icon: wxIcon(wxDay(td)), days: { [td]: wd(td), [tm]: wd(tm) } } : null,
+      noSchool: [td, tm].filter(noSchoolOn),
+      decisions: (decList || []).slice(0, 3).map(d => d.title),
+      needsYou: (decList || []).length,
+      work: workHours(td)
+    };
+  }
+  function publishWidgetSoon() {
+    if (mode !== 'cloud' || hh.me === 'omar') return;
+    clearTimeout(widgetTimer); widgetTimer = setTimeout(publishWidget, 4000);
+  }
+  async function publishWidget() {
+    let snap; try { snap = widgetSnapshot(); } catch (e) { return; }
+    const body = JSON.stringify(snap);
+    if (body === widgetLast && Date.now() - widgetAt < 30 * 60000) return;
+    if (body !== widgetLast && Date.now() - widgetAt < 60000) { clearTimeout(widgetTimer); widgetTimer = setTimeout(publishWidget, 60000); return; }
+    widgetLast = body; widgetAt = Date.now();
+    try { await fetch('/api/widget', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body }); } catch (e) {}
+  }
+
+  // ---------- wiring ----------
+  function wireV2() {
+    wireSwipe(); wireCmd();
+    // Opening Plan from the tab bar picks the mode that fits the hour.
+    // Capture phase: runs before the original handlers.
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const act = el.dataset.act;
+      if (act === 'tab' && el.dataset.tab === 'schedule' && ui.tab !== 'schedule') { ui.sub = 'plan'; if (!(ui.ritualAt && Date.now() - ui.ritualAt < 45 * 60000)) ui.ritual = null; }
+      if (act === 'tab') closeCmd();
+      if (act === 'plan-cancel' || act === 'plan-commit') { ui.planDismissed = today(); saveUi(); }
+      if (act === 'plan-open') { ui.planDismissed = null; saveUi(); }
+    }, true);
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'dec': { const d = decList.find(x => x.key === el.dataset.key); const a = d && d.acts[+el.dataset.i]; if (a) a.run(); break; }
+        case 'dec-all': ui.decAll = !ui.decAll; saveUi(); renderDecide(); break;
+        case 'toast-undo': { const u = toastUndo; hideToast(); if (u) u(); break; }
+        case 'tl-earlier': ui.open.tlEarlier = !ui.open.tlEarlier; saveUi(); renderTimeline(); break;
+        case 'tl-all': ui.open.tlAll = !ui.open.tlAll; saveUi(); renderTimeline(); break;
+        case 'tl-slot': { const t = S.tasks[id]; if (!t) break; const undo = snapTasks([id]); setTask(id, { date: today(), time: clockLabel(+el.dataset.min), duration: taskMinutes(t), originalDate: t.originalDate || (t.date && t.date !== today() ? t.date : null) }); toast(`${t.title} at ${clockLabel(+el.dataset.min)}.`, undo); break; }
+        case 'swipe-hint-x': ui.swipeHint = true; saveUi(); renderTimeline(); break;
+        case 'outdoor-tgl': { const t = S.tasks[id]; if (t) setTask(id, { outdoor: !isOutdoor(t) }, { noCal: true }); break; }
+        case 'ritual': ui.ritual = el.dataset.mode; ui.ritualAt = Date.now(); if (ui.ritual === 'evening') ui.wrapAsk = Date.now(); saveUi(); render(); break;
+        case 'plan-cancel': render(); break;
+        case 'ho-again': ui.handoffOpen = true; ui.hoSkip = null; saveUi(); render(); break;
+        case 'done-toggle': case 'paused-toggle': renderTimeline(); break;
+        case 'cmd-open': openCmd(); break;
+        case 'cmd-close': closeCmd(); break;
+        case 'cmd-try': $('cmdInput').value = el.dataset.q; renderCmd(); $('cmdInput').focus(); break;
+        case 'cmd-nav': { const n = NAV[+el.dataset.i]; if (n) n[3](); break; }
+        case 'cmd-run': { const r = cmdRes[+el.dataset.i]; if (r && r.run) r.run(); break; }
+        case 'cmd-task': {
+          const t = S.tasks[id]; if (!t) break; const undo = snapTasks([id]), how = el.dataset.do;
+          if (how === 'done') { setTask(id, { status: 'done' }); toast(`Done: ${t.title}`, undo); }
+          else { moveTo(id, how === 'today' ? today() : addDays(today(), 1)); toast(how === 'today' ? 'Moved to today.' : 'Moved to tomorrow.', undo); }
+          renderCmd(); break;
+        }
+      }
+    });
+    $('cmdSheet').addEventListener('click', e => { if (e.target.id === 'cmdSheet') closeCmd(); });
+    // "Not now" on the day plan holds until tomorrow morning.
+    if (ui.planDismissed && ui.planDismissed !== today()) { ui.planDismissed = null; saveUi(); }
+    setInterval(() => { if (!document.hidden && ui.tab === 'home') renderTimeline(); }, 60000);
   }
 
   init();
