@@ -479,6 +479,17 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 /* Routines, plan, work day, settings */
 .rt-row { display: flex; align-items: center; gap: 10px; min-height: 56px; border-bottom: 1px solid var(--hair); }
 .rt-row.off { opacity: .6; }
+.wk-ov { position: fixed; inset: 0; background: rgba(15, 15, 14, .55); display: flex; align-items: flex-end; justify-content: center; z-index: 60; }
+.wk-card { width: 100%; max-width: 520px; max-height: 92vh; overflow: auto; background: var(--card); color: var(--text); border-radius: 18px 18px 0 0; padding: 16px 18px calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -8px 30px rgba(0, 0, 0, .2); }
+.wk-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); color: var(--muted); }
+.wk-bar { height: 4px; background: var(--hair); border-radius: 2px; margin: 12px 0 18px; overflow: hidden; }
+.wk-bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.wk-lbl { font-size: var(--fs-sm); color: var(--muted); }
+.wk-ttl { font-size: var(--fs-xl); font-weight: 600; margin: 4px 0 8px; }
+.wk-big { font-size: 3.5rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: center; margin: 18px 0; }
+.wk-note { color: var(--muted); font-size: var(--fs-md); margin: 6px 0 14px; }
+.wk-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.wk-next { margin-top: 16px; font-size: var(--fs-sm); color: var(--faint); }
 .rt-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .rt-t { font-size: 0.9375rem; overflow-wrap: anywhere; }
 .rt-m { font-size: 0.8125rem; color: var(--muted); }
@@ -1063,7 +1074,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
           <option value="tomorrow">Tomorrow</option>
           <option value="none">No date</option>
         </select>
-        <select id="ntRepeat" aria-label="Repeats"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="weekdays">Every weekday</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Every month</option></select>
+        <select id="ntRepeat" aria-label="Repeats"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="alt">Every other day</option><option value="weekdays">Every weekday</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Every month</option></select>
         <input type="time" id="ntTime" aria-label="Time">
         <button class="btn-add" data-act="add-task">Add</button>
       </div>
@@ -1750,11 +1761,13 @@ input, select, textarea { font-size: max(16px, 1rem); }
     if (from && !done) facts.push(`from ${esc(dayLabel(from))}`);
     if (t.due && !done) facts.push(`due ${esc(dayLabel(t.due))}`);
     if (t.routineId) facts.push('repeats');
+    if (Array.isArray(t.steps)) facts.push(`${t.steps.length} steps`);
     if (t.status === 'doing') facts.push('in progress');
     if (t.projectId && S.projects[t.projectId]) facts.push(esc(projName(t.projectId)));
     if (t.sharedBy === 'omar') facts.push('from Omar');
     if (t.source === 'gmail') facts.push('from an email'); else if (t.source === 'brain-dump') facts.push('from a brain dump');
     const acts = [];
+    if (!done && Array.isArray(t.steps) && t.steps.length) acts.push(`<button class="mini primary" data-act="wk-start" data-id="${id}">Start workout</button>`);
     if (!done && opts.today) acts.push(`<button class="mini" data-act="to-today" data-id="${id}">Today</button>`);
     if (!done && opts.tomorrow !== false) acts.push(`<button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move ${esc(t.title)} to tomorrow">Tomorrow</button>`);
     const panel = open ? `<div class="ti-info" id="ti-${id}">
@@ -3285,13 +3298,14 @@ Rules:
   // A routine lives in settings (meta.routines). Its next 7 days are kept filled in as ordinary tasks with fixed ids,
   // so two phones can never create duplicates. Missed daily or weekday instances drop away instead of piling up.
   const routinesList = () => Array.isArray(meta().routines) ? meta().routines : [];
-  const FREQ_LABEL = { daily: 'Every day', weekdays: 'Every weekday', weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month' };
+  const FREQ_LABEL = { alt: 'Every other day', daily: 'Every day', weekdays: 'Every weekday', weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month' };
   const DOW_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10 < 4 ? n % 10 : 0]);
   function routineHits(r, d) {
     if (r.active === false || d < r.start) return false;
     const dt = parseYmd(d), dow = dt.getDay();
     switch (r.freq) {
+      case 'alt': return Math.abs(daysBetween(r.start, d)) % 2 === 0;
       case 'daily': return true;
       case 'weekdays': return dow >= 1 && dow <= 5;
       case 'weekly': return dow === r.dow;
@@ -3332,8 +3346,26 @@ Rules:
     setMetaStaged({ pickupSeeded: true, routines: r ? [...list, r] : list });
     return true;
   }
+  // The 10-minute home workout: a routine every other day, its steps are run by the timer above.
+  const WORKOUT_STEPS = [
+    { name: 'Treadmill, incline walk', sec: 180, note: 'Brisk pace, gentle incline. Warm up your legs.' },
+    { name: 'Glute bridges', reps: '5', note: 'Squeeze at the top. Keep your lower back flat.' },
+    { name: 'Squats', reps: '5', note: 'Controlled. Feet planted, go only as low as you can control.' },
+    { name: 'Reverse lunges', reps: '3 per leg', note: 'Hold something sturdy if balance is hard.' },
+    { name: 'Calf raises', reps: '12', note: 'Rise slowly, pause, lower with control.' },
+    { name: 'Rower, easy pace', sec: 180, note: 'Moderate pace. Keep the resistance comfortable.' }
+  ];
+  function seedWorkout() {
+    const m = meta(); if (m.workoutSeeded) return false;
+    const list = routinesList();
+    const r = list.some(x => x.steps) ? null
+      : { id: 'r-workout', title: '💪 Quick workout (10 min)', category: 'self', freq: 'alt', time: null, start: today(), dow: 1, dom: 1, active: true, createdAt: Date.now(), steps: WORKOUT_STEPS };
+    setMetaStaged({ workoutSeeded: true, routines: r ? [...list, r] : list });
+    return true;
+  }
   function materializeRoutines() {
     let changed = seedPickup();
+    if (seedWorkout()) changed = true;
     const list = routinesList(); if (!list.length) { if (changed) commit(); return; }
     const td = today();
     const have = new Set(); Object.values(S.tasks).forEach(t => { if (t.routineId) have.add(t.routineId + '|' + t.date); });
@@ -3345,6 +3377,7 @@ Rules:
         if (SCHOOL_ROUTINE.test(r.title) && noSchoolOn(d)) continue;
         const t = makeTask({ title: r.title, category: r.category, date: d, time: r.time || null, source: 'routine' });
         t.id = `t-${r.id}-${d}`; t.routineId = r.id;
+        if (r.steps) t.steps = r.steps;
         stage('tasks', t); changed = true;
       }
     });
@@ -3356,13 +3389,13 @@ Rules:
     Object.values(S.tasks).forEach(t => {
       if (!t.routineId || !isOpen(t) || !t.date || t.date >= td) return;
       const r = list.find(x => x.id === t.routineId);
-      if (!r || r.freq === 'daily' || r.freq === 'weekdays') { stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now(), missed: true })); changed = true; }
+      if (!r || r.freq === 'daily' || r.freq === 'weekdays' || r.freq === 'alt') { stage('tasks', Object.assign({}, t, { status: 'dropped', droppedAt: Date.now(), missed: true })); changed = true; }
     });
     if (changed) commit();
   }
-  function addRoutine({ title, category, freq, time, startDate }) {
+  function addRoutine({ title, category, freq, time, startDate, steps }) {
     const dt = parseYmd(startDate);
-    const r = { id: 'r' + Date.now().toString(36), title, category, freq, time: time || null, start: startDate, dow: dt.getDay(), dom: dt.getDate(), active: true, createdAt: Date.now() };
+    const r = { id: 'r' + Date.now().toString(36), title, category, freq, time: time || null, start: startDate, dow: dt.getDay(), dom: dt.getDate(), active: true, createdAt: Date.now(), ...(steps ? { steps } : {}) };
     setMeta({ routines: [...routinesList(), r] });
   }
   function renderRoutines() {
@@ -3375,6 +3408,92 @@ Rules:
         <button class="mini ghost" data-act="rt-del" data-id="${esc(r.id)}" aria-label="Remove routine">${confirmKey === 'rt-' + r.id ? 'Sure?' : 'Remove'}</button></div>`).join('')
       : '<div class="empty">No routines yet. Choose "Every day", "Every week" and so on when you add a task, and it shows up on its own.</div>';
   }
+
+  // ---------- guided workout: a routine whose steps run as a timer ----------
+  // A step is timed ({ name, sec, note }) or counted ({ name, reps, note }). Timed steps move on by themselves at zero.
+  let wk = null, wkTimer = null;
+  const mmss = n => { n = Math.max(0, Math.round(n)); return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`; };
+  function wkSteps(id) { const t = S.tasks[id]; return t && Array.isArray(t.steps) ? t.steps : []; }
+  function wkOpen(id) {
+    const steps = wkSteps(id); if (!steps.length) return;
+    wk = { id, i: 0, left: steps[0].sec || 0, run: true, done: [] };
+    clearInterval(wkTimer); wkTimer = setInterval(wkTickOne, 1000);
+    renderWk();
+  }
+  function wkClose() {
+    clearInterval(wkTimer); wkTimer = null; wk = null;
+    const r = $('wkRoot'); if (r) { r.hidden = true; r.innerHTML = ''; }
+  }
+  function wkBeep() {
+    try { if (navigator.vibrate) navigator.vibrate([180, 80, 180]); } catch (e) {}
+    try { const A = window.AudioContext || window.webkitAudioContext; const c = new A(); const o = c.createOscillator(); o.frequency.value = 880; o.connect(c.destination); o.start(); o.stop(c.currentTime + 0.25); } catch (e) {}
+  }
+  function wkTickOne() {
+    if (!wk || !wk.run) return;
+    const s = wkSteps(wk.id)[wk.i]; if (!s || !s.sec) return;
+    wk.left -= 1;
+    if (wk.left <= 0) { wkBeep(); wkNext(true); return; }
+    const c = $('wkClock'); if (c) c.textContent = mmss(wk.left);
+  }
+  function wkNext(finished) {
+    const steps = wkSteps(wk.id);
+    if (finished) wk.done.push(wk.i);
+    wk.i++;
+    if (wk.i >= steps.length) { wk.run = false; wk.left = 0; renderWk(); return; }
+    wk.left = steps[wk.i].sec || 0; wk.run = true;
+    renderWk();
+  }
+  function wkBack() {
+    if (wk.i === 0) return;
+    wk.i--; wk.done = wk.done.filter(x => x !== wk.i);
+    wk.left = wkSteps(wk.id)[wk.i].sec || 0; wk.run = true;
+    renderWk();
+  }
+  function renderWk() {
+    if (!wk) return;
+    let root = $('wkRoot');
+    if (!root) { root = document.createElement('div'); root.id = 'wkRoot'; document.body.appendChild(root); }
+    const t = S.tasks[wk.id], steps = wkSteps(wk.id);
+    if (!t || !steps.length) { wkClose(); return; }
+    root.hidden = false;
+    const n = steps.length, fin = wk.i >= n, s = steps[Math.min(wk.i, n - 1)];
+    const next = !fin && steps[wk.i + 1];
+    const head = `<div class="wk-top"><span>${esc(t.title)}</span><button class="mini ghost" data-act="wk-close">Close</button></div>`;
+    const bar = `<div class="wk-bar" aria-hidden="true"><i style="width:${Math.round(wk.i / n * 100)}%"></i></div>`;
+    let body;
+    if (fin) {
+      body = `<div class="wk-ttl">Done. Nice work.</div><div class="wk-note">${wk.done.length} of ${n} steps finished.</div>
+        <div class="wk-acts"><button class="btn-add" data-act="wk-finish">Log as done</button></div>`;
+    } else {
+      const timed = !!s.sec;
+      const big = timed ? `<div class="wk-big" id="wkClock">${mmss(wk.left)}</div>` : `<div class="wk-big">${esc(s.reps)}</div>`;
+      body = `<div class="wk-lbl">Step ${wk.i + 1} of ${n}${timed ? '' : ' · counted'}</div>
+        <div class="wk-ttl">${esc(s.name)}</div>${big}
+        ${s.note ? `<div class="wk-note">${esc(s.note)}</div>` : ''}
+        <div class="wk-acts">
+          ${wk.i > 0 ? `<button class="mini" data-act="wk-back">Back</button>` : ''}
+          ${timed ? (wk.run ? `<button class="mini" data-act="wk-pause">Pause</button>` : `<button class="mini" data-act="wk-resume">Resume</button>`) : ''}
+          <button class="mini" data-act="wk-skip">Skip</button>
+          <button class="btn-add" data-act="wk-done">Done</button>
+        </div>
+        <div class="wk-next">${next ? `Next: ${esc(next.name)}${next.sec ? ` · ${Math.round(next.sec / 60)} min` : next.reps ? ` · ${esc(next.reps)}` : ''}` : 'Last step'}</div>`;
+    }
+    root.innerHTML = `<div class="wk-ov" role="dialog" aria-modal="true" aria-label="Workout timer"><div class="wk-card">${head}${bar}${body}</div></div>`;
+  }
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act^="wk-"]'); if (!el) return;
+    const act = el.dataset.act;
+    if (act === 'wk-start') { wkOpen(el.dataset.id); return; }
+    if (!wk) return;
+    if (act === 'wk-done') wkNext(true);
+    else if (act === 'wk-skip') wkNext(false);
+    else if (act === 'wk-back') wkBack();
+    else if (act === 'wk-pause') { wk.run = false; renderWk(); }
+    else if (act === 'wk-resume') { wk.run = true; renderWk(); }
+    else if (act === 'wk-close') wkClose();
+    else if (act === 'wk-finish') { const id = wk.id; setTask(id, { status: 'done' }); wkClose(); }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && wk) wkClose(); });
 
   // ---------- work-day mode ----------
   const workCfg = () => Object.assign({ on: false, from: '2026-10-26', days: [1, 2, 3, 4, 5], start: '09:00', end: '17:00' }, meta().work || {});
