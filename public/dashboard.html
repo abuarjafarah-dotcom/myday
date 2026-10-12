@@ -746,7 +746,7 @@ body.cmd-open { overflow: hidden; }
 .cmd-chips .fc-chip { min-height: 44px; }
 .cmd-r { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 56px; padding: 10px 14px; margin-bottom: 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; position: relative; font-size: 15px; }
 .cmd-r span, .cmd-rt span { font-size: 13px; color: var(--muted); }
-.cmd-r.top { border-color: var(--text); }
+.cmd-r.top { border-color: var(--text); padding-right: 52px; }
 .cmd-r kbd { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font: inherit; font-size: 12px; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
 .cmd-r.find { flex-direction: row; align-items: center; gap: 8px; cursor: default; }
 .cmd-rt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -770,7 +770,7 @@ body.cmd-open { overflow: hidden; }
 .h-smart .dec-card { margin-top: 16px; }
 
 /* Today timeline */
-.h-today { order: 2; } .h-dump { order: 3; } .h-carry { display: none; } .h-oldtoday { display: none; }
+.h-today { order: 2; } .h-dump { display: none; } .h-carry { display: none; } .h-oldtoday { display: none; }
 .tl-card { border-radius: 14px; }
 .tl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .tl-chip { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
@@ -836,6 +836,10 @@ body.cmd-open { overflow: hidden; }
 body:not([data-tab="home"]) .info-strip, body:not([data-tab="home"]) #dressPanel, body:not([data-tab="home"]) .omar-card, body:not([data-tab="home"]) .dayline { display: none; }
 body:not([data-tab="home"]) .headline { font-size: 26px; }
 body:not([data-tab="home"]) .header { gap: 8px; }
+.cmd-top { align-items: flex-start; }
+.cmd-top textarea { flex: 1; min-width: 0; min-height: 52px; max-height: 180px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); font-size: 17px; line-height: 1.4; resize: none; }
+.cmd-mic { flex: 0 0 48px; height: 52px; display: grid; place-items: center; color: var(--text); border-radius: 12px; }
+.cmd-pill.has-draft { color: var(--text); }
 @media (prefers-reduced-motion: reduce) { .toast, .task-item[data-swipe] .ti-main { transition: none; } }
 </style>
 </head>
@@ -1040,7 +1044,7 @@ body:not([data-tab="home"]) .header { gap: 8px; }
 </section>
 
 <div class="dock" id="dock">
-  <button type="button" class="cmd-pill" data-act="cmd-open" aria-label="Ask or do anything"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Ask or do… “move swim to Thursday”</span></button>
+  <button type="button" class="cmd-pill" data-act="cmd-open" aria-label="Add, ask or do anything"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Add, ask or do anything…</span></button>
   <nav class="tabs" id="tabs" aria-label="Sections">
     <button class="tab-btn" data-act="tab" data-tab="home"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Today</span></button>
     <button class="tab-btn" data-act="tab" data-tab="schedule"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Plan</span></button>
@@ -1050,7 +1054,7 @@ body:not([data-tab="home"]) .header { gap: 8px; }
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="cmd-sheet" id="cmdSheet" hidden role="dialog" aria-modal="true" aria-label="Ask or do anything">
-  <div class="cmd-top"><input id="cmdInput" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Move swim to Thursday, buy milk at Costco…" aria-label="Ask or do anything" aria-controls="cmdList"><button type="button" class="cmd-x" data-act="cmd-close">Cancel</button></div>
+  <div class="cmd-top"><textarea id="cmdInput" rows="1" enterkeyhint="go" autocomplete="off" autocapitalize="sentences" placeholder="Dump anything, or: move swim to Thursday" aria-label="Add, ask or do anything" aria-controls="cmdList"></textarea><a class="cmd-mic" href="/capture.html" aria-label="Voice capture"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></a><button type="button" class="cmd-x" data-act="cmd-close">Cancel</button></div>
   <div class="cmd-list" id="cmdList" role="listbox"></div>
 </div>
 <footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 11, v2 Home</span></footer>
@@ -5285,9 +5289,30 @@ Rules:
     setTimeout(() => { const el = $(target); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
   }
   // Each result: { kind: 'do' | 'go' | 'find' | 'say', title, sub, run, acts }
+  // Several things at once (lines, commas, "and"): treat it as a brain dump and sort it with the usual review.
+  function isDump(q) {
+    const lines = q.split(/\n+/).map(x => x.trim()).filter(Boolean);
+    if (lines.length >= 2) return true;
+    const parts = q.split(/\s*[,;]\s*|\s+(?:and then|then|also|plus)\s+/i).filter(x => x.trim().length > 1);
+    return parts.length >= 3 || (parts.length >= 2 && q.length > 40);
+  }
+  function runDump(text) {
+    const dump = { id: newId('d'), text: text.trim(), createdAt: Date.now(), processed: false, source: 'command' };
+    put('dumps', dump); lsSet(LS.draft, ''); $('cmdInput').value = '';
+    ui.tab = 'home'; saveUi(); closeCmd();
+    sortDump(dump);
+    setTimeout(() => { const r = $('reviewBox'); if (r && r.scrollIntoView) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+  }
   function cmdResults(raw) {
     const q = raw.trim(), lc = q.toLowerCase().replace(/[?.!]+$/, '').trim(), out = [];
     if (!lc) return [];
+    if (isDump(q)) {
+      const n = q.split(/\n+|\s*[,;]\s*/).filter(x => x.trim()).length;
+      out.push({ kind: 'do', title: `Sort ${n} things into tasks, groceries and ideas`, sub: 'You review before anything is added', top: true, run: () => runDump(q) });
+      if (!/\n/.test(q)) out.push({ kind: 'do', title: `Add as one task: “${capFirst(q.length > 50 ? q.slice(0, 49) + '…' : q)}”`, sub: 'Keep it together',
+        run: () => { const t = makeTask({ title: capFirst(q), category: guessCategory(q), date: today(), source: 'command' }); put('tasks', t); lsSet(LS.draft, ''); $('cmdInput').value = ''; closeCmd(); toast('Added.', () => { unstage('tasks', t.id); commit(); }); } });
+      return out;
+    }
     const td = today();
     NAV.forEach(([re, title, sub, run]) => { if (re.test(lc)) out.push({ kind: 'go', title, sub, run }); });
     let m;
@@ -5341,6 +5366,7 @@ Rules:
       const w = parseWhen(body), title = capFirst((w.rest || body).replace(/\s+/g, ' ').trim());
       if (title.length >= 2) {
         const date = w.date || (w.time != null ? td : td);
+        if (body.length > 25) out.push({ kind: 'do', title: 'Sort it like a brain dump', sub: 'Splits it into tasks, groceries and ideas', run: () => runDump(q) });
         out.push({ kind: 'do', title: `Add “${title}”`, sub: `${dayName(date) === 'today' ? 'Today' : capFirst(dayName(date))}${w.time != null ? ' at ' + clockLabel(w.time) : ''} · ${(CATS[guessCategory(title)] || {}).label || 'Home'}`, top: !out.some(r => r.top),
           run: () => { const t = makeTask({ title, category: guessCategory(title), date, time: w.time != null ? clockLabel(w.time) : null, source: 'command' }); put('tasks', t); closeCmd(); toast(`Added: ${title}`, () => { unstage('tasks', t.id); commit(); }); } });
       }
@@ -5358,7 +5384,7 @@ Rules:
     return out.sort((a, b) => (b.top ? 1 : 0) - (a.top ? 1 : 0) || ['say', 'do', 'go', 'find'].indexOf(a.kind) - ['say', 'do', 'go', 'find'].indexOf(b.kind));
   }
   let cmdRes = [];
-  const CMD_EXAMPLES = ['move swim to Thursday', 'what’s due this week', 'buy milk at Costco', 'give trash to Omar', 'call dentist tomorrow 10am', 'plan my evening', 'school radar'];
+  const CMD_EXAMPLES = ['milk, call dentist, pumpkin carving Saturday', 'move swim to Thursday', 'what’s due this week', 'buy milk at Costco', 'give trash to Omar', 'call dentist tomorrow 10am', 'plan my evening', 'school radar'];
   function renderCmd() {
     const list = $('cmdList'); if (!list) return;
     const q = $('cmdInput').value;
@@ -5384,24 +5410,27 @@ Rules:
   function openCmd(q) {
     const sh = $('cmdSheet'); if (!sh) return;
     sh.hidden = false; document.body.classList.add('cmd-open');
-    const inp = $('cmdInput'); inp.value = q || ''; renderCmd(); inp.focus();
+    const inp = $('cmdInput'); inp.value = q || lsGet(LS.draft, '') || ''; growCmd(); renderCmd(); inp.focus();
   }
-  function closeCmd() { const sh = $('cmdSheet'); if (!sh || sh.hidden) return; sh.hidden = true; document.body.classList.remove('cmd-open'); $('cmdInput').blur(); }
+  function closeCmd() { const sh = $('cmdSheet'); if (!sh || sh.hidden) return; sh.hidden = true; document.body.classList.remove('cmd-open'); $('cmdInput').blur(); pillDraft(); }
+  function pillDraft() { const sp = document.querySelector('.cmd-pill span'); if (!sp) return; const d = (lsGet(LS.draft, '') || '').trim(); sp.textContent = d ? `Draft: ${d.replace(/\s+/g, ' ')}` : 'Add, ask or do anything…'; sp.parentElement.classList.toggle('has-draft', !!d); }
+  function growCmd() { const el = $('cmdInput'); if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 180) + 'px'; }
   function wireCmd() {
     const inp = $('cmdInput');
-    inp.addEventListener('input', renderCmd);
+    inp.addEventListener('input', () => { growCmd(); lsSet(LS.draft, inp.value); renderCmd(); });
     inp.addEventListener('keydown', e => {
       if (e.key === 'Escape') { e.preventDefault(); closeCmd(); return; }
-      if (e.key !== 'Enter') return;
+      if (e.key !== 'Enter' || e.shiftKey) return;      // Shift+Enter adds a line
       e.preventDefault();
       const r = cmdRes.find(x => x.run && (x.kind === 'do' || x.kind === 'go')) || cmdRes.find(x => x.run);
-      if (r) r.run();
+      if (r) { if (r.kind === 'do') { lsSet(LS.draft, ''); inp.value = ''; } r.run(); }
     });
     document.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmd(); }
       else if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) { e.preventDefault(); openCmd(); }
     });
     if (ui.cmdOnLoad) { ui.cmdOnLoad = false; setTimeout(() => openCmd(), 300); }
+    pillDraft();
   }
 
   // ---------- widget feed: a small snapshot of what only the browser knows (calendar, Omar, weather, decisions) ----------
@@ -5470,7 +5499,7 @@ Rules:
         case 'cmd-close': closeCmd(); break;
         case 'cmd-try': $('cmdInput').value = el.dataset.q; renderCmd(); $('cmdInput').focus(); break;
         case 'cmd-nav': { const n = NAV[+el.dataset.i]; if (n) n[3](); break; }
-        case 'cmd-run': { const r = cmdRes[+el.dataset.i]; if (r && r.run) r.run(); break; }
+        case 'cmd-run': { const r = cmdRes[+el.dataset.i]; if (r && r.run) { if (r.kind === 'do') { lsSet(LS.draft, ''); $('cmdInput').value = ''; } r.run(); } break; }
         case 'cmd-task': {
           const t = S.tasks[id]; if (!t) break; const undo = snapTasks([id]), how = el.dataset.do;
           if (how === 'done') { setTask(id, { status: 'done' }); toast(`Done: ${t.title}`, undo); }
