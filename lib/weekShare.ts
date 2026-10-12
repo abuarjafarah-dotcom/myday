@@ -1,10 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { omarEmail } from "@/lib/users";
 import { partnerDays } from "@/lib/partner";
-import { listShared, type Who } from "@/lib/household";
+import { listShared } from "@/lib/household";
 
-// "This week at home": one shared picture of the week for Farah and Omar, framed around balance and next week's plan.
-// Counts only, never task titles. Farah decides whether Omar sees it (meta.main.loadShare, on by default).
+// "This week at home": a picture of the week framed around balance and next week's plan. Counts only, never task titles.
+// Private to Farah. She can send Omar a snapshot ("Send to Omar"); he sees only what she sent, never a live view.
 
 type Db = NonNullable<ReturnType<typeof supabaseAdmin>>;
 const TABLE = "dashboard_docs";
@@ -21,7 +21,7 @@ const mondayOf = (ymd: string) => { const [y, m, d] = ymd.split("-").map(Number)
 
 export type WeekShare = {
   mon: string;
-  shared: boolean;                       // Omar can see it
+  sentAt: number | null;                 // when Farah last sent this week's snapshot to Omar
   farah: { done: number };
   omar: { done: number; household: number; shifts: number };
   next: { mon: string; nights: number; shifts: number; planned: boolean };
@@ -34,16 +34,35 @@ async function rows(db: Db, owner: string, kind: string): Promise<Doc[]> {
   return ((data || []) as { data: Doc }[]).map((r) => r.data).filter(Boolean);
 }
 
-export async function weekShare(db: Db, viewer: Who): Promise<WeekShare | null> {
+const HOUSEHOLD = "_household";
+async function lastSent(db: Db): Promise<WeekShare | null> {
+  const { data } = await db.from(TABLE).select("data").eq("owner", HOUSEHOLD).eq("kind", "weekcard").eq("id", "latest").maybeSingle();
+  return (data?.data as WeekShare) || null;
+}
+
+// Omar: only the snapshot Farah sent, and only for about a week after.
+export async function weekForOmar(db: Db): Promise<WeekShare | null> {
+  const w = await lastSent(db);
+  return w && w.sentAt && Date.now() - w.sentAt < 8 * 86400000 ? w : null;
+}
+
+// Farah: "Send to Omar" saves today's numbers as a snapshot for his page.
+export async function sendWeek(db: Db): Promise<WeekShare | null> {
+  const w = await weekShare(db);
+  if (!w) return null;
+  const snap = { ...w, sentAt: Date.now() };
+  await db.from(TABLE).upsert([{ owner: HOUSEHOLD, kind: "weekcard", id: "latest", data: snap, updated_at: new Date().toISOString() }], { onConflict: "owner,kind,id" });
+  return snap;
+}
+
+export async function weekShare(db: Db): Promise<WeekShare | null> {
   const farah = (process.env.CAPTURE_EMAIL || "").trim().toLowerCase();
   const omar = omarEmail();
   const td = ymdIn(Date.now()), mon = mondayOf(td), sun = addDays(mon, 6), nextMon = addDays(mon, 7), nextSun = addDays(mon, 13);
-  const [fTasks, fMeta, oTasks, shared, partner] = await Promise.all([
-    rows(db, farah, "tasks"), rows(db, farah, "meta"), rows(db, omar, "tasks"), listShared(db).catch(() => []), partnerDays(db, 14).catch(() => ({ days: [] as { date: string; kind: string }[] })),
+  const [fTasks, fMeta, oTasks, shared, partner, sent] = await Promise.all([
+    rows(db, farah, "tasks"), rows(db, farah, "meta"), rows(db, omar, "tasks"), listShared(db).catch(() => []), partnerDays(db, 14).catch(() => ({ days: [] as { date: string; kind: string }[] })), lastSent(db).catch(() => null),
   ]);
   const meta = (fMeta.find((m) => m.id === "main") || {}) as Doc;
-  const share = meta.loadShare !== false;
-  if (viewer === "omar" && !share) return null;
   const inWeek = (ts: unknown) => typeof ts === "number" && ts > 0 && ymdIn(ts) >= mon && ymdIn(ts) <= td;
 
   const farahDone = fTasks.filter((t) => t.status === "done" && t.category !== "omar" && inWeek(t.completedAt)).length;
@@ -59,7 +78,7 @@ export async function weekShare(db: Db, viewer: Who): Promise<WeekShare | null> 
 
   return {
     mon,
-    shared: share,
+    sentAt: sent && sent.mon === mon ? sent.sentAt : null,
     farah: { done: farahDone },
     omar: { done: omarOwn, household: omarHousehold, shifts: count(mon, sun, (k) => work.has(k)) },
     next: { mon: nextMon, nights: count(nextMon, nextSun, (k) => k === "night"), shifts: count(nextMon, nextSun, (k) => work.has(k)), planned: !!(sync[nextMon] && sync[nextMon].doneAt) },

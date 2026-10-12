@@ -924,6 +924,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
 :root[data-night="1"] .tl-gap, :root[data-night="1"] .tl-hint { display: none; }
 :root[data-night="1"] .tab-content { zoom: 1.08; }
 :root[data-night="1"] .headline { font-size: 1.9rem; }
+.load-send { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-2); }
+.load-send .muted { flex: 1 1 200px; }
 </style>
 </head>
 <body>
@@ -4113,12 +4115,24 @@ Rules:
     const pct = total ? Math.round(100 * mine / total) : 50;
     const nights = w.next.nights, next = w.next;
     const plan = next.planned ? 'Next week is planned.' : nights ? `Next week Omar has ${nights} night${nights === 1 ? '' : 's'}. Worth deciding who covers what on Sunday.` : 'Next week looks open. A quick plan on Sunday keeps it that way.';
+    const sent = w.sentAt ? new Date(w.sentAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+    const sendBtn = hh.me === 'farah' && !fam.off ? `<button class="mini" data-act="week-send" ${weekLoad.sending ? 'disabled' : ''}>${weekLoad.sending ? 'Sending…' : w.sentAt ? 'Send update' : 'Send to Omar'}</button>` : '';
     return `<div class="load-ref" role="group" aria-label="This week at home">
-      <div class="load-h"><span>This week at home</span><span class="muted">${w.shared ? 'Shared with Omar' : 'Only you see this'}</span></div>
+      <div class="load-h"><span>This week at home</span><span class="muted">${w.sentAt ? `Sent to Omar ${esc(sent)}` : 'Only you see this'}</span></div>
       <p class="load-lead">${total} things done together${w.omar.shifts ? `, plus ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'} for Omar` : ''}.</p>
       <div class="load-bar" role="img" aria-label="You ${mine}, Omar ${his}"><span style="width:${pct}%"></span></div>
       <div class="load-k muted"><span>You · ${mine}</span><span>Omar · ${his}${w.omar.shifts ? ` + ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'}` : ''}</span></div>
-      <div class="load-next"><span>${esc(plan)}</span>${next.planned ? '' : '<button class="mini" data-act="plan-week">Plan the week</button>'}</div></div>`;
+      <div class="load-next"><span>${esc(plan)}</span>${next.planned ? '' : '<button class="mini" data-act="plan-week">Plan the week</button>'}</div>
+      ${sendBtn ? `<div class="load-send"><span class="muted">Omar sees a copy only when you send it. Counts only, no task names.</span>${sendBtn}</div>` : ''}</div>`;
+  }
+  async function sendWeekToOmar() {
+    if (weekLoad.sending) return;
+    weekLoad.sending = true; render();
+    const res = await calFetch('POST', '/api/household', { op: 'week-send' });
+    weekLoad.sending = false;
+    if (res.ok && res.data.week) { weekLoad.data = Object.assign({}, weekLoad.data, { sentAt: res.data.week.sentAt }); toast('Sent to Omar. It shows on his dashboard.'); }
+    else toast("Couldn't send it. Try again.");
+    render();
   }
 
   function familyHtml() {
@@ -4534,8 +4548,6 @@ Rules:
           <label>Theme on this phone<select data-ui="theme">${[['auto', 'Match phone'], ['light', 'Light'], ['dark', 'Dark']].map(([v, l]) => `<option value="${v}" ${(ui.theme || 'auto') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         </div>
         <label class="set-row"><input type="checkbox" data-ui="night" ${ui.night !== false ? 'checked' : ''}><span><b>Night layout, 8 PM to 4 AM</b><span class="muted">Darker, larger text, only what’s left tonight.</span></span></label></div>
-      <div class="set-sec"><div class="set-h">Sharing</div>
-        <label class="set-row"><input type="checkbox" data-meta="loadShare" ${meta().loadShare !== false ? 'checked' : ''}><span><b>Show “This week at home” to Omar</b><span class="muted">Counts only, never task names.</span></span></label></div>
       <div class="set-sec"><div class="set-h">Work day</div>
         <label class="set-row"><input type="checkbox" data-set="work.on" ${w.on ? 'checked' : ''}><span><b>Work-day mode</b><span class="muted">During work hours, Today shows work and anything urgent. Pickup stays pinned; family items wait.</span></span></label>
         <div class="set-grid">
@@ -5684,6 +5696,7 @@ Rules:
         case 'live-retry': loadLive(); break;
         case 'tl-work': ui.open.tlWork = !ui.open.tlWork; saveUi(); renderTimeline(); break;
         case 'plan-week': openRitual('week'); break;
+        case 'week-send': sendWeekToOmar(); break;
         case 'ritual-eve': openRitual('evening'); break;
       }
     });

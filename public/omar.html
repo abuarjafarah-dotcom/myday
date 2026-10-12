@@ -190,6 +190,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 .hh-row.done .t { color: var(--muted); text-decoration: line-through; }
 .hh-pill { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
 .hh-pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.wk-from { margin: 0 0 4px; font-size: 13px; color: var(--muted); }
 .wk-lead { margin: 0 0 8px; font-size: 15px; }
 .wk-bar { height: 8px; border-radius: 999px; background: var(--omar, #A68166); overflow: hidden; }
 .wk-bar span { display: block; height: 100%; background: var(--accent); }
@@ -1017,7 +1018,8 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       const his = w.omar.done + w.omar.household, hers = w.farah.done, total = his + hers;
       const pct = total ? Math.round(100 * hers / total) : 50;
       const plan = w.next.planned ? 'Next week is planned.' : w.next.nights ? `Next week you have ${w.next.nights} night${w.next.nights === 1 ? '' : 's'}. Farah plans the week on Sunday; add what you can take in Household.` : 'Next week looks open. Farah plans the week on Sunday.';
-      $('wkBody').innerHTML = `<p class="wk-lead">${total} things done together${w.omar.shifts ? `, plus your ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'}` : ''}.</p>
+      const when = new Date(w.sentAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+      $('wkBody').innerHTML = `<p class="wk-from">From Farah · ${esc(when)}</p><p class="wk-lead">${total} things done together${w.omar.shifts ? `, plus your ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'}` : ''}.</p>
         <div class="wk-bar" role="img" aria-label="Farah ${hers}, you ${his}"><span style="width:${pct}%"></span></div>
         <div class="wk-k"><span>Farah · ${hers}</span><span>You · ${his}${w.omar.shifts ? ` + ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'}` : ''}</span></div>
         <p class="wk-next">${esc(plan)}</p>`;

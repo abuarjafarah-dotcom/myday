@@ -2,13 +2,14 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { addShared, deleteShared, listShared, updateShared, whoIs } from "@/lib/household";
-import { weekShare } from "@/lib/weekShare";
+import { sendWeek, weekForOmar, weekShare } from "@/lib/weekShare";
 
 export const dynamic = "force-dynamic";
 
 // Shared household tasks for Farah and Omar.
 //   GET                                   { me, items }
-//   GET ?view=week                        "This week at home": counts for both of you and next week's shifts
+//   GET ?view=week                        "This week at home": Farah gets the live view; Omar only the snapshot she sent
+//   POST { op: "week-send" }              Farah sends this week's snapshot to Omar
 //   POST { op: "add", title, to, date?, due?, note? }
 //   POST { op: "update", id, patch: { status?, title?, to?, date?, due?, note? } }
 //   POST { op: "delete", id }
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
   const c = await context();
   if ("error" in c) return c.error;
   if (new URL(request.url).searchParams.get("view") === "week") {
-    const week = await weekShare(c.db, c.me).catch(() => null);
+    const week = await (c.me === "omar" ? weekForOmar(c.db) : weekShare(c.db)).catch(() => null);
     return Response.json({ me: c.me, week }, { headers: { "Cache-Control": "no-store" } });
   }
   return Response.json({ me: c.me, items: await listShared(c.db) }, { headers: { "Cache-Control": "no-store" } });
@@ -39,6 +40,10 @@ export async function POST(request: Request) {
   if (!body) return Response.json({ error: "bad_json" }, { status: 400 });
   const id = typeof body.id === "string" && /^h-[a-z0-9]{4,40}$/.test(body.id) ? body.id : null;
   try {
+    if (body.op === "week-send") {
+      if (c.me !== "farah") return Response.json({ error: "Not available" }, { status: 403 });
+      return Response.json({ week: await sendWeek(c.db) });
+    }
     if (body.op === "add") return Response.json({ item: await addShared(c.db, c.me, body) });
     if (body.op === "update" && id) {
       const item = await updateShared(c.db, c.me, id, (body.patch as Record<string, unknown>) || {});
