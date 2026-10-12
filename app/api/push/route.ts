@@ -30,6 +30,12 @@ type Vapid = { publicKey: string; jwk: NodeJwk };
 type Out = Msg & { key: string };
 
 const BED_MIN = 21 * 60;
+// Notification center: time-critical messages always go out; extras respect a daily limit and can be bundled.
+//   meta.notify.budget  "0" = no limit, otherwise the most pushes per day (default 6)
+//   meta.notify.digest  true = extras wait and go out together at meta.notify.digestAt (default 6:00 PM)
+//   meta.notify.household false = no pushes when the other person adds or finishes a household task
+const URGENT = /^(t-|handoff-|wind-|morning-|ho-)/;
+const DEFAULT_BUDGET = 6;
 const WAKE_MIN = 5 * 60;
 const MAX_SUBS = 5;
 
@@ -284,14 +290,38 @@ async function tick(db: Db): Promise<Response> {
     // Shared household tasks and handoffs from the other person. Farah's quiet hours apply; Omar's wait while he sleeps.
     if (me && cfg.on && !asleep && (me === "omar" || (now.min >= WAKE_MIN && now.min < BED_MIN))) {
       if (household === null) household = await listShared(db).catch(() => []);
-      householdMessages(me, household, sent).forEach((m) => due.push({ ...m, url: homePath(view), tag: m.key }));
+      if (cfg.household !== false) householdMessages(me, household, sent).forEach((m) => due.push({ ...m, url: homePath(view), tag: m.key }));
       handoffMessages(me, handoffs || [], sent).forEach((m) => due.push({ ...m, url: `${homePath(view)}?open=handoff`, tag: m.key }));
     }
-    for (const m of due) {
+    // Budget and digest (Farah's page; Omar's page keeps its short list as is).
+    const count = { ...((state.count as Record<string, number>) || {}) };
+    Object.keys(count).forEach((k) => { if (k < addDays(now.date, -3)) delete count[k]; });
+    let held = ((state.held as { title: string; body: string; date: string }[]) || []).filter((h) => h.date === now.date);
+    const heldBefore = held.length;
+    const budgetRaw = Number(cfg.budget ?? DEFAULT_BUDGET);
+    const budget = Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : Infinity;
+    const outgoing: Out[] = [];
+    const ordered = due.slice().sort((a, b) => Number(URGENT.test(b.key)) - Number(URGENT.test(a.key)));
+    for (const m of ordered) {
       sent[m.key] = Date.now();
+      const urgent = URGENT.test(m.key);
+      if (!urgent && view === "farah" && cfg.digest === true) { held.push({ title: m.title, body: m.body, date: now.date }); continue; }
+      if (!urgent && (count[now.date] || 0) >= budget) continue;           // over today's limit: it waits in the app
+      outgoing.push(m);
+      count[now.date] = (count[now.date] || 0) + 1;
+    }
+    const digestAt = toMin(typeof cfg.digestAt === "string" ? cfg.digestAt : "18:00");
+    if (view === "farah" && cfg.digest === true && held.length && digestAt !== null && now.min >= digestAt && now.min < digestAt + 25 && now.min < BED_MIN) {
+      const lines = held.map((h) => `${h.title}: ${h.body}`);
+      outgoing.push({ key: `digest-${now.date}`, tag: `digest-${now.date}`, url: homePath(view), title: `Today's digest (${held.length})`,
+        body: lines.slice(0, 4).join(" · ").slice(0, 300) + (lines.length > 4 ? ` +${lines.length - 4} more` : "") });
+      count[now.date] = (count[now.date] || 0) + 1;
+      held = [];
+    }
+    for (const m of outgoing) {
       for (const s of subs) if (await deliver(db, v, s, { title: m.title, body: m.body, url: m.url, tag: m.tag })) sentCount++;
     }
-    if (due.length) await putDoc(db, owner, "push-state", "main", { sent });
+    if (due.length || held.length !== heldBefore) await putDoc(db, owner, "push-state", "main", { sent, count, held });
   }
   return Response.json({ ok: true, owners: byOwner.size, sent: sentCount });
 }

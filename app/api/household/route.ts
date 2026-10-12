@@ -2,11 +2,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { addShared, deleteShared, listShared, updateShared, whoIs } from "@/lib/household";
+import { weekShare } from "@/lib/weekShare";
 
 export const dynamic = "force-dynamic";
 
 // Shared household tasks for Farah and Omar.
 //   GET                                   { me, items }
+//   GET ?view=week                        "This week at home": counts for both of you and next week's shifts
 //   POST { op: "add", title, to, date?, due?, note? }
 //   POST { op: "update", id, patch: { status?, title?, to?, date?, due?, note? } }
 //   POST { op: "delete", id }
@@ -20,9 +22,13 @@ async function context() {
   return { me, db };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const c = await context();
   if ("error" in c) return c.error;
+  if (new URL(request.url).searchParams.get("view") === "week") {
+    const week = await weekShare(c.db, c.me).catch(() => null);
+    return Response.json({ me: c.me, week }, { headers: { "Cache-Control": "no-store" } });
+  }
   return Response.json({ me: c.me, items: await listShared(c.db) }, { headers: { "Cache-Control": "no-store" } });
 }
 

@@ -29,6 +29,18 @@ No new service, account or key: the widget reads `/api/widget` with the same cap
 6. **Lock screen:** long-press the lock screen → Customize → Lock Screen → tap the widget row (or the date line for inline)
    → Scriptable → pick a shape → tap it → Script: **myday**.
 
+## Capture from the lock screen
+
+Two ways, both using the same sorting rules as the dashboard.
+
+- **Add widget (tap to type):** add another Scriptable widget (circular or rectangular on the lock screen, or small on the
+  home screen), choose the **myday** script, and set **Parameter** to `add`. Tapping it opens the dashboard with the
+  Add box ready. Medium and large widgets also have a "＋ Add" line.
+- **Lock screen button (speak it):** iOS 18 → long-press the lock screen → Customize → Lock Screen →
+  tap the bottom-left or bottom-right button → choose **Shortcut** → pick your existing **back-tap capture** Shortcut.
+  Press it, say the brain dump, done (iOS may ask you to unlock first). It posts to /api/capture like back-tap does, so items arrive sorted with Undo on the dashboard.
+  The Action Button (iPhone 15 Pro and later) can run the same Shortcut.
+
 ## How fresh it is
 
 - Tasks are read live from Supabase each refresh, so a task ticked on any device is reflected.

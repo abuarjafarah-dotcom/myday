@@ -190,6 +190,11 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 .hh-row.done .t { color: var(--muted); text-decoration: line-through; }
 .hh-pill { min-height: 36px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
 .hh-pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.wk-lead { margin: 0 0 8px; font-size: 15px; }
+.wk-bar { height: 8px; border-radius: 999px; background: var(--omar, #A68166); overflow: hidden; }
+.wk-bar span { display: block; height: 100%; background: var(--accent); }
+.wk-k { display: flex; justify-content: space-between; margin-top: 6px; font-size: 13px; color: var(--muted); }
+.wk-next { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid var(--border); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -245,6 +250,11 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   </form>
   <div class="result hidden" id="hhMsg" role="status" aria-live="polite"></div>
   <div id="hhList"></div>
+</section>
+
+<section class="card hidden" aria-labelledby="wkH" id="wkCard">
+  <h2 id="wkH">This week at home</h2>
+  <div id="wkBody"></div>
 </section>
 
 <details class="card hidden trips-fold" id="tripsCard">
@@ -997,6 +1007,24 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     hhSend({ op: 'update', id: t.id, patch: { to: t.to } });
   });
 
+  // ---------- "This week at home": shared with Farah, counts only ----------
+  async function loadWeek() {
+    try {
+      const r = await fetch('/api/household?view=week', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) return;
+      const w = (await r.json()).week;
+      if (!w) { $('wkCard').classList.add('hidden'); return; }
+      const his = w.omar.done + w.omar.household, hers = w.farah.done, total = his + hers;
+      const pct = total ? Math.round(100 * hers / total) : 50;
+      const plan = w.next.planned ? 'Next week is planned.' : w.next.nights ? `Next week you have ${w.next.nights} night${w.next.nights === 1 ? '' : 's'}. Farah plans the week on Sunday; add what you can take in Household.` : 'Next week looks open. Farah plans the week on Sunday.';
+      $('wkBody').innerHTML = `<p class="wk-lead">${total} things done together${w.omar.shifts ? `, plus your ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'}` : ''}.</p>
+        <div class="wk-bar" role="img" aria-label="Farah ${hers}, you ${his}"><span style="width:${pct}%"></span></div>
+        <div class="wk-k"><span>Farah · ${hers}</span><span>You · ${his}${w.omar.shifts ? ` + ${w.omar.shifts} shift${w.omar.shifts === 1 ? '' : 's'}` : ''}</span></div>
+        <p class="wk-next">${esc(plan)}</p>`;
+      $('wkCard').classList.remove('hidden');
+    } catch (e) { /* offline */ }
+  }
+
   // ---------- evening handoff with Farah (/api/handoff) ----------
   const HO = { inbox: null, mine: null, days: [], status: null, text: null };
   const HO_SECTIONS = [['kids', 'Kids'], ['done', 'Done'], ['open', 'Still open'], ['tomorrow', 'Tomorrow'], ['foryou', 'For you']];
@@ -1071,7 +1099,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       if (me.view !== 'omar') { location.replace(me.home || '/dashboard'); return; }
     } catch (e) { /* offline: show the saved copy */ }
     render();
-    await load(); loadCalendar(); await loadHousehold(); loadHandoff();
+    await load(); loadCalendar(); await loadHousehold(); loadHandoff(); loadWeek();
     if (new URLSearchParams(location.search).get('open') === 'handoff') { history.replaceState(null, '', location.pathname); setTimeout(() => $('hoCard').scrollIntoView({ block: 'start' }), 300); }
     setInterval(() => { if (!document.hidden) { loadHousehold(); loadHandoff(); } }, 60000);
     const last = metaMain().mailScannedAt || 0;

@@ -5,6 +5,9 @@
 const BASE = "https://myday-orcin.vercel.app";
 const KEY = "myday_token";
 
+// Widget parameter "add" makes this widget a capture button: tap it to open the dashboard's Add box.
+const ADD = String(args.widgetParameter || "").trim().toLowerCase() === "add";
+
 async function token() {
   if (args.widgetParameter && args.widgetParameter.length > 20) return args.widgetParameter.trim();
   if (Keychain.contains(KEY)) return Keychain.get(KEY);
@@ -45,6 +48,25 @@ function text(stack, s, font, color, lines = 1) {
   const t = stack.addText(String(s || ""));
   t.font = font; t.textColor = color; t.lineLimit = lines; t.minimumScaleFactor = 0.7;
   return t;
+}
+
+function addButton(family) {
+  const w = new ListWidget();
+  w.url = `${BASE}/dashboard?open=cmd`;
+  const lock = family.startsWith("accessory");
+  if (family === "accessoryInline") { text(w, "＋ Add to myday", sys(12, true), Color.white()); return w; }
+  if (family === "accessoryCircular") {
+    w.addAccessoryWidgetBackground = true;
+    const s = w.addStack(); s.layoutVertically(); s.centerAlignContent();
+    const p = text(s, "＋", sys(22, true), Color.white()); p.centerAlignText();
+    const l = text(s, "Add", sys(10, true), Color.white()); l.centerAlignText();
+    return w;
+  }
+  if (!lock) { w.backgroundColor = bg; w.setPadding(14, 14, 14, 14); }
+  const c = lock ? Color.white() : ink;
+  text(w, "＋ Add", sys(lock ? 15 : 20, true), c);
+  text(w, "Tasks, groceries, ideas", sys(lock ? 11 : 12), lock ? Color.white() : muted, 2);
+  return w;
 }
 
 function build(d, family) {
@@ -94,16 +116,24 @@ function build(d, family) {
   }
   w.addSpacer();
   if (family !== "small" && d.omar) text(w, d.omar, sys(11), muted, 1);
+  if (family !== "small") {
+    const row = w.addStack(); row.url = `${BASE}/dashboard?open=cmd`;
+    text(row, "＋ Add", sys(12, true), ink); row.addSpacer();
+  }
   if (family === "large" && d.firstDecision) { w.addSpacer(4); text(w, `Needs you: ${d.firstDecision}`, sys(12, true), ink, 2); }
   if (d.allDay && d.allDay.length && family !== "small") text(w, d.allDay.join(" · "), sys(11), muted, 1);
   text(w, leftLine + (d.offline ? " · offline" : ""), sys(11, true), ink, 1);
   return w;
 }
 
-const tok = await token();
-const data = tok ? await load(tok) : { error: "Open Scriptable to set up" };
 const family = config.widgetFamily || "medium";
-const widget = build(data, family);
+let widget;
+if (ADD) widget = addButton(family);              // no token or network needed
+else {
+  const tok = await token();
+  const data = tok ? await load(tok) : { error: "Open Scriptable to set up" };
+  widget = build(data, family);
+}
 if (config.runsInWidget) Script.setWidget(widget);
 else if (family === "small") await widget.presentSmall();
 else if (family === "large") await widget.presentLarge();
