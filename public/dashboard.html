@@ -1973,7 +1973,8 @@ Rules:
   const GROCERY_WORDS = /\b(yogh?urt|milk|eggs?|bread|berr(y|ies)|blueberr|strawberr|chicken|beef|turkey|fish|rice|cheese|fruit|apples?|bananas?|grapes|water|oil|diapers?|wipes|formula|puffs|pasta|tomato|onions?|garlic|potato|cucumber|lettuce|spinach|butter|labneh|hummus|zaatar|za'atar|olive|dates|flour|sugar|cereal|oats|snacks?|juice|coffee|tea|paper towels?|toilet paper|detergent|soap|shampoo)\b/i;
   const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   function guessCategory(s) {
-    if (/\bomar\b/i.test(s)) return 'omar';
+    // Only a handoff phrase ("by Omar", "ask Omar", "Omar to …") makes it Omar's. "for Omar" is Farah's task.
+    if (/\b(?:by|to|ask|tell|give|send)\s+omar\b|\bomar\s+(?:to|should|will|can|needs?)\b/i.test(s)) return 'omar';
     if (/hamad|talal|yousef|yusuf|\bkids?\b|school|daycare|pediatric|diaper|nap|\brms\b|\bot\b|soccer|nanny/i.test(s)) return 'kids';
     if (/workwave|\bwork\b|email|portfolio|course|meeting|interview|onboard|resume/i.test(s)) return 'work';
     if (/shower|workout|gym|\bread\b|rest\b|sleep|walk|pray|nails|hair/i.test(s)) return 'self';
@@ -4037,9 +4038,18 @@ Rules:
   }
   async function handToOmar(id) {
     const t = S.tasks[id]; if (!t) return;
-    const ok = await hhSend({ op: 'add', title: t.title, to: 'omar', date: t.date && t.date >= today() ? t.date : null, due: t.due || null, note: t.notes || '' }, `Handed to Omar: ${t.title}`);
-    if (ok) { infoOpen.delete(id); setTask(id, { status: 'dropped', handedTo: 'omar' }); }   // not counted as "let go"; its calendar block is removed
-    else { calNote = { kind: 'err', text: hh.err || "Couldn't send that to Omar. Try again." }; render(); }
+    const before = { status: t.status, handedTo: t.handedTo || null };
+    const res = await calFetch('POST', '/api/household', { op: 'add', title: t.title, to: 'omar', date: t.date && t.date >= today() ? t.date : null, due: t.due || null, note: t.notes || '' });
+    if (!res.ok) { calNote = { kind: 'err', text: (res.data && res.data.error && res.data.error.length < 60 ? res.data.error : "Couldn't send that to Omar. Try again.") }; render(); return; }
+    const itemId = res.data && res.data.item ? res.data.item.id : null;
+    await loadHousehold();
+    infoOpen.delete(id);
+    setTask(id, { status: 'dropped', handedTo: 'omar' });   // not counted as "let go"; its calendar block is removed
+    toast(`With Omar: ${t.title}`, async () => {           // Undo: take it back from his list and restore it here
+      if (itemId) await calFetch('POST', '/api/household', { op: 'delete', id: itemId });
+      await loadHousehold();
+      if (S.tasks[id]) setTask(id, { status: before.status, handedTo: before.handedTo });
+    });
   }
   function wireHousehold() {
     document.addEventListener('click', e => {
@@ -5613,7 +5623,7 @@ Rules:
       });
     }
     // Hand to Omar.
-    if ((m = lc.match(/^(?:give|hand|send|assign|pass)\s+(.+?)\s+to\s+omar$/)) || (m = lc.match(/^(.+?)\s+(?:to|for)\s+omar$/))) {
+    if ((m = lc.match(/^(?:give|hand|send|assign|pass)\s+(.+?)\s+to\s+omar$/)) || (m = lc.match(/^(.+?)\s+to\s+omar$/))) {
       const t = findTasks(m[1], 1)[0];
       if (t && hh.me === 'farah') out.push({ kind: 'do', title: `Give “${t.title}” to Omar`, sub: 'Moves it to his dashboard and phone', top: true, run: () => { closeCmd(); handToOmar(t.id); } });
       else if (hh.me === 'farah') out.push({ kind: 'do', title: `Ask Omar: ${capFirst(m[1])}`, sub: 'New household task for Omar', top: true, run: () => { closeCmd(); hhSend({ op: 'add', title: capFirst(m[1]), to: 'omar', date: null }, `Sent to Omar: ${capFirst(m[1])}`); } });
