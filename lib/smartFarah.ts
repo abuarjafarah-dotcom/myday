@@ -17,7 +17,8 @@ const STORE_ALIASES: Record<string, string> = { "tj s": "Trader Joe's", tjs: "Tr
 
 // Order matters: the first rule that matches wins.
 const TAG_RULES: [FarahTag, RegExp][] = [
-  ["omar", /\b(omar|husband|hubby)\b/i],
+  // Only a handoff phrase makes it Omar's ("ask Omar", "by Omar", "Omar to …"). "for Omar" stays Farah's.
+  ["omar", /\b(?:by|to|ask|tell|give|send)\s+(?:omar|husband|hubby)\b|\b(?:omar|husband|hubby)\s+(?:to|should|will|can|needs?)\b/i],
   ["kids", /\b(hamad|talal|yousef|yusuf|kids?|children|boys|baby|school|daycare|pre-?k|preschool|teacher|pediatric(?:ian)?|diapers?|nap|bath(?: ?time)?|bedtime|homework|nanny|babysitter|soccer|swim (?:class|lesson)s?|ot\b|rms|playdate|play date|car ?seat|stroller|lunchbox|lunches)\b/i],
   ["work", /\b(workwave|work|job|portfolio|resume|cv|linkedin|recruiter|onboard(?:ing)?|interview|meeting|standup|stand-up|client|stakeholder|figma|deck|slides?|presentation|case study|design review|manager|team|offer letter|i-?9|w-?4|course|certificate|deadline)\b/i],
   ["self", /\b(gym|workout|work out|yoga|pilates|run(?:ning)?|walk|stretch|shower|nails|manicure|pedicure|hair(?:cut)?|brows?|facial|skin ?care|massage|therapy|journal|read(?:ing)?|book club|pray(?:er)?|quran|meditat\w*|rest|sleep|me time|self[- ]care|dentist|doctor|dermatolog\w*|eye exam|sew(?:ing)?|quilt)\b/i],
