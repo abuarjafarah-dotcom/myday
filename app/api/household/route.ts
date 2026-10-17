@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { addShared, deleteShared, listShared, updateShared, whoIs } from "@/lib/household";
 import { sendWeek, weekForOmar, weekShare } from "@/lib/weekShare";
-import { addCostco, clearCheckedCostco, listCostco, removeCostco, setCostcoChecked } from "@/lib/costco";
+import { addCostco, clearCheckedCostco, costcoView, removeCostco, setCostcoChecked } from "@/lib/costco";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 //   POST { op: "add", title, to, date?, due?, note? }
 //   POST { op: "update", id, patch: { status?, title?, to?, date?, due?, note? } }
 //   POST { op: "delete", id }
-//   GET ?view=costco                      the shared Costco list (both of them)
-//   POST { op: "costco-add", item }       also used to send one of Farah's Costco items to Omar
+//   GET ?view=costco                      the shared Costco list (both of them, incl. Farah's open Costco items)
+//   POST { op: "costco-add", item }
 //   POST { op: "costco-check", id, checked }
 //   POST { op: "costco-del", id }
 //   POST { op: "costco-clear" }           remove everything already checked off
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   const c = await context();
   if ("error" in c) return c.error;
   const view = new URL(request.url).searchParams.get("view");
-  if (view === "costco") return Response.json({ me: c.me, items: await listCostco(c.db) }, { headers: { "Cache-Control": "no-store" } });
+  if (view === "costco") return Response.json({ me: c.me, items: await costcoView(c.db) }, { headers: { "Cache-Control": "no-store" } });
   if (view === "week") {
     const week = await (c.me === "omar" ? weekForOmar(c.db) : weekShare(c.db)).catch(() => null);
     return Response.json({ me: c.me, week }, { headers: { "Cache-Control": "no-store" } });
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   if ("error" in c) return c.error;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return Response.json({ error: "bad_json" }, { status: 400 });
-  const id = typeof body.id === "string" && /^[hc]-[a-z0-9]{4,40}$/.test(body.id) ? body.id : null;
+  const id = typeof body.id === "string" && /^[hcg]-[a-z0-9]{4,40}$/.test(body.id) ? body.id : null;
   try {
     if (body.op === "week-send") {
       if (c.me !== "farah") return Response.json({ error: "Not available" }, { status: 403 });

@@ -1291,6 +1291,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
           }
         });
         savePending();
+        loadCostco();
       }
     } catch (e) {
       writeError = 'Offline: saved on this device, will sync'; retryLater = true;
@@ -2243,7 +2244,7 @@ Rules:
         <input type="checkbox" data-act="cc-check" data-id="${esc(c.id)}" aria-label="Got it: ${esc(c.item)}">
         <span class="text"><span class="t">${esc(c.item)}</span><span class="muted"> · ${c.by === 'omar' ? 'from Omar' : 'from you'}</span></span>
         <button class="mini ghost" data-act="cc-del" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.item)}">Remove</button></div>`).join('') : '<div class="empty">Nothing shared for Costco right now.</div>'}
-      <div class="add-row"><input type="text" data-enter="cc-add" placeholder="Add to the shared Costco list…"></div>`;
+    `;
   }
   async function loadCostco() {
     try {
@@ -2276,7 +2277,7 @@ Rules:
           <span>${STORE_ICON[s] || '🏪'} ${esc(s)}</span><span class="right">${open.length ? open.length + ' to get' : ''}<span>${accOpen ? '▲' : '▼'}</span></span></button>
         ${accOpen ? `<div class="accordion-content">
           ${s === 'Costco' ? costcoSharedHtml() : ''}
-          ${open.map(g => grocRow(g)).join('')}${checked.map(g => grocRow(g)).join('')}
+          ${(s === 'Costco' && costcoShared ? [] : open).map(g => grocRow(g)).join('')}${checked.map(g => grocRow(g)).join('')}
           ${!mine.length ? '<div class="empty">Nothing on this list.</div>' : ''}
           <div class="add-row"><input type="text" id="ga-${si}" data-enter="groc-add" data-si="${si}" placeholder="Add to ${esc(s)}…"></div>
           ${checked.length ? `<button class="toggle-line" data-act="groc-clear" data-si="${si}">${confirmKey === 'gc-' + si ? 'Tap again to clear' : `Clear ${checked.length} checked`}</button>` : ''}
@@ -2286,7 +2287,6 @@ Rules:
   const grocRow = g => `<div class="task-item ${g.checked ? 'done' : ''}" style="border-left-color:var(--errands)">
       <input type="checkbox" data-act="groc-toggle" data-id="${esc(g.id)}" ${g.checked ? 'checked' : ''} aria-label="Got it">
       <span class="text"><span class="t">${esc(g.item)}</span></span>
-      ${g.store === 'Costco' && !g.checked ? `<button class="mini ghost" data-act="groc-send" data-id="${esc(g.id)}" aria-label="Send ${esc(g.item)} to the shared Costco list">To Omar</button>` : ''}
       <button class="mini ghost" data-act="groc-del" data-id="${esc(g.id)}" aria-label="Remove ${esc(g.item)}">Remove</button></div>`;
   function addGrocery(text, fallbackStore) {
     const list = stores();
@@ -3179,7 +3179,6 @@ Rules:
           commit(); break;
         }
         case 'groc-quick': quickGrocery(); break;
-        case 'groc-send': { const g = S.grocery[id]; if (g) { costcoPost({ op: 'costco-add', item: g.item }); put('grocery', Object.assign({}, g, { archived: true, archivedAt: Date.now() })); } break; }
         case 'cc-check': costcoPost({ op: 'costco-check', id, checked: el.checked }); break;
         case 'cc-del': costcoPost({ op: 'costco-del', id }); break;
       }
@@ -3195,7 +3194,6 @@ Rules:
         case 'add-idea': if (v) { el.value = ''; put('notes', { id: newId('n'), text: v, projectId: null, createdAt: Date.now() }); } break;
         case 'proj-add': if (v) { const p = S.projects[el.dataset.id]; el.value = ''; put('tasks', makeTask({ title: v, category: (p && p.category) || 'self', projectId: el.dataset.id })); } break;
         case 'groc-add': if (v) { el.value = ''; addGrocery(v, stores()[+el.dataset.si]); } break;
-        case 'cc-add': if (v) { el.value = ''; costcoPost({ op: 'costco-add', item: v }); } break;
         case 'groc-quick': quickGrocery(); break;
         case 'add-store': if (v && !stores().includes(v)) { el.value = ''; ui.open['g-' + v] = true; saveUi(); setMeta({ stores: [...stores(), v] }); } break;
       }
