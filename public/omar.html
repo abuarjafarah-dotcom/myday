@@ -63,6 +63,13 @@ a { color: var(--text); }
 .result.err { background: var(--p1-bg); color: var(--p1); }
 
 /* Cards */
+.costco-alert { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 14px; background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--errands); border-radius: 10px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.costco-alert:focus-visible { outline: 2px solid var(--errands); outline-offset: 2px; }
+.costco-alert .ca-icon { font-size: 22px; }
+.costco-alert .ca-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.costco-alert .ca-text span { font-size: 13px; color: var(--muted); }
+.costco-alert .ca-chev { color: var(--muted); font-size: 12px; }
+.costco-panel { margin-top: 10px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 14px; }
 .card > h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .card > h2 .count { font-size: 13px; font-weight: 600; color: var(--muted); }
@@ -208,6 +215,22 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   <p class="dayline" id="dayline"></p>
 </header>
 
+<button class="costco-alert hidden" id="ccAlert" type="button" aria-expanded="false" aria-controls="ccCard">
+  <span class="ca-icon" aria-hidden="true">🛒</span>
+  <span class="ca-text"><strong>You have a Costco list</strong><span id="ccAlertCount"></span></span>
+  <span class="ca-chev" aria-hidden="true">▼</span>
+</button>
+<section class="card hidden costco-panel" aria-labelledby="ccH" id="ccCard">
+  <h2 id="ccH">Costco list <span class="count" id="ccCount"></span></h2>
+  <p class="muted">Shared with Farah. Anything either of you adds shows up for both, and checking it off clears it for both.</p>
+  <form class="hh-add" id="ccForm">
+    <input id="ccItem" maxlength="120" placeholder="Add to Costco, e.g. Eggs" aria-label="Add to the Costco list">
+    <button class="btn primary" type="submit">Add</button>
+  </form>
+  <div id="ccList"></div>
+  <div class="result hidden" id="ccMsg" role="status" aria-live="polite"></div>
+</section>
+
 <section aria-label="Smart add">
   <form class="smart" id="smartForm">
     <label class="hidden" for="smartText">Add anything</label>
@@ -251,17 +274,6 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   </form>
   <div class="result hidden" id="hhMsg" role="status" aria-live="polite"></div>
   <div id="hhList"></div>
-</section>
-
-<section class="card hidden" aria-labelledby="ccH" id="ccCard">
-  <h2 id="ccH">Costco list <span class="count" id="ccCount"></span></h2>
-  <p class="muted">Shared with Farah. Anything either of you adds shows up for both, and checking it off clears it for both.</p>
-  <form class="hh-add" id="ccForm">
-    <input id="ccItem" maxlength="120" placeholder="Add to Costco, e.g. Eggs" aria-label="Add to the Costco list">
-    <button class="btn primary" type="submit">Add</button>
-  </form>
-  <div id="ccList"></div>
-  <div class="result hidden" id="ccMsg" role="status" aria-live="polite"></div>
 </section>
 
 <section class="card hidden" aria-labelledby="wkH" id="wkCard">
@@ -1020,13 +1032,21 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   });
 
   // ---------- shared Costco list (/api/household?view=costco) ----------
-  const CC = { items: null };
+  const CC = { items: null, open: false };
+  function ccToggle(force) {
+    CC.open = typeof force === 'boolean' ? force : !CC.open;
+    $('ccCard').classList.toggle('hidden', !CC.open);
+    const b = $('ccAlert'); b.setAttribute('aria-expanded', String(CC.open));
+    b.querySelector('.ca-chev').textContent = CC.open ? '▲' : '▼';
+    if (CC.open) $('ccCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('ccAlert').addEventListener('click', () => ccToggle());
   async function loadCostco() {
     try {
       const r = await fetch('/api/household?view=costco', { credentials: 'same-origin', cache: 'no-store' });
-      if (!r.ok) { if (r.status === 403 || r.status === 503) $('ccCard').classList.add('hidden'); return; }
+      if (!r.ok) { if (r.status === 403 || r.status === 503) { $('ccAlert').classList.add('hidden'); ccToggle(false); } return; }
       CC.items = (await r.json()).items || [];
-      $('ccCard').classList.remove('hidden'); renderCostco();
+      renderCostco();
     } catch (e) { /* offline: keep what's shown */ }
   }
   async function ccSend(body) {
@@ -1049,6 +1069,10 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     $('ccList').innerHTML = (open.length ? open.map(ccRow).join('') : '<p class="empty">The Costco list is empty.</p>')
       + (done.length ? `<div class="hh-sub"><span>Got it</span><span>${done.length}</span></div>${done.map(ccRow).join('')}` : '');
     $('ccCount').textContent = open.length ? `${open.length} to get` : '';
+    const alertEl = $('ccAlert');
+    alertEl.classList.toggle('hidden', !open.length);
+    if (!open.length) ccToggle(false);
+    $('ccAlertCount').textContent = open.length ? `${open.length} item${open.length === 1 ? '' : 's'} to get` : '';
   }
   $('ccForm').addEventListener('submit', e => {
     e.preventDefault();
