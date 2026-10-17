@@ -253,6 +253,17 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   <div id="hhList"></div>
 </section>
 
+<section class="card hidden" aria-labelledby="ccH" id="ccCard">
+  <h2 id="ccH">Costco list <span class="count" id="ccCount"></span></h2>
+  <p class="muted">Shared with Farah. Anything either of you adds shows up for both, and checking it off clears it for both.</p>
+  <form class="hh-add" id="ccForm">
+    <input id="ccItem" maxlength="120" placeholder="Add to Costco, e.g. Eggs" aria-label="Add to the Costco list">
+    <button class="btn primary" type="submit">Add</button>
+  </form>
+  <div id="ccList"></div>
+  <div class="result hidden" id="ccMsg" role="status" aria-live="polite"></div>
+</section>
+
 <section class="card hidden" aria-labelledby="wkH" id="wkCard">
   <h2 id="wkH">This week at home</h2>
   <div id="wkBody"></div>
@@ -1008,6 +1019,58 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     hhSend({ op: 'update', id: t.id, patch: { to: t.to } });
   });
 
+  // ---------- shared Costco list (/api/household?view=costco) ----------
+  const CC = { items: null };
+  async function loadCostco() {
+    try {
+      const r = await fetch('/api/household?view=costco', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) { if (r.status === 403 || r.status === 503) $('ccCard').classList.add('hidden'); return; }
+      CC.items = (await r.json()).items || [];
+      $('ccCard').classList.remove('hidden'); renderCostco();
+    } catch (e) { /* offline: keep what's shown */ }
+  }
+  async function ccSend(body) {
+    try {
+      const r = await fetch('/api/household', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) ccMsg('Couldn’t save that. Try again.', true); else $('ccMsg').classList.add('hidden');
+    } catch (e) { ccMsg('No connection. Try again in a moment.', true); }
+    loadCostco();
+  }
+  function ccMsg(text, err) { const el = $('ccMsg'); el.textContent = text; el.className = 'result' + (err ? ' err' : ''); }
+  function ccRow(c) {
+    const id = esc(c.id);
+    return `<div class="hh-row ${c.checked ? 'done' : ''}"><input type="checkbox" data-cc-check="${id}" ${c.checked ? 'checked' : ''} aria-label="Got it: ${esc(c.item)}">
+      <span class="t">${esc(c.item)}<span class="muted">${c.by === 'farah' ? 'from Farah' : 'from you'}${c.checked ? ` · ${c.checkedBy === 'omar' ? 'you' : 'Farah'} got it` : ''}</span></span>
+      <button type="button" class="hh-pill" data-cc-del="${id}" aria-label="Remove ${esc(c.item)}">Remove</button></div>`;
+  }
+  function renderCostco() {
+    if (!CC.items) return;
+    const open = CC.items.filter(c => !c.checked), done = CC.items.filter(c => c.checked);
+    $('ccList').innerHTML = (open.length ? open.map(ccRow).join('') : '<p class="empty">The Costco list is empty.</p>')
+      + (done.length ? `<div class="hh-sub"><span>Got it</span><span>${done.length}</span></div>${done.map(ccRow).join('')}` : '');
+    $('ccCount').textContent = open.length ? `${open.length} to get` : '';
+  }
+  $('ccForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const item = $('ccItem').value.trim(); if (!item) { $('ccItem').focus(); return; }
+    $('ccItem').value = '';
+    (CC.items = CC.items || []).push({ id: 'pending-' + Date.now(), item, by: 'omar', checked: false, createdAt: Date.now() });
+    renderCostco();
+    ccSend({ op: 'costco-add', item });
+  });
+  document.addEventListener('change', e => {
+    const id = e.target.dataset && e.target.dataset.ccCheck; if (!id) return;
+    const c = (CC.items || []).find(x => x.id === id); if (c) { c.checked = e.target.checked; c.checkedBy = 'omar'; }
+    renderCostco();
+    ccSend({ op: 'costco-check', id, checked: e.target.checked });
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-cc-del]'); if (!b) return;
+    const id = b.dataset.ccDel; if (CC.items) CC.items = CC.items.filter(x => x.id !== id);
+    renderCostco();
+    ccSend({ op: 'costco-del', id });
+  });
+
   // ---------- "This week at home": shared with Farah, counts only ----------
   async function loadWeek() {
     try {
@@ -1101,9 +1164,9 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
       if (me.view !== 'omar') { location.replace(me.home || '/dashboard'); return; }
     } catch (e) { /* offline: show the saved copy */ }
     render();
-    await load(); loadCalendar(); await loadHousehold(); loadHandoff(); loadWeek();
+    await load(); loadCalendar(); await loadHousehold(); loadCostco(); loadHandoff(); loadWeek();
     if (new URLSearchParams(location.search).get('open') === 'handoff') { history.replaceState(null, '', location.pathname); setTimeout(() => $('hoCard').scrollIntoView({ block: 'start' }), 300); }
-    setInterval(() => { if (!document.hidden) { loadHousehold(); loadHandoff(); } }, 60000);
+    setInterval(() => { if (!document.hidden) { loadHousehold(); loadCostco(); loadHandoff(); } }, 60000);
     const last = metaMain().mailScannedAt || 0;
     if (Date.now() - last > 6 * 3600 * 1000) scanMail(true);
     setInterval(() => { if (!document.hidden) load(); }, 30000);

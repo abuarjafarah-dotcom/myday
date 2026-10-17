@@ -17,6 +17,30 @@ Header: `Authorization: Bearer <CAPTURE_TOKEN>`
 Reply (JSON): `count`, `title` (e.g. "At Costco: 3 to get"), `text` (items joined by commas), `items`, `link`.
 Only unchecked items are returned. Any other store on the dashboard works the same way (`walmart`, `aldi`).
 
+## Costco: the simple setup (both phones, same three steps)
+
+Costco is the shared list: anything on the **Costco list** on Farah's dashboard or Omar's page shows up in the alert for both of you, and checking it off on either phone clears it for both. You only set up the location once per phone.
+
+Use this token for each phone:
+
+| Phone | Header value |
+|-------|--------------|
+| Farah | `Bearer ` + `CAPTURE_TOKEN` |
+| Omar  | `Bearer ` + `CAPTURE_TOKEN_OMAR` |
+
+**Automation (per phone):** Shortcuts → **Automation** → **+** → **Arrive** → **Costco** (search "Costco Rochester") → **Next** → **Run Immediately**, turn off **Notify When Run** → **New Blank Automation**. Then add:
+
+1. **Get Contents of URL**: `https://myday-orcin.vercel.app/api/grocery?store=costco&format=text`, Method **GET**, Header `Authorization` = the value from the table above.
+2. **If** *Contents of URL* **is not** empty.
+   - **Show Notification**: Body = *Contents of URL*.
+3. **End If** (added automatically).
+
+That's it. The reply is plain text, so no dictionary steps. An empty list sends nothing.
+
+Test with the play button in the automation. A 401 means the token doesn't match Vercel's value.
+
+Other stores keep the full setup below.
+
 ## iPhone setup (once per store, about 2 minutes each)
 
 1. Shortcuts app → **Automation** → **+** → **Arrive**.
