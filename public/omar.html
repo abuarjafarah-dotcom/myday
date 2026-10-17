@@ -70,6 +70,13 @@ a { color: var(--text); }
 .costco-alert .ca-text span { font-size: 13px; color: var(--muted); }
 .costco-alert .ca-chev { color: var(--muted); font-size: 12px; }
 .costco-panel { margin-top: 10px; }
+.fold { padding: 0 14px 14px; }
+.fold > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 -14px; padding: 14px; cursor: pointer; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::after { content: '▼'; font-size: 12px; color: var(--muted); }
+.fold[open] > summary::after { content: '▲'; }
+.fold > summary h2 { margin: 0; font-size: 16px; font-weight: 700; }
+.fold .ho-send { margin: 4px 0 10px; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 14px; }
 .card > h2 { font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .card > h2 .count { font-size: 13px; font-weight: 600; color: var(--muted); }
@@ -206,15 +213,6 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
 </style>
 </head>
 <body>
-<header>
-  <div class="top">
-    <div class="eyebrow" id="eyebrow"></div>
-    <button class="sync" id="sync" type="button" aria-live="polite">Loading…</button>
-  </div>
-  <h1 class="headline" id="hello">Omar's day</h1>
-  <p class="dayline" id="dayline"></p>
-</header>
-
 <button class="costco-alert hidden" id="ccAlert" type="button" aria-expanded="false" aria-controls="ccCard">
   <span class="ca-icon" aria-hidden="true">🛒</span>
   <span class="ca-text"><strong>You have a Costco list</strong><span id="ccAlertCount"></span></span>
@@ -231,6 +229,15 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   <div class="result hidden" id="ccMsg" role="status" aria-live="polite"></div>
 </section>
 
+<header>
+  <div class="top">
+    <div class="eyebrow" id="eyebrow"></div>
+    <button class="sync" id="sync" type="button" aria-live="polite">Loading…</button>
+  </div>
+  <h1 class="headline" id="hello">Omar's day</h1>
+  <p class="dayline" id="dayline"></p>
+</header>
+
 <section aria-label="Smart add">
   <form class="smart" id="smartForm">
     <label class="hidden" for="smartText">Add anything</label>
@@ -246,35 +253,9 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   <ul class="today-list" id="todayList"></ul>
 </section>
 
-<section class="card hidden" aria-labelledby="hoH" id="hoCard">
-  <h2 id="hoH">Handoff <button class="btn small" type="button" id="hoToggle" aria-expanded="false">Send one to Farah</button></h2>
-  <p class="dayline" id="hoShift"></p>
-  <div id="hoIn"></div>
-  <form class="form hidden" id="hoForm">
-    <div class="seg" role="group" aria-label="How the day went" id="hoStatus">
-      <button type="button" data-k="smooth" aria-pressed="false">🟢 Smooth</button><button type="button" data-k="busy" aria-pressed="false">🟡 Busy</button><button type="button" data-k="rough" aria-pressed="false">🔴 Rough</button>
-    </div>
-    <div id="hoFields"></div>
-    <div class="result hidden" id="hoMsg" role="status" aria-live="polite"></div>
-    <div class="acts"><button class="btn ghost" type="button" id="hoCancel">Cancel</button><button class="btn primary" type="submit" id="hoSend">Send to Farah</button></div>
-  </form>
-</section>
 
-<section class="card hidden" aria-labelledby="hhH" id="hhCard">
-  <h2 id="hhH">Household <span class="count" id="hhCount"></span></h2>
-  <form class="hh-add" id="hhForm">
-    <input id="hhTitle" maxlength="160" placeholder="Add for the house, e.g. Pick up dry cleaning" aria-label="New household task">
-    <div class="hh-opts">
-      <div class="seg" role="group" aria-label="Who does it" id="hhTo">
-        <button type="button" data-to="omar" aria-pressed="true">Me</button><button type="button" data-to="farah" aria-pressed="false">Farah</button><button type="button" data-to="either" aria-pressed="false">Either</button>
-      </div>
-      <input type="date" id="hhDate" aria-label="Day (optional)">
-      <button class="btn primary" type="submit">Add</button>
-    </div>
-  </form>
-  <div class="result hidden" id="hhMsg" role="status" aria-live="polite"></div>
-  <div id="hhList"></div>
-</section>
+
+
 
 <section class="card hidden" aria-labelledby="wkH" id="wkCard">
   <h2 id="wkH">This week at home</h2>
@@ -377,6 +358,37 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
   </div>
   <div class="result hidden" id="pushMsg" role="status" aria-live="polite"></div>
 </section>
+
+<details class="card hidden fold" id="hoCard">
+  <summary><h2 id="hoH">Handoff</h2></summary>
+  <button class="btn small ho-send" type="button" id="hoToggle" aria-expanded="false">Send one to Farah</button>
+  <p class="dayline" id="hoShift"></p>
+  <div id="hoIn"></div>
+  <form class="form hidden" id="hoForm">
+    <div class="seg" role="group" aria-label="How the day went" id="hoStatus">
+      <button type="button" data-k="smooth" aria-pressed="false">🟢 Smooth</button><button type="button" data-k="busy" aria-pressed="false">🟡 Busy</button><button type="button" data-k="rough" aria-pressed="false">🔴 Rough</button>
+    </div>
+    <div id="hoFields"></div>
+    <div class="result hidden" id="hoMsg" role="status" aria-live="polite"></div>
+    <div class="acts"><button class="btn ghost" type="button" id="hoCancel">Cancel</button><button class="btn primary" type="submit" id="hoSend">Send to Farah</button></div>
+  </form>
+</details>
+
+<details class="card hidden fold" id="hhCard">
+  <summary><h2 id="hhH">Household <span class="count" id="hhCount"></span></h2></summary>
+  <form class="hh-add" id="hhForm">
+    <input id="hhTitle" maxlength="160" placeholder="Add for the house, e.g. Pick up dry cleaning" aria-label="New household task">
+    <div class="hh-opts">
+      <div class="seg" role="group" aria-label="Who does it" id="hhTo">
+        <button type="button" data-to="omar" aria-pressed="true">Me</button><button type="button" data-to="farah" aria-pressed="false">Farah</button><button type="button" data-to="either" aria-pressed="false">Either</button>
+      </div>
+      <input type="date" id="hhDate" aria-label="Day (optional)">
+      <button class="btn primary" type="submit">Add</button>
+    </div>
+  </form>
+  <div class="result hidden" id="hhMsg" role="status" aria-live="polite"></div>
+  <div id="hhList"></div>
+</details>
 
 <footer class="foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span>Omar · myday</span></footer>
 
@@ -1189,7 +1201,7 @@ input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; m
     } catch (e) { /* offline: show the saved copy */ }
     render();
     await load(); loadCalendar(); await loadHousehold(); loadCostco(); loadHandoff(); loadWeek();
-    if (new URLSearchParams(location.search).get('open') === 'handoff') { history.replaceState(null, '', location.pathname); setTimeout(() => $('hoCard').scrollIntoView({ block: 'start' }), 300); }
+    if (new URLSearchParams(location.search).get('open') === 'handoff') { history.replaceState(null, '', location.pathname); $('hoCard').open = true; setTimeout(() => $('hoCard').scrollIntoView({ block: 'start' }), 300); }
     setInterval(() => { if (!document.hidden) { loadHousehold(); loadCostco(); loadHandoff(); } }, 60000);
     const last = metaMain().mailScannedAt || 0;
     if (Date.now() - last > 6 * 3600 * 1000) scanMail(true);
