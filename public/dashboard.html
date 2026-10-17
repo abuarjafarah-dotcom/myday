@@ -1291,6 +1291,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
           }
         });
         savePending();
+        loadCostco();
       }
     } catch (e) {
       writeError = 'Offline: saved on this device, will sync'; retryLater = true;
@@ -1420,7 +1421,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
 
     goLocal();
     await loadCloud();
-    setInterval(() => { if (!document.hidden) loadCloud(); }, 30000);
+    loadCostco();
+    setInterval(() => { if (!document.hidden) { loadCloud(); loadCostco(); } }, 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) loadCloud(); });
   }
 
@@ -2232,6 +2234,32 @@ Rules:
   }
 
   // ---------- grocery ----------
+  // Shared Costco list, shared with Omar (/api/household?view=costco). Only open lines are shown here.
+  let costcoShared = null;
+  function costcoSharedHtml() {
+    if (!costcoShared) return '';
+    const open = costcoShared.filter(c => !c.checked);
+    return `<div class="hh-sub"><span>Shared with Omar</span><span>${open.length || ''}</span></div>
+      ${open.length ? open.map(c => `<div class="task-item" style="border-left-color:var(--errands)">
+        <input type="checkbox" data-act="cc-check" data-id="${esc(c.id)}" aria-label="Got it: ${esc(c.item)}">
+        <span class="text"><span class="t">${esc(c.item)}</span><span class="muted"> · ${c.by === 'omar' ? 'from Omar' : 'from you'}</span></span>
+        <button class="mini ghost" data-act="cc-del" data-id="${esc(c.id)}" aria-label="Remove ${esc(c.item)}">Remove</button></div>`).join('') : '<div class="empty">Nothing shared for Costco right now.</div>'}
+    `;
+  }
+  async function loadCostco() {
+    try {
+      const r = await fetch('/api/household?view=costco', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) return;
+      costcoShared = (await r.json()).items || [];
+      renderGrocery();
+    } catch (e) { /* offline: keep what's shown */ }
+  }
+  async function costcoPost(body) {
+    try {
+      await fetch('/api/household', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    } catch (e) { /* offline: the line stays on your list */ }
+    loadCostco();
+  }
   function renderGrocery() {
     const list = stores();
     const gs = $('gStore');
@@ -2248,7 +2276,8 @@ Rules:
       return `<button class="accordion-header ${accOpen ? 'active' : ''}" data-act="acc" data-key="g-${esc(s)}" aria-expanded="${accOpen}">
           <span>${STORE_ICON[s] || '🏪'} ${esc(s)}</span><span class="right">${open.length ? open.length + ' to get' : ''}<span>${accOpen ? '▲' : '▼'}</span></span></button>
         ${accOpen ? `<div class="accordion-content">
-          ${open.map(g => grocRow(g)).join('')}${checked.map(g => grocRow(g)).join('')}
+          ${s === 'Costco' ? costcoSharedHtml() : ''}
+          ${(s === 'Costco' && costcoShared ? [] : open).map(g => grocRow(g)).join('')}${checked.map(g => grocRow(g)).join('')}
           ${!mine.length ? '<div class="empty">Nothing on this list.</div>' : ''}
           <div class="add-row"><input type="text" id="ga-${si}" data-enter="groc-add" data-si="${si}" placeholder="Add to ${esc(s)}…"></div>
           ${checked.length ? `<button class="toggle-line" data-act="groc-clear" data-si="${si}">${confirmKey === 'gc-' + si ? 'Tap again to clear' : `Clear ${checked.length} checked`}</button>` : ''}
@@ -3150,6 +3179,8 @@ Rules:
           commit(); break;
         }
         case 'groc-quick': quickGrocery(); break;
+        case 'cc-check': costcoPost({ op: 'costco-check', id, checked: el.checked }); break;
+        case 'cc-del': costcoPost({ op: 'costco-del', id }); break;
       }
     });
     document.addEventListener('keydown', e => {

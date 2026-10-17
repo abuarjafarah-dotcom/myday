@@ -1,14 +1,18 @@
 import { timingSafeEqual } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { listCostco } from "@/lib/costco";
+import { omarEmail } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
 // Store-arrival alerts. An iPhone Shortcuts automation ("When I arrive at Costco") calls
-//   GET /api/grocery?store=costco
-// with header "Authorization: Bearer <CAPTURE_TOKEN>" and shows the reply as a notification.
-// Returns the open (unchecked, not archived) items for that store from Farah's synced grocery list.
+//   GET /api/grocery?store=costco&format=text
+// with header "Authorization: Bearer <token>" and shows the reply as a notification.
+//   Farah's token  (CAPTURE_TOKEN)       -> her own list for the store
+//   Omar's token   (CAPTURE_TOKEN_OMAR)  -> his list for the store (Costco also includes what's shared)
+// For Costco, the shared list (see /api/household?view=costco) is included for both of them, so the
+// same alert covers the trip whoever is at the store. Only unchecked items are returned.
 // Store matching ignores case, spaces and punctuation: "traderjoes", "Trader Joe's" and "trader-joes" all work.
-// Add &format=text to get a plain-text reply instead of JSON.
 
 function tokenMatches(given: string, expected: string): boolean {
   if (expected.length < 24) return false;
@@ -22,9 +26,11 @@ type Item = { item?: string; store?: string; checked?: boolean; archived?: boole
 
 export async function GET(request: Request) {
   const given = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  if (!tokenMatches(given, process.env.CAPTURE_TOKEN || "")) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  const owner = (process.env.CAPTURE_EMAIL || "").trim().toLowerCase();
-  if (!owner) return Response.json({ error: "CAPTURE_EMAIL is not set" }, { status: 503 });
+  const who = tokenMatches(given, process.env.CAPTURE_TOKEN || "") ? "farah"
+    : tokenMatches(given, process.env.CAPTURE_TOKEN_OMAR || "") ? "omar" : null;
+  if (!who) return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const owner = (who === "omar" ? omarEmail() : (process.env.CAPTURE_EMAIL || "").trim().toLowerCase());
+  if (!owner) return Response.json({ error: who === "omar" ? "OMAR_EMAIL is not set" : "CAPTURE_EMAIL is not set" }, { status: 503 });
   const db = supabaseAdmin();
   if (!db) return Response.json({ error: "Sync is not set up" }, { status: 503 });
 
@@ -39,15 +45,25 @@ export async function GET(request: Request) {
   }
 
   const all = (data || []).map((r) => r.data as Item).filter((g) => g && !g.archived && g.item && g.store);
-  const open = all
+  const own = all
     .filter((g) => !g.checked && norm(g.store!) === wanted)
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-  const storeName = open[0]?.store || all.find((g) => norm(g.store!) === wanted)?.store || url.searchParams.get("store")!;
+  const storeName = own[0]?.store || all.find((g) => norm(g.store!) === wanted)?.store || (wanted === "costco" ? "Costco" : url.searchParams.get("store")!);
 
-  const items = open.map((g) => (g.quantity ? `${g.item} (${g.quantity})` : g.item!));
+  // Shared list: only for Costco, and only the lines not yet checked off.
+  const shared = wanted === "costco" ? (await listCostco(db)).filter((c) => !c.checked).map((c) => c.item) : [];
+  const seen = new Set<string>();
+  const items: string[] = [];
+  for (const g of own) {
+    const label = g.quantity ? `${g.item} (${g.quantity})` : g.item!;
+    seen.add(norm(g.item!));
+    items.push(label);
+  }
+  for (const s of shared) if (!seen.has(norm(s))) { seen.add(norm(s)); items.push(s); }
+
   const title = items.length ? `At ${storeName}: ${items.length} to get` : `Nothing on your ${storeName} list`;
   const text = items.join(", ");
-  const link = `${url.origin}/dashboard?tab=grocery&store=${encodeURIComponent(storeName)}`;
+  const link = who === "omar" ? `${url.origin}/omar` : `${url.origin}/dashboard?tab=grocery&store=${encodeURIComponent(storeName)}`;
 
   if (url.searchParams.get("format") === "text") {
     return new Response(items.length ? `${title}\n${text}` : "", { headers: { "content-type": "text/plain; charset=utf-8" } });
