@@ -549,6 +549,33 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 .week-tools { display: flex; align-items: center; gap: 8px; }
 .week-status { font-size: 0.875rem; padding: 2px 0 12px; }
 .week-day .sy-meal { margin-top: 10px; }
+.seg { display: flex; gap: 4px; background: var(--soft); padding: 3px; border-radius: 999px; width: max-content; max-width: 100%; }
+.seg.sm { flex-wrap: wrap; }
+.seg-btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; font-weight: 600; font-size: 0.8125rem; color: var(--muted); cursor: pointer; }
+.seg-btn[aria-pressed="true"] { background: var(--card); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.wkt-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.wkt-intro { margin: 0 0 10px; }
+.wkt-cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
+.wkt-cards .week-day { flex: 0 0 min(280px, 84vw); scroll-snap-align: start; margin-bottom: 0; }
+.wkt-item { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--body); }
+.wkt-item:first-child { border-top: 0; }
+.wkt-item .wkt-body { flex: 1; min-width: 0; }
+.wkt-item .t { overflow-wrap: anywhere; }
+.wkt-item.done .t { text-decoration: line-through; opacity: .6; }
+.wkt-item .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.wkt-days { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; }
+.wkt-chip { flex: 0 0 auto; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--body); font-weight: 600; font-size: 0.8125rem; cursor: pointer; }
+.wkt-chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--card); }
+.wkt-hr { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
+.wkt-hr .hl { font-size: 0.75rem; color: var(--faint); font-variant-numeric: tabular-nums; padding-top: 4px; }
+.wkt-hr .hc { display: flex; flex-direction: column; min-width: 0; }
+.wkt-hr .wkt-item { border-top: 0; padding: 4px 0; }
+.wkt-more { margin: 12px 0; }
+.wkt-more > summary { cursor: pointer; font-weight: 700; color: var(--primary); min-height: 44px; display: flex; align-items: center; }
+.wkt-more .card { margin: 8px 0; }
+.energy-card { margin-top: 12px; }
+.energy-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.energy-head h2 { margin: 0; font-size: 1rem; }
 .sy-reset { margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--border); }
 
 /* ===== Calm Home: three button styles (filled, outlined, text), quiet rows, collapsed extras ===== */
@@ -1039,7 +1066,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
   <div class="sub-tabs">
     <button class="sub-tab-btn" data-act="sub" data-sub="plan">Plan</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="week">Week</button>
-    <button class="sub-tab-btn" data-act="sub" data-sub="today">Board</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="recap">Recap</button>
   </div>
   <div id="sub-plan">
@@ -1052,42 +1078,49 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div id="ritualEve" class="rit-panel"></div>
     <div id="ritualWeek" class="rit-panel"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
   </div>
-  <div id="sub-today">
-    <div class="donut-container">
-      <svg class="donut-svg" viewBox="0 0 120 120" id="donut" role="img" aria-label="Today's tasks by category"></svg>
-      <div class="donut-legend" id="donutLegend"></div>
-    </div>
+  <div id="sub-week">
     <div class="status-boxes">
       <div class="status-box"><div class="status-label">To Do</div><div class="status-count" id="countTodo">0</div></div>
       <div class="status-box"><div class="status-label">Delayed</div><div class="status-count" id="countDelayed">0</div></div>
       <div class="status-box"><div class="status-label">Done</div><div class="status-count" id="countDone">0</div></div>
     </div>
-    <div class="card">
-      <h2>Add task</h2>
-      <div class="add-row">
-        <input type="text" id="ntTitle" data-enter="add-task" placeholder="What needs doing?">
-      </div>
-      <div class="add-row">
-        <select id="ntCat" aria-label="Category"></select>
-        <select id="ntDate" aria-label="Day">
-          <option value="today">Today</option>
-          <option value="tomorrow">Tomorrow</option>
-          <option value="none">No date</option>
-        </select>
-        <select id="ntRepeat" aria-label="Repeats"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="alt">Every other day</option><option value="weekdays">Every weekday</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Every month</option></select>
-        <input type="time" id="ntTime" aria-label="Time">
-        <button class="btn-add" data-act="add-task">Add</button>
-      </div>
+    <div class="wkt-bar">
+      <div class="seg" id="wkViewSeg" role="group" aria-label="Layout"></div>
+      <button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button>
     </div>
-    <div class="card">
-      <h2>Routines</h2>
-      <div id="routinesList"></div>
-    </div>
-    <div class="kanban" id="kanban"></div>
-  </div>
-  <div id="sub-week">
-    <div class="row" style="margin-bottom:10px;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><p class="muted">Your dashboard tasks and Google Calendar events for the next 7 days.</p><button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button></div>
+    <p class="muted wkt-intro">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
     <div id="weekList"></div>
+    <div class="card energy-card">
+      <div class="energy-head"><h2>Where your energy went</h2><div class="seg sm" id="energySeg" role="group" aria-label="Energy scope"></div></div>
+      <div class="donut-container">
+        <svg class="donut-svg" viewBox="0 0 120 120" id="donut" role="img" aria-label="Finished tasks by category"></svg>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+    </div>
+    <details class="wkt-more">
+      <summary>Add task and routines</summary>
+      <div class="card">
+        <h2>Add task</h2>
+        <div class="add-row">
+          <input type="text" id="ntTitle" data-enter="add-task" placeholder="What needs doing?">
+        </div>
+        <div class="add-row">
+          <select id="ntCat" aria-label="Category"></select>
+          <select id="ntDate" aria-label="Day">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="none">No date</option>
+          </select>
+          <select id="ntRepeat" aria-label="Repeats"><option value="">Doesn't repeat</option><option value="daily">Every day</option><option value="alt">Every other day</option><option value="weekdays">Every weekday</option><option value="weekly">Every week</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Every month</option></select>
+          <input type="time" id="ntTime" aria-label="Time">
+          <button class="btn-add" data-act="add-task">Add</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Routines</h2>
+        <div id="routinesList"></div>
+      </div>
+    </details>
   </div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
@@ -1221,9 +1254,10 @@ input, select, textarea { font-size: max(16px, 1rem); }
   if (firstRun) { try { localStorage.setItem(LS.cache, JSON.stringify(S)); localStorage.setItem(LS.migrated, 'true'); } catch (e) {} }
   KINDS.forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   let pending = lsGet(LS.pending, {});           // "kind/id" -> object | null (delete), survives reloads until synced
-  let ui = Object.assign({ tab: 'home', sub: 'today', open: {}, showDone: false }, lsGet(LS.ui, {}));
+  let ui = Object.assign({ tab: 'home', sub: 'week', open: {}, showDone: false, wkView: 'cards', wkDay: 0, energy: 'today' }, lsGet(LS.ui, {}));
   if (ui.sub === 'reset' || ui.sub === 'sync') { ui.sub = 'plan'; ui.ritual = 'week'; }
-  if (!['plan', 'week', 'today', 'recap'].includes(ui.sub)) ui.sub = 'plan';
+  if (ui.sub === 'today') ui.sub = 'week';   // Board merged into Week
+  if (!['plan', 'week', 'recap'].includes(ui.sub)) ui.sub = 'plan';
   // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
   try {
     const q = new URLSearchParams(location.search);
@@ -1731,10 +1765,10 @@ input, select, textarea { font-size: max(16px, 1rem); }
   }
   function renderTabs() {
     if (ui.sub === 'reset' || ui.sub === 'sync') { ui.sub = 'plan'; ui.ritual = 'week'; }   // the weekly sync lives in Plan → Week
+    if (ui.sub === 'today') ui.sub = 'week';
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === ui.tab));
     document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
-    $('sub-today').classList.toggle('hidden', ui.sub !== 'today');
     $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
     $('sub-plan').classList.toggle('hidden', ui.sub !== 'plan');
     $('sub-recap').classList.toggle('hidden', ui.sub !== 'recap');
@@ -2127,7 +2161,7 @@ Rules:
     commit();
   }
 
-  // ---------- schedule ----------
+  // ---------- week (merged with Board): cards or hours, with energy donut ----------
   function renderSchedule() {
     const sel = $('ntCat');
     if (!sel.options.length) sel.innerHTML = CAT_KEYS.map(c => `<option value="${c}">${CATS[c].label}</option>`).join('');
@@ -2136,40 +2170,50 @@ Rules:
     $('countTodo').textContent = todayOpen.length;
     $('countDelayed').textContent = carry.length;
     $('countDone').textContent = doneToday.length;
+    renderEnergy(set, doneToday.length);
+  }
 
-    // donut by category, real segments
-    const counts = {}; set.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
-    const total = set.length; const C = 2 * Math.PI * 45; let off = 0;
+  // Where the energy went: today's list, this week, or this month, by category. Week and month count finished tasks.
+  function renderEnergy(todaySet, doneTodayCount) {
+    const td = today(), mon = mondayOf(td), sun = addDays(mon, 6), scope = ui.energy || 'today';
+    const finished = Object.values(S.tasks).filter(t => t.status === 'done' && t.completedAt);
+    const pool = scope === 'today' ? todaySet : finished.filter(t => {
+      const d = ymd(new Date(t.completedAt));
+      return scope === 'week' ? (d >= mon && d <= sun) : d.slice(0, 7) === td.slice(0, 7);
+    });
+    const counts = {}; pool.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
+    const total = pool.length; const C = 2 * Math.PI * 45; let off = 0;
     let svg = `<circle cx="60" cy="60" r="45" fill="none" style="stroke:var(--border)" stroke-width="20"></circle>`;
+    const legendRows = [];
     Object.entries(counts).forEach(([c, n]) => {
       const len = (n / total) * C;
       svg += `<circle cx="60" cy="60" r="45" fill="none" stroke="${catColor(c)}" stroke-width="20" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"></circle>`;
       off += len;
+      legendRows.push(`<div class="legend-item"><div class="legend-color" style="background:${catColor(c)}"></div><span><span class="legend-count">${n}</span> ${esc((CATS[c] || {}).label || c)}</span></div>`);
     });
-    const pct = total ? Math.round(doneToday.length / total * 100) : 0;
-    svg += `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${pct}%</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">done</text>`;
-    $('donut').innerHTML = svg;
-    $('donutLegend').innerHTML = Object.keys(counts).length
-      ? Object.entries(counts).map(([c, n]) => `<div class="legend-item"><div class="legend-color" style="background:${catColor(c)}"></div><span><span class="legend-count">${n}</span> ${esc((CATS[c] || {}).label || c)}</span></div>`).join('')
-      : '<div class="empty">No tasks today yet.</div>';
+    const centre = scope === 'today'
+      ? `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${total ? Math.round(doneTodayCount / total * 100) : 0}%</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">done</text>`
+      : `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${total}</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">finished</text>`;
+    $('donut').innerHTML = svg + centre;
+    $('donutLegend').innerHTML = legendRows.length ? legendRows.join('')
+      : `<div class="empty">${scope === 'today' ? 'No tasks today yet.' : 'Nothing finished in this period yet.'}</div>`;
+    $('energySeg').innerHTML = [['today', 'Today'], ['week', 'This week'], ['month', 'This month']]
+      .map(([k, l]) => `<button type="button" class="seg-btn" data-act="energy" data-scope="${k}" aria-pressed="${scope === k ? 'true' : 'false'}">${l}</button>`).join('');
+  }
 
-    const card = (t, col) => {
-      const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
-      const id = esc(t.id);
-      let acts = '';
-      if (col === 'todo') acts = `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button><button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move ${esc(t.title)} to tomorrow">Tomorrow</button>`;
-      if (col === 'doing') acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Back</button><button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button>`;
-      if (col === 'done') acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Undo</button>`;
-      return `<div class="kcard ${col === 'done' ? 'done' : ''}" data-drag-id="${id}" style="border-left-color:${catColor(t.category)}">${catTag(t.category)}
-        ${dragHandle(t, 'kanban')}
-        <div class="kbody"><div class="t">${from}${esc(t.title)}</div>
-        <div class="meta">${[t.time, (CATS[t.category] || {}).label, t.projectId ? projName(t.projectId) : ''].filter(Boolean).map(esc).join(' · ')}</div>
-        <div class="acts">${acts}</div></div></div>`;
-    };
-    const b = board();
-    const empty = { todo: 'All clear.', doing: 'Drag a task here to start it.', done: 'Finished tasks stay here, grayed out.' };
-    $('kanban').innerHTML = COLS.map(col => `<div class="kcol"><h3><span>${COL_LABEL[col]}</span><span>${b[col].length}</span></h3>
-      <div class="drop" data-drop="${col}" data-board="kanban">${b[col].map(t => card(t, col)).join('') || `<div class="empty">${empty[col]}</div>`}</div></div>`).join('');
+  // One task row in the week: category, time, title, and the same actions the Board had (Start, Done, Tomorrow, Undo).
+  function wktRow(t, withActs) {
+    const id = esc(t.id), done = t.status === 'done';
+    const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
+    const doing = t.status === 'doing' ? `<span class="badge">In progress</span>` : '';
+    let acts = '';
+    if (done) acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Undo</button>`;
+    else acts = (t.status === 'doing'
+      ? `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Back</button>`
+      : `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button>`)
+      + `<button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button>`
+      + `<button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move ${esc(t.title)} to tomorrow">Tomorrow</button>`;
+    return `<div class="wkt-item ${done ? 'done' : ''}">${catTag(t.category)}<div class="wkt-body"><div class="t">${from}${doing}${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</div>${withActs ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
   }
 
   function renderWeek() {
@@ -2183,20 +2227,59 @@ Rules:
       if ((info.failed || []).length) status += ` Couldn't load: ${info.failed.map(f => `${f.name} (error ${f.status || 'offline'})`).join(', ')}.`;
       if (info.icloudFailed) status += " An iCloud feed didn't load.";
     } else status = `${n} event${n === 1 ? '' : 's'} loaded.`;
+
+    const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(td, i));
+    // Today's list also carries overdue tasks (Board's "from <day>" items), so both views show the same set.
+    const itemsFor = (d, i) => {
+      const base = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done'));
+      return (i === 0 ? [...carry, ...base] : base).sort(byTime);
+    };
+    const dayLabelOf = (d, i) => i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+    $('wkViewSeg').innerHTML = [['cards', 'Cards'], ['hours', 'Hours']]
+      .map(([k, l]) => `<button type="button" class="seg-btn" data-act="wk-view" data-view="${k}" aria-pressed="${(ui.wkView || 'cards') === k ? 'true' : 'false'}">${l}</button>`).join('');
+
     let html = `${loadRefHtml()}<div class="week-status muted" role="status">${esc(status)}<br>Omar's shifts come from his calendar. Tap a day's icon to set one by hand (moon nights, sun days, house off).</div>`;
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(td, i), sh = shiftsMap()[d] || '';
-      const items = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done')).sort(byTime);
-      const evs = eventsOn(d);
-      const schHtml = schoolOn(d).filter(i => i.kind === 'noschool').map(i => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${esc(i.icon)} ${esc(i.title)}</span></div>`).join('');
-      const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
-      const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
-      html += `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}</span>
-          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${(() => { const o = !sh && omarDay(d); return o ? `<span class="od-auto" title="Omar, from his calendar">${o.emoji} ${esc(o.kind === 'recovery' ? 'Recovery' : o.label)}</span>` : ''; })()}${shiftBtn(d, sh, shortD(d))}<span class="muted">${items.filter(isOpen).length || ''}</span></span></div>
-        ${i === 0 && carry.length ? `<div class="week-line"><span class="dot" style="background:var(--carry-line)"></span><span>+ ${carry.length} carried over</span></div>` : ''}
-        ${evHtml}${items.length ? items.map(t => `<div class="week-line ${t.status === 'done' ? 'done' : ''}">${catTag(t.category)}<span>${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</span></div>`).join('') : (i === 0 && carry.length) || evs.length ? '' : '<div class="muted">Nothing planned</div>'}
-        <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
-      </div>`;
+
+    if ((ui.wkView || 'cards') === 'cards') {
+      const cards = days.map((d, i) => {
+        const sh = shiftsMap()[d] || '';
+        const items = itemsFor(d, i);
+        const evs = eventsOn(d);
+        const schHtml = schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${esc(x.icon)} ${esc(x.title)}</span></div>`).join('');
+        const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+        const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
+        const open = items.filter(isOpen).length;
+        return `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(dayLabelOf(d, i))}</span>
+          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${(() => { const o = !sh && omarDay(d); return o ? `<span class="od-auto" title="Omar, from his calendar">${o.emoji} ${esc(o.kind === 'recovery' ? 'Recovery' : o.label)}</span>` : ''; })()}${shiftBtn(d, sh, shortD(d))}<span class="muted">${open || ''}</span></span></div>
+          ${evHtml}${items.length ? items.map(t => wktRow(t, true)).join('') : evs.length ? '' : '<div class="muted">Nothing planned</div>'}
+          <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
+        </div>`;
+      });
+      html += `<div class="wkt-cards">${cards.join('')}</div>`;
+    } else {
+      const idx = Math.min(6, Math.max(0, ui.wkDay || 0)), d = days[idx];
+      const items = itemsFor(d, idx), evs = eventsOn(d);
+      const timed = t => timeMin(t.time) < 9998;
+      const hourOf = t => Math.floor(timeMin(t.time) / 60);
+      const evHour = ev => Math.floor(evMin(ev) / 60);
+      html += `<div class="wkt-days" role="group" aria-label="Day">${days.map((x, i) => `<button type="button" class="wkt-chip" aria-pressed="${i === idx ? 'true' : 'false'}" data-act="wk-day" data-i="${i}">${esc(parseYmd(x).toLocaleDateString('en-US', { weekday: 'short' }))} ${parseYmd(x).getDate()}</button>`).join('')}</div>`;
+      const anytime = [
+        ...schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="wkt-item"><span class="dot" style="background:${catColor('kids')}"></span><span class="t">${esc(x.icon)} ${esc(x.title)}</span></div>`),
+        ...evs.filter(ev => ev.allDay).map(ev => `<div class="wkt-item"><span class="dot cal"></span><span class="t">${srcIcon(ev)} ${esc(ev.title || '(No title)')}</span></div>`),
+        ...items.filter(t => !timed(t)).map(t => wktRow(t, true))
+      ];
+      if (anytime.length) html += `<div class="wkt-hr"><span class="hl">Anytime</span><div class="hc">${anytime.join('')}</div></div>`;
+      for (let h = 6; h <= 22; h++) {
+        const its = items.filter(t => timed(t) && hourOf(t) === h);
+        const ens = evs.filter(ev => !ev.allDay && evHour(ev) === h);
+        if (!its.length && !ens.length) continue;
+        const label = h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+        const rows = ens.map(ev => `<div class="wkt-item"><span class="dot cal"></span><span class="t">${srcIcon(ev)} ${esc(evTime(ev))} ${esc(ev.title || '(No title)')}</span></div>`)
+          .concat(its.map(t => wktRow(t, true))).join('');
+        html += `<div class="wkt-hr"><span class="hl">${label}</span><div class="hc">${rows}</div></div>`;
+      }
+      if (!anytime.length && !items.some(timed) && !evs.some(ev => !ev.allDay)) html += '<div class="muted">Nothing planned this day.</div>';
     }
     $('weekList').innerHTML = html;
   }
@@ -3122,6 +3205,9 @@ Rules:
       switch (act) {
         case 'tab': ui.tab = el.dataset.tab; saveUi(); render(); window.scrollTo({ top: 0 }); break;
         case 'sub': ui.sub = el.dataset.sub; saveUi(); render(); break;
+        case 'wk-view': ui.wkView = el.dataset.view; saveUi(); render(); break;
+        case 'wk-day': ui.wkDay = +el.dataset.i; saveUi(); render(); break;
+        case 'energy': ui.energy = el.dataset.scope; saveUi(); render(); break;
         case 'unit-toggle': setMeta({ units: useC() ? 'f' : 'c' }); break;
         case 'set-pri': setTask(id, { priority: el.dataset.pri === 'none' ? null : el.dataset.pri }); break;
         case 'pri-filter': ui.priFilter = el.dataset.pri; saveUi(); render(); break;
@@ -5584,7 +5670,7 @@ Rules:
     [/^(plan( the)? week|sunday sync|weekly sync|week plan|sync)$/, 'Plan the week', 'Plan → Week', () => openRitual('week')],
     [/^(handoff|hand ?off|sign ?out)$/, 'Handoff to Omar', 'Plan → Evening', () => { ui.handoffOpen = true; ui.hoScroll = true; openRitual('evening'); }],
     [/^(week|week view|this week|calendar)$/, 'Week view', 'Plan → Week view', () => { ui.tab = 'schedule'; ui.sub = 'week'; saveUi(); closeCmd(); render(); }],
-    [/^(board|kanban)$/, 'Board', 'Plan → Board', () => { ui.tab = 'schedule'; ui.sub = 'today'; saveUi(); closeCmd(); render(); }],
+    [/^(board|kanban|today board)$/, 'Week', 'Plan → Week (cards and hours)', () => { ui.tab = 'schedule'; ui.sub = 'week'; saveUi(); closeCmd(); render(); }],
     [/^(recap|monthly recap)$/, 'Monthly recap', 'Plan → Recap', () => { ui.tab = 'schedule'; ui.sub = 'recap'; saveUi(); closeCmd(); render(); }],
     [/^(fridge( sheet)?|print( the)? week)$/, 'Fridge sheet', 'Printable week for the boys', () => { closeCmd(); fridgeSheet(); }],
     [/^(grocer(y|ies)|shopping( list)?|groceries list)$/, 'Grocery', 'Lists by store', () => { ui.tab = 'grocery'; saveUi(); closeCmd(); render(); }],
