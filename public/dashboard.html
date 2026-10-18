@@ -552,28 +552,51 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 .seg { display: flex; gap: 4px; background: var(--soft); padding: 3px; border-radius: 999px; width: max-content; max-width: 100%; }
 .seg.sm { flex-wrap: wrap; }
 .seg-btn { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; font-weight: 600; font-size: 0.8125rem; color: var(--muted); cursor: pointer; }
-.seg-btn[aria-pressed="true"] { background: var(--card); color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-.wkt-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.wkt-intro { margin: 0 0 10px; }
+.seg-btn[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.wkt-counts { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8125rem; color: var(--muted); margin: 0 0 10px; }
+.wkt-counts b { color: var(--text); font-variant-numeric: tabular-nums; }
+.wkt-sum { margin-bottom: 12px; }
+.wkt-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.wkt-top .big { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; margin: 0; }
+.wkt-top .muted { margin: 0; }
+.wkt-pct { font-weight: 700; color: var(--accent); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.wkt-meter { height: 8px; background: var(--hair); border-radius: 999px; overflow: hidden; margin: 10px 0 14px; }
+.wkt-meter i { display: block; height: 100%; background: var(--accent); }
+.wkt-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.wkt-cat { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.wkt-cat-top { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 600; min-width: 0; }
+.wkt-cat-top > span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wkt-cat-top .n { margin-left: auto; color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.wkt-mini { height: 5px; background: var(--hair); border-radius: 999px; overflow: hidden; }
+.wkt-mini i { display: block; height: 100%; background: var(--primary); }
+.wkt-home { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.wkt-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
 .wkt-cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
 .wkt-cards .week-day { flex: 0 0 min(280px, 84vw); scroll-snap-align: start; margin-bottom: 0; }
-.wkt-item { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--body); }
+.wkt-dname { font-family: var(--serif); font-size: 1.1875rem; font-weight: 700; color: var(--text); }
+.wkt-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--border); }
 .wkt-item:first-child { border-top: 0; }
-.wkt-item .wkt-body { flex: 1; min-width: 0; }
-.wkt-item .t { overflow-wrap: anywhere; }
-.wkt-item.done .t { text-decoration: line-through; opacity: .6; }
-.wkt-item .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.wkt-box { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 3px; border-radius: 50%; border: 2px solid var(--muted); box-sizing: border-box; }
+.wkt-box.on { background: var(--accent); border-color: var(--accent); }
+.wkt-box.cal { border-radius: 4px; border-color: var(--cal); }
+.wkt-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.wkt-meta { display: flex; gap: 6px; align-items: center; font-size: 0.75rem; color: var(--faint); font-variant-numeric: tabular-nums; }
+.wkt-item .t { font-size: 0.875rem; font-weight: 600; color: var(--body); overflow-wrap: anywhere; }
+.wkt-item.done .t { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+.wkt-item .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.wkt-anytime { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.wkt-anytime .eyebrow { margin: 0 0 4px; font-size: 0.6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 .wkt-days { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; }
 .wkt-chip { flex: 0 0 auto; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--body); font-weight: 600; font-size: 0.8125rem; cursor: pointer; }
 .wkt-chip[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: var(--card); }
-.wkt-hr { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
+.wkt-hr { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); }
 .wkt-hr .hl { font-size: 0.75rem; color: var(--faint); font-variant-numeric: tabular-nums; padding-top: 4px; }
 .wkt-hr .hc { display: flex; flex-direction: column; min-width: 0; }
 .wkt-hr .wkt-item { border-top: 0; padding: 4px 0; }
 .wkt-more { margin: 12px 0; }
 .wkt-more > summary { cursor: pointer; font-weight: 700; color: var(--primary); min-height: 44px; display: flex; align-items: center; }
 .wkt-more .card { margin: 8px 0; }
-.energy-card { margin-top: 12px; }
+.energy-card { margin-bottom: 12px; }
 .energy-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .energy-head h2 { margin: 0; font-size: 1rem; }
 .sy-reset { margin-top: 28px; padding-top: 8px; border-top: 1px solid var(--border); }
@@ -1079,17 +1102,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div id="ritualWeek" class="rit-panel"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
   </div>
   <div id="sub-week">
-    <div class="status-boxes">
-      <div class="status-box"><div class="status-label">To Do</div><div class="status-count" id="countTodo">0</div></div>
-      <div class="status-box"><div class="status-label">Delayed</div><div class="status-count" id="countDelayed">0</div></div>
-      <div class="status-box"><div class="status-label">Done</div><div class="status-count" id="countDone">0</div></div>
-    </div>
-    <div class="wkt-bar">
-      <div class="seg" id="wkViewSeg" role="group" aria-label="Layout"></div>
-      <button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button>
-    </div>
-    <p class="muted wkt-intro">Your dashboard tasks and Google Calendar events for the next 7 days.</p>
-    <div id="weekList"></div>
+    <div class="wkt-counts"><span>To do <b id="countTodo">0</b></span><span>Delayed <b id="countDelayed">0</b></span><span>Done <b id="countDone">0</b></span></div>
+    <div id="wkSummary"></div>
     <div class="card energy-card">
       <div class="energy-head"><h2>Where your energy went</h2><div class="seg sm" id="energySeg" role="group" aria-label="Energy scope"></div></div>
       <div class="donut-container">
@@ -1097,6 +1111,11 @@ input, select, textarea { font-size: max(16px, 1rem); }
         <div class="donut-legend" id="donutLegend"></div>
       </div>
     </div>
+    <div class="wkt-bar">
+      <div class="seg" id="wkViewSeg" role="group" aria-label="Layout"></div>
+      <button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button>
+    </div>
+    <div id="weekList"></div>
     <details class="wkt-more">
       <summary>Add task and routines</summary>
       <div class="card">
@@ -2201,7 +2220,7 @@ Rules:
       .map(([k, l]) => `<button type="button" class="seg-btn" data-act="energy" data-scope="${k}" aria-pressed="${scope === k ? 'true' : 'false'}">${l}</button>`).join('');
   }
 
-  // One task row in the week: category, time, title, and the same actions the Board had (Start, Done, Tomorrow, Undo).
+  // One task row in the week: checkbox, time and category, title, and the Board's actions.
   function wktRow(t, withActs) {
     const id = esc(t.id), done = t.status === 'done';
     const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
@@ -2213,7 +2232,9 @@ Rules:
       : `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button>`)
       + `<button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button>`
       + `<button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move ${esc(t.title)} to tomorrow">Tomorrow</button>`;
-    return `<div class="wkt-item ${done ? 'done' : ''}">${catTag(t.category)}<div class="wkt-body"><div class="t">${from}${doing}${t.time ? esc(t.time) + ' ' : ''}${esc(t.title)}</div>${withActs ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
+    return `<div class="wkt-item ${done ? 'done' : ''}"><span class="wkt-box ${done ? 'on' : ''}" aria-hidden="true"></span>
+      <div class="wkt-body"><div class="wkt-meta">${t.time ? `<span>${esc(t.time)}</span>` : ''}${catTag(t.category)}</div>
+      <div class="t">${from}${doing}${esc(t.title)}</div>${withActs ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
   }
 
   function renderWeek() {
@@ -2229,30 +2250,49 @@ Rules:
     } else status = `${n} event${n === 1 ? '' : 's'} loaded.`;
 
     const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(td, i));
-    // Today's list also carries overdue tasks (Board's "from <day>" items), so both views show the same set.
+    // Today's list also carries overdue tasks (the Board's "from <day>" items), so both views show the same set.
     const itemsFor = (d, i) => {
       const base = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done'));
       return (i === 0 ? [...carry, ...base] : base).sort(byTime);
     };
     const dayLabelOf = (d, i) => i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : parseYmd(d).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    const timed = t => timeMin(t.time) < 9998;
+    const view = ui.wkView || 'cards';
+
+    // Summary: week progress, per-category bars, and the home load line.
+    const weekItems = days.flatMap((d, i) => itemsFor(d, i));
+    const doneN = weekItems.filter(t => t.status === 'done').length, totalN = weekItems.length;
+    const pct = totalN ? Math.round(doneN / totalN * 100) : 0;
+    const catHtml = CAT_KEYS.map(k => {
+      const its = weekItems.filter(t => t.category === k), dn = its.filter(t => t.status === 'done').length;
+      const p = its.length ? Math.round(dn / its.length * 100) : 0;
+      return `<div class="wkt-cat"><div class="wkt-cat-top">${catTag(k)}<span>${esc(CATS[k].label)}</span><span class="n">${dn}/${its.length}</span></div><div class="wkt-mini"><i style="width:${p}%"></i></div></div>`;
+    }).join('');
+    $('wkSummary').innerHTML = `<section class="card wkt-sum" aria-label="Week summary">
+      <div class="wkt-top"><div><p class="big">${doneN} of ${totalN}</p><p class="muted">tasks done this week</p></div><span class="wkt-pct">${pct}%</span></div>
+      <div class="wkt-meter"><i style="width:${pct}%"></i></div>
+      <div class="wkt-cats">${catHtml}</div>
+      <div class="wkt-home">${loadRefHtml()}</div>
+    </section>`;
 
     $('wkViewSeg').innerHTML = [['cards', 'Cards'], ['hours', 'Hours']]
-      .map(([k, l]) => `<button type="button" class="seg-btn" data-act="wk-view" data-view="${k}" aria-pressed="${(ui.wkView || 'cards') === k ? 'true' : 'false'}">${l}</button>`).join('');
+      .map(([k, l]) => `<button type="button" class="seg-btn" data-act="wk-view" data-view="${k}" aria-pressed="${view === k ? 'true' : 'false'}">${l}</button>`).join('');
 
-    let html = `${loadRefHtml()}<div class="week-status muted" role="status">${esc(status)}<br>Omar's shifts come from his calendar. Tap a day's icon to set one by hand (moon nights, sun days, house off).</div>`;
+    let html = `<div class="week-status muted" role="status">${esc(status)}<br>Omar's shifts come from his calendar. Tap a day's icon to set one by hand (moon nights, sun days, house off).</div>`;
 
-    if ((ui.wkView || 'cards') === 'cards') {
+    if (view === 'cards') {
       const cards = days.map((d, i) => {
         const sh = shiftsMap()[d] || '';
-        const items = itemsFor(d, i);
-        const evs = eventsOn(d);
+        const items = itemsFor(d, i), evs = eventsOn(d);
         const schHtml = schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${esc(x.icon)} ${esc(x.title)}</span></div>`).join('');
         const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
         const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
         const open = items.filter(isOpen).length;
-        return `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span>${esc(dayLabelOf(d, i))}</span>
+        const anyItems = items.filter(t => !timed(t));
+        const anyHtml = anyItems.length ? `<div class="wkt-anytime"><p class="eyebrow">Anytime</p>${anyItems.map(t => wktRow(t, true)).join('')}</div>` : '';
+        return `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span class="wkt-dname">${esc(dayLabelOf(d, i))}</span>
           <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${(() => { const o = !sh && omarDay(d); return o ? `<span class="od-auto" title="Omar, from his calendar">${o.emoji} ${esc(o.kind === 'recovery' ? 'Recovery' : o.label)}</span>` : ''; })()}${shiftBtn(d, sh, shortD(d))}<span class="muted">${open || ''}</span></span></div>
-          ${evHtml}${items.length ? items.map(t => wktRow(t, true)).join('') : evs.length ? '' : '<div class="muted">Nothing planned</div>'}
+          ${evHtml}${items.filter(timed).map(t => wktRow(t, true)).join('')}${anyHtml}${!items.length && !evs.length ? '<div class="muted">Nothing planned</div>' : ''}
           <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
         </div>`;
       });
@@ -2260,13 +2300,12 @@ Rules:
     } else {
       const idx = Math.min(6, Math.max(0, ui.wkDay || 0)), d = days[idx];
       const items = itemsFor(d, idx), evs = eventsOn(d);
-      const timed = t => timeMin(t.time) < 9998;
       const hourOf = t => Math.floor(timeMin(t.time) / 60);
       const evHour = ev => Math.floor(evMin(ev) / 60);
       html += `<div class="wkt-days" role="group" aria-label="Day">${days.map((x, i) => `<button type="button" class="wkt-chip" aria-pressed="${i === idx ? 'true' : 'false'}" data-act="wk-day" data-i="${i}">${esc(parseYmd(x).toLocaleDateString('en-US', { weekday: 'short' }))} ${parseYmd(x).getDate()}</button>`).join('')}</div>`;
       const anytime = [
-        ...schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="wkt-item"><span class="dot" style="background:${catColor('kids')}"></span><span class="t">${esc(x.icon)} ${esc(x.title)}</span></div>`),
-        ...evs.filter(ev => ev.allDay).map(ev => `<div class="wkt-item"><span class="dot cal"></span><span class="t">${srcIcon(ev)} ${esc(ev.title || '(No title)')}</span></div>`),
+        ...schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="wkt-item"><span class="wkt-box" aria-hidden="true"></span><div class="wkt-body"><div class="t">${esc(x.icon)} ${esc(x.title)}</div></div></div>`),
+        ...evs.filter(ev => ev.allDay).map(ev => `<div class="wkt-item"><span class="wkt-box" aria-hidden="true"></span><div class="wkt-body"><div class="t">${srcIcon(ev)} ${esc(ev.title || '(No title)')}</div></div></div>`),
         ...items.filter(t => !timed(t)).map(t => wktRow(t, true))
       ];
       if (anytime.length) html += `<div class="wkt-hr"><span class="hl">Anytime</span><div class="hc">${anytime.join('')}</div></div>`;
@@ -2275,7 +2314,7 @@ Rules:
         const ens = evs.filter(ev => !ev.allDay && evHour(ev) === h);
         if (!its.length && !ens.length) continue;
         const label = h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
-        const rows = ens.map(ev => `<div class="wkt-item"><span class="dot cal"></span><span class="t">${srcIcon(ev)} ${esc(evTime(ev))} ${esc(ev.title || '(No title)')}</span></div>`)
+        const rows = ens.map(ev => `<div class="wkt-item"><span class="wkt-box cal" aria-hidden="true"></span><div class="wkt-body"><div class="t">${srcIcon(ev)} ${esc(evTime(ev))} ${esc(ev.title || '(No title)')}</div></div></div>`)
           .concat(its.map(t => wktRow(t, true))).join('');
         html += `<div class="wkt-hr"><span class="hl">${label}</span><div class="hc">${rows}</div></div>`;
       }
