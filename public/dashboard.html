@@ -570,7 +570,10 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 .wkt-mini { height: 5px; background: var(--hair); border-radius: 999px; overflow: hidden; }
 .wkt-mini i { display: block; height: 100%; background: var(--primary); }
 .wkt-home { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
-.wkt-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px; }
+.wkt-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 4px 0 14px; }
+.wkt-title { font-family: var(--serif); font-weight: 700; font-size: 2rem; line-height: 1.1; margin: 4px 0 0; color: var(--text); }
+.wkt-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.wkt-primary { min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--primary); color: var(--card); font-weight: 600; font-size: 0.875rem; cursor: pointer; }
 .wkt-cards { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
 .wkt-cards .week-day { flex: 0 0 min(280px, 84vw); scroll-snap-align: start; margin-bottom: 0; }
 .wkt-dname { font-family: var(--serif); font-size: 1.1875rem; font-weight: 700; color: var(--text); }
@@ -1096,7 +1099,10 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div id="ritualWeek" class="rit-panel"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
   </div>
   <div id="sub-week">
-    <div class="wkt-counts"><span>To do <b id="countTodo">0</b></span><span>Delayed <b id="countDelayed">0</b></span><span>Done <b id="countDone">0</b></span></div>
+    <div class="wkt-head">
+      <div><span class="eyebrow">Plan · Week</span><h2 class="wkt-title" id="wkTitle"></h2></div>
+      <div class="wkt-acts"><button class="btn-secondary" data-act="fridge">Fridge sheet</button><button class="wkt-primary" data-act="sunday-sync">Sunday sync</button></div>
+    </div>
     <div id="wkSummary"></div>
     <div class="card energy-card">
       <div class="energy-head"><h2>Where your energy went</h2><div class="seg sm" id="energySeg" role="group" aria-label="Energy scope"></div></div>
@@ -1104,9 +1110,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
         <svg class="donut-svg" viewBox="0 0 120 120" id="donut" role="img" aria-label="Finished tasks by category"></svg>
         <div class="donut-legend" id="donutLegend"></div>
       </div>
-    </div>
-    <div class="wkt-bar">
-      <button class="btn-secondary" data-act="fridge">🖨 Fridge sheet</button>
     </div>
     <div id="weekList"></div>
     <details class="wkt-more">
@@ -2179,9 +2182,6 @@ Rules:
     if (!sel.options.length) sel.innerHTML = CAT_KEYS.map(c => `<option value="${c}">${CATS[c].label}</option>`).join('');
     const { carry, todayOpen, doneToday } = views();
     const set = [...carry, ...todayOpen, ...doneToday];
-    $('countTodo').textContent = todayOpen.length;
-    $('countDelayed').textContent = carry.length;
-    $('countDone').textContent = doneToday.length;
     renderEnergy(set, doneToday.length);
   }
 
@@ -2243,6 +2243,7 @@ Rules:
     } else status = `${n} event${n === 1 ? '' : 's'} loaded.`;
 
     const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(td, i));
+    $('wkTitle').textContent = `${shortD(days[0])} – ${shortD(days[6])}`;
     // Today's list also carries overdue tasks (the Board's "from <day>" items), so both views show the same set.
     const itemsFor = (d, i) => {
       const base = all.filter(t => t.date === d && (isOpen(t) || t.status === 'done'));
@@ -5895,6 +5896,7 @@ Rules:
         case 'tl-slot': { const t = S.tasks[id]; if (!t) break; const undo = snapTasks([id]); setTask(id, { date: today(), time: clockLabel(+el.dataset.min), duration: taskMinutes(t), originalDate: t.originalDate || (t.date && t.date !== today() ? t.date : null) }); toast(`${t.title} at ${clockLabel(+el.dataset.min)}.`, undo); break; }
         case 'swipe-hint-x': ui.swipeHint = true; saveUi(); renderTimeline(); break;
         case 'outdoor-tgl': { const t = S.tasks[id]; if (t) setTask(id, { outdoor: !isOutdoor(t) }, { noCal: true }); break; }
+        case 'sunday-sync': ui.sub = 'plan'; ui.ritual = 'week'; ui.ritualAt = Date.now(); saveUi(); render(); break;
         case 'ritual': ui.ritual = el.dataset.mode; ui.ritualAt = Date.now(); if (ui.ritual === 'evening') ui.wrapAsk = Date.now(); saveUi(); render(); break;
         case 'plan-cancel': render(); break;
         case 'ho-again': ui.handoffOpen = true; ui.hoSkip = null; saveUi(); render(); break;
