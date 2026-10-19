@@ -886,6 +886,8 @@ body.cmd-open { overflow: hidden; }
 .rit-panel[hidden] { display: none; }
 .rit-brief p { font-size: 0.9375rem; line-height: 1.5; color: var(--body); margin: 0 0 4px; }
 #sub-plan.hidden { display: none; }
+.rit-more { margin: 12px 0; }
+.rit-more > summary { cursor: pointer; font-weight: 700; color: var(--primary); min-height: 44px; display: flex; align-items: center; }
 .sub-tabs { position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
 .tl-card .toggle-line { display: block; }
 .tl-gap.quiet { border-style: dotted; padding: 4px 10px; min-height: 0; }
@@ -1085,23 +1087,22 @@ input, select, textarea { font-size: max(16px, 1rem); }
 <section id="schedule" class="tab-content">
   <div class="sub-tabs">
     <button class="sub-tab-btn" data-act="sub" data-sub="plan">Plan</button>
-    <button class="sub-tab-btn" data-act="sub" data-sub="week">Week</button>
     <button class="sub-tab-btn" data-act="sub" data-sub="recap">Recap</button>
   </div>
   <div id="sub-plan">
     <div class="rit-modes" role="tablist" aria-label="Plan">
-      <button class="rit-mode" role="tab" data-act="ritual" data-mode="day"><b>Day</b><span>Morning plan</span></button>
-      <button class="rit-mode" role="tab" data-act="ritual" data-mode="evening"><b>Evening</b><span>Wrap-up + handoff</span></button>
-      <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b><span>Sunday sync</span></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="day"><b>Today</b></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="month"><b>Month</b></button>
     </div>
-    <div id="ritualDay" class="rit-panel"><div id="ritualDayBrief"></div><div id="planBox"></div></div>
-    <div id="ritualEve" class="rit-panel"></div>
-    <div id="ritualWeek" class="rit-panel"><div id="syncView"></div><div id="resetView" class="sy-reset"></div></div>
-  </div>
-  <div id="sub-week">
+    <div id="ritualDay" class="rit-panel">
+      <div id="ritualDayBrief"></div><div id="planBox"></div>
+      <details id="evePanel" class="rit-more"><summary>Wrap-up and handoff</summary><div id="ritualEve"></div></details>
+    </div>
+    <div id="ritualWeek" class="rit-panel">
     <div class="wkt-head">
       <div><span class="eyebrow">Plan · Week</span><h2 class="wkt-title" id="wkTitle"></h2></div>
-      <div class="wkt-acts"><button class="btn-secondary" data-act="fridge">Fridge sheet</button><button class="wkt-primary" data-act="sunday-sync">Sunday sync</button></div>
+      <div class="wkt-acts"><button class="btn-secondary" data-act="fridge">Fridge sheet</button></div>
     </div>
     <div id="wkSummary"></div>
     <div class="card energy-card">
@@ -1136,6 +1137,9 @@ input, select, textarea { font-size: max(16px, 1rem); }
         <div id="routinesList"></div>
       </div>
     </details>
+      <details id="checkinPanel" class="rit-more"><summary>Weekly check-in</summary><div id="syncView"></div><div id="resetView" class="sy-reset"></div></details>
+    </div>
+    <div id="ritualMonth" class="rit-panel"><div id="monthView"></div></div>
   </div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
@@ -1269,10 +1273,9 @@ input, select, textarea { font-size: max(16px, 1rem); }
   if (firstRun) { try { localStorage.setItem(LS.cache, JSON.stringify(S)); localStorage.setItem(LS.migrated, 'true'); } catch (e) {} }
   KINDS.forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   let pending = lsGet(LS.pending, {});           // "kind/id" -> object | null (delete), survives reloads until synced
-  let ui = Object.assign({ tab: 'home', sub: 'week', open: {}, showDone: false, wkView: 'cards', wkDay: 0, energy: 'today' }, lsGet(LS.ui, {}));
-  if (ui.sub === 'reset' || ui.sub === 'sync') { ui.sub = 'plan'; ui.ritual = 'week'; }
-  if (ui.sub === 'today') ui.sub = 'week';   // Board merged into Week
-  if (!['plan', 'week', 'recap'].includes(ui.sub)) ui.sub = 'plan';
+  let ui = Object.assign({ tab: 'home', sub: 'plan', open: {}, showDone: false, wkView: 'cards', wkDay: 0, energy: 'today' }, lsGet(LS.ui, {}));
+  if (['reset', 'sync', 'week', 'today'].includes(ui.sub)) { ui.sub = 'plan'; ui.ritual = 'week'; }   // Week now lives in Plan
+  if (!['plan', 'recap'].includes(ui.sub)) ui.sub = 'plan';
   // Deep link from a store-arrival alert: /dashboard?tab=grocery&store=Costco opens that store's list.
   try {
     const q = new URLSearchParams(location.search);
@@ -1665,7 +1668,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     renderTracker(); renderSmart(); renderFamily(); renderSchoolAdmin(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     renderTimeline(); renderRitual(); publishWidgetSoon();
-    if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap();
+    if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap('rc', 'recapView');
     restoreFocus(keep);
   }
   function rememberFocus() {
@@ -1779,12 +1782,11 @@ input, select, textarea { font-size: max(16px, 1rem); }
     }).join('');
   }
   function renderTabs() {
-    if (ui.sub === 'reset' || ui.sub === 'sync') { ui.sub = 'plan'; ui.ritual = 'week'; }   // the weekly sync lives in Plan → Week
-    if (ui.sub === 'today') ui.sub = 'week';
+    if (['reset', 'sync', 'week', 'today'].includes(ui.sub)) { ui.sub = 'plan'; ui.ritual = 'week'; }   // Week now lives in Plan
+    if (!['plan', 'recap'].includes(ui.sub)) ui.sub = 'plan';
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === ui.tab));
     document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === ui.tab));
     document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === ui.sub));
-    $('sub-week').classList.toggle('hidden', ui.sub !== 'week');
     $('sub-plan').classList.toggle('hidden', ui.sub !== 'plan');
     $('sub-recap').classList.toggle('hidden', ui.sub !== 'recap');
     document.body.dataset.cap = capMode();
@@ -5023,19 +5025,19 @@ Rules:
     const H = y + 100;
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(`${d.monthName} ${d.year} recap: ${d.done} things done`)}"><rect width="${W}" height="${H}" fill="${BG}"/>${o.join('')}</svg>`;
   }
-  function renderRecap() {
-    const el = $('recapView'); if (!el) return;
+  function renderRecap(p = 'rc', target = 'recapView') {
+    const el = $(target); if (!el) return;
     const months = recapMonths(), ym = months.includes(ui.recapMonth) ? ui.recapMonth : curYm(), i = months.indexOf(ym), d = recapData(ym);
-    const keepMsg = $('recapMsg') ? $('recapMsg').textContent : '';
+    const keepMsg = $(p + 'Msg') ? $(p + 'Msg').textContent : '';
     el.innerHTML = `<div class="rc-nav"><button class="mini" data-act="recap-prev" ${i <= 0 ? 'disabled' : ''} aria-label="Previous month">‹</button>
         <span class="rc-month">${esc(d.monthName)} ${d.year}</span>
         <button class="mini" data-act="recap-next" ${i >= months.length - 1 ? 'disabled' : ''} aria-label="Next month">›</button></div>
-      <div class="rc-card" id="recapSvgWrap">${recapSvg(d)}</div>
+      <div class="rc-card" id="${p}SvgWrap">${recapSvg(d)}</div>
       <div class="rc-acts"><button class="btn-add" data-act="recap-save">Save or share image</button></div>
-      <p class="muted" id="recapMsg">${esc(keepMsg)}</p>`;
+      <p class="muted" id="${p}Msg">${esc(keepMsg)}</p>`;
   }
   async function recapImage() {
-    const msg = $('recapMsg'), svg = document.querySelector('#recapSvgWrap svg');
+    const p = ui.sub === 'recap' ? 'rc' : 'mo', msg = $(p + 'Msg'), svg = document.querySelector('#' + p + 'SvgWrap svg');
     if (!svg) return;
     try {
       const clone = svg.cloneNode(true), vb = svg.getAttribute('viewBox').split(' ').map(Number);
@@ -5529,7 +5531,7 @@ Rules:
     if (dow === 0 || (dow === 6 && n >= 15 * 60)) return 'week';
     return 'day';
   }
-  const ritualMode = () => (ui.ritual && ui.ritualAt && Date.now() - ui.ritualAt < 45 * 60000) ? ui.ritual : autoRitual();
+  const ritualMode = () => ui.ritual || autoRitual();
   function openRitual(mode) {
     ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = mode; ui.ritualAt = Date.now();
     if (mode === 'evening') ui.wrapAsk = Date.now();
@@ -5566,21 +5568,24 @@ Rules:
   }
   function renderRitual() {
     const wrap = $('sub-plan'); if (!wrap) return;
-    const mode = ritualMode();
-    document.querySelectorAll('.rit-mode').forEach(b => { const on = b.dataset.mode === mode; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    $('ritualDay').hidden = mode !== 'day'; $('ritualEve').hidden = mode !== 'evening'; $('ritualWeek').hidden = mode !== 'week';
+    const mode = ritualMode(), tab = mode === 'evening' ? 'day' : mode;   // wrap-up lives inside Today
+    document.querySelectorAll('.rit-mode').forEach(b => { const on = b.dataset.mode === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualMonth').hidden = tab !== 'month';
     if (!(ui.tab === 'schedule' && ui.sub === 'plan')) { $('ritualEve').innerHTML = ''; return; }   // keeps ids unique while hidden
-    if (mode === 'day') {
+    // Wrap-up opens itself in the evening, and the check-in opens when you pick Week; otherwise the user's own toggle sticks.
+    const ev = $('evePanel'); if (ev.dataset.m !== mode) { ev.dataset.m = mode; ev.open = mode === 'evening'; }
+    const ck = $('checkinPanel'); if (ck.dataset.m !== mode) { ck.dataset.m = mode; ck.open = mode === 'week'; }
+    if (tab === 'day') {
       if (ui.planDismissed && ui.planDismissed !== today()) ui.planDismissed = null;
       if (!plan && !ui.planDismissed) plan = buildPlan();
       $('ritualDayBrief').innerHTML = dayBriefHtml() + (!plan ? '<div class="card"><button class="btn-add full" data-act="plan-open" style="margin:0">Suggest a plan for the rest of today</button></div>' : '');
       renderPlan();
-    } else if (mode === 'evening') {
       $('ritualEve').innerHTML = eveningHtml();
       if (ui.hoScroll && $('handoffCard')) { ui.hoScroll = false; saveUi(); $('handoffCard').scrollIntoView({ block: 'start' }); }
-    } else {
+    } else if (tab === 'week') {
       renderWeekSync();
-      const sv = $('syncView'); if (sv) sv.insertAdjacentHTML('afterbegin', loadRefHtml());
+    } else {
+      renderRecap('mo', 'monthView');
     }
   }
 
@@ -5674,8 +5679,8 @@ Rules:
     [/^(plan( my)? evening|wrap ?-?up|evening|tonight)$/, 'Evening wrap-up', 'Plan → Evening', () => openRitual('evening')],
     [/^(plan( the)? week|sunday sync|weekly sync|week plan|sync)$/, 'Plan the week', 'Plan → Week', () => openRitual('week')],
     [/^(handoff|hand ?off|sign ?out)$/, 'Handoff to Omar', 'Plan → Evening', () => { ui.handoffOpen = true; ui.hoScroll = true; openRitual('evening'); }],
-    [/^(week|week view|this week|calendar)$/, 'Week view', 'Plan → Week view', () => { ui.tab = 'schedule'; ui.sub = 'week'; saveUi(); closeCmd(); render(); }],
-    [/^(board|kanban|today board)$/, 'Week', 'Plan → Week (cards and hours)', () => { ui.tab = 'schedule'; ui.sub = 'week'; saveUi(); closeCmd(); render(); }],
+    [/^(week|week view|this week|calendar)$/, 'Week view', 'Plan → Week', () => { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'week'; ui.ritualAt = Date.now(); saveUi(); closeCmd(); render(); }],
+    [/^(board|kanban|today board)$/, 'Week', 'Plan → Week', () => { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'week'; ui.ritualAt = Date.now(); saveUi(); closeCmd(); render(); }],
     [/^(recap|monthly recap)$/, 'Monthly recap', 'Plan → Recap', () => { ui.tab = 'schedule'; ui.sub = 'recap'; saveUi(); closeCmd(); render(); }],
     [/^(fridge( sheet)?|print( the)? week)$/, 'Fridge sheet', 'Printable week for the boys', () => { closeCmd(); fridgeSheet(); }],
     [/^(grocer(y|ies)|shopping( list)?|groceries list)$/, 'Grocery', 'Lists by store', () => { ui.tab = 'grocery'; saveUi(); closeCmd(); render(); }],
