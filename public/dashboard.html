@@ -2232,6 +2232,21 @@ Rules:
       <div class="t">${from}${doing}${esc(t.title)}</div>${withActs ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
   }
 
+  // Yousef's daycare menu (October 2026), from the monthly screenshot. Update by editing this block.
+  // "TBD" or a missing day shows nothing. placeholder: true labels the menu as not final.
+  const YOUSEF_MENU = { placeholder: true, days: {
+    '2026-10-20': { breakfast: 'Eggs w/Onions & Peppers, Oranges', lunch: 'Chicken Curry WG Pilaf, Apples' },
+    '2026-10-21': { breakfast: 'WG Zucchini Banana Bread, Watermelon', lunch: 'Spinach, Chicken & Feta WG Pasta, WG Bread & Pineapple' },
+    '2026-10-22': { breakfast: 'Apple French Toast Bake, Kiwi', lunch: 'Tofu, Black Bean & Bell Pepper WG Quesadilla, w/ Cantaloupe' },
+    '2026-10-23': { breakfast: 'Pumpkin Pancakes, Bananas', lunch: 'Beef Zucabagus Stir Fry, w/Brown Rice & Kiwi' },
+    '2026-10-26': { breakfast: 'Eggs w/Onions & Peppers, Oranges', lunch: 'Chicken Curry WG Pilaf, Apples' },
+    '2026-10-27': { breakfast: 'WG Zucchini Banana Bread, Watermelon', lunch: 'Spinach, Chicken & Feta WG Pasta, WG Bread & Pineapple' },
+    '2026-10-28': { breakfast: 'Apple French Toast Bake, Kiwi', lunch: 'Tofu, Black Bean & Bell Pepper WG Quesadilla, w/ Cantaloupe' },
+    '2026-10-29': { breakfast: 'Pumpkin Pancakes, Bananas', lunch: 'Beef Zucabagus Stir Fry, w/Brown Rice & Kiwi' },
+    '2026-10-30': { breakfast: 'Eggs w/Onions & Peppers, Oranges', lunch: 'Chicken Curry WG Pilaf, Apples' }
+  } };
+  const yousefLunch = d => { const m = YOUSEF_MENU.days[d]; return m && m.lunch && m.lunch !== 'TBD' ? m.lunch : ''; };
+
   function renderWeek() {
     const td = today(); const all = Object.values(S.tasks); const { carry } = views();
     const shortD = d => parseYmd(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -2270,6 +2285,7 @@ Rules:
       <div class="wkt-home">${loadRefHtml()}</div>
     </section>`;
 
+    if (YOUSEF_MENU.placeholder) status += " Yousef's daycare menu is a placeholder until the real one is added.";
     let html = `<div class="week-status muted" role="status">${esc(status)}<br>Omar's shifts come from his calendar. Tap a day's icon to set one by hand (moon nights, sun days, house off).</div>`;
 
     {
@@ -2277,7 +2293,9 @@ Rules:
         const sh = shiftsMap()[d] || '';
         const items = itemsFor(d, i), evs = eventsOn(d);
         const schHtml = schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${esc(x.icon)} ${esc(x.title)}</span></div>`).join('');
-        const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('');
+        const lunchY = yousefLunch(d);
+        const lunchHtml = lunchY ? `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>🍱 Yousef: ${esc(lunchY)}</span></div>` : '';
+        const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('') + lunchHtml;
         const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
         const open = items.filter(isOpen).length;
         const anyItems = items.filter(t => !timed(t));
