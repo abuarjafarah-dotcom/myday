@@ -24,7 +24,7 @@ export async function smartSave(owner: string, text: string, opts: { tz?: string
   const db = supabaseAdmin();
   if (!db) return { error: "Sync is not set up", status: 503 };
   const today = localToday(opts.tz || "America/Chicago");
-  const parsed = parseCapture(text, today);
+  const parsed = parseCapture(text, today, { lists: true });
   if (!parsed.length) return { error: "I couldn't find anything to add.", status: 400 };
 
   const now = Date.now();

@@ -326,11 +326,28 @@ function settleReminder(p: ReturnType<typeof parseOne>, today: string): void {
   p.remindOn = on;
 }
 
+// A list of actions in one sentence: "remind me to email X, send Y, buy Z" -> three items.
+// Only splits before a word that starts an action (a verb), so "buy milk, eggs and bread" stays one item.
+const ACTION_VERB = "(?:email|e-mail|send|buy|call|text|message|reply|respond|write|pay|schedule|book|order|pick|drop|bring|return|renew|cancel|confirm|sign|submit|print|mail|ask|tell|check|review|finish|fill|add|move|get|take|make|set|cook|clean|wash|fold|feed|walk|drive|fix|order|forward|remind|register|sort|plan|prep|pack|unpack|donate|apply|file|book|refill|grab|collect|deliver|vaccinate|schedule|fix)";
+const LIST_SPLIT = new RegExp(`\\s*,\\s*(?:and\\s+|then\\s+)?(?=${ACTION_VERB}\\b)|\\s+and\\s+(?:then\\s+)?(?=${ACTION_VERB}\\b)|\\s+then\\s+(?=${ACTION_VERB}\\b)`, "i");
+const LIST_PREFIX = /^\s*((?:please\s+)?(?:remind me to|reminder to|don'?t forget to|make sure (?:i|to)\s+|(?:i\s+)?(?:need|have|must|should|want|got)\s+to\s+|to\s+))/i;
+
+export function splitActionList(piece: string): string[] {
+  const m = LIST_PREFIX.exec(piece);
+  const prefix = m ? m[1] : "";
+  const rest = piece.slice(prefix.length);
+  const parts = rest.split(LIST_SPLIT).map((x) => x.trim()).filter((x) => x.replace(/[\s.,;!?]/g, "").length > 0);
+  if (parts.length < 2) return [piece];
+  return parts.map((x) => `${prefix}${x}`);
+}
+
 // opts.trips = false: no trip detection (Farah's errands like "going to Target" stay tasks).
 // opts.split = false: treat the text as one item (the caller already split it).
-export function parseCapture(text: string, today: string, opts: { trips?: boolean; split?: boolean } = {}): Parsed[] {
+// opts.lists = true: also split one sentence that holds several actions ("email X, send Y, buy Z").
+export function parseCapture(text: string, today: string, opts: { trips?: boolean; split?: boolean; lists?: boolean } = {}): Parsed[] {
   const items: ReturnType<typeof parseOne>[] = [];
-  const pieces = opts.split === false ? [text.trim()].filter(Boolean) : splitItems(text).slice(0, 20);
+  let pieces = opts.split === false ? [text.trim()].filter(Boolean) : splitItems(text).slice(0, 20);
+  if (opts.lists && opts.split !== false) pieces = pieces.flatMap(splitActionList).slice(0, 30);
   for (const piece of pieces) {
     const p = parseOne(piece, today, opts.trips !== false);
     // "Remind me a week before." on its own line belongs to the item before it.
