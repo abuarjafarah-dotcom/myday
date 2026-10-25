@@ -703,6 +703,7 @@ details.fold.sub > summary { min-height: 48px; }
 .as-acts a.mini { text-decoration: none; display: inline-flex; align-items: center; }
 .as-wx-t { flex: 1 1 220px; min-width: 0; color: var(--body); line-height: 1.45; }
 .as-top-row { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 0.9375rem; }
+.as-top-r { display: inline-flex; align-items: center; gap: 8px; }
 .as-top-row .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .as-top-row.done .t { text-decoration: line-through; color: var(--muted); }
 .sched-box { margin-top: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); display: flex; flex-direction: column; gap: 8px; }
@@ -735,8 +736,10 @@ details.fold.sub > summary { min-height: 48px; }
 .hh-row.done > .t { text-decoration: line-through; }
 .hh-row.done > .t .muted { text-decoration: none; }
 .hh-check { width: 20px; text-align: center; color: var(--muted); }
-.fam-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 10px 0 4px; font-size: 0.875rem; }
-.fam-line .fam-t { flex: 1 1 200px; min-width: 0; color: var(--text); }
+.fam-line { display: flex; align-items: center; justify-content: flex-start; gap: 8px 12px; flex-wrap: wrap; padding: 10px 0 4px; font-size: 0.875rem; }
+.fam-line .fam-t { flex: 0 1 auto; min-width: 0; color: var(--text); }
+.fam-line .as-acts { flex-wrap: nowrap; }
+.as-top-min { font-size: 0.8125rem; min-height: 44px; padding: 0 12px; }
 .ho-card .ho-status { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .ho-sec { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 0.8125rem; color: var(--muted); }
 .ho-sec textarea { width: 100%; font: inherit; font-size: 0.9375rem; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; resize: vertical; }
@@ -3972,8 +3975,9 @@ Rules:
     const top = weekTop();
     if (top.length && !isResting()) {
       const linked = top.map(x => x.id && S.tasks[x.id]).filter(Boolean), done = linked.filter(t => t.status === 'done').length;
-      parts.push(`<div class="card as-top"><h2><span>This week's focus</span><span class="muted">${linked.length ? `${done} of ${linked.length} done` : ''}</span></h2>
-        ${top.map(x => { const t = x.id && S.tasks[x.id]; return t ? `<div class="as-top-row ${t.status === 'done' ? 'done' : ''}"><input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${t.status === 'done' ? 'checked' : ''} aria-label="Done: ${esc(t.title)}">
+      const min = !!ui.focusMin;
+      parts.push(`<div class="card as-top"><h2><span>This week's focus</span><span class="as-top-r"><span class="muted">${linked.length ? `${done} of ${linked.length} done` : ''}</span><button class="mini ghost as-top-min" data-act="focus-min" aria-expanded="${min ? 'false' : 'true'}">${min ? 'Show' : 'Minimize'}</button></span></h2>
+        ${min ? '' : top.map(x => { const t = x.id && S.tasks[x.id]; return t ? `<div class="as-top-row ${t.status === 'done' ? 'done' : ''}"><input type="checkbox" data-act="toggle" data-id="${esc(t.id)}" ${t.status === 'done' ? 'checked' : ''} aria-label="Done: ${esc(t.title)}">
           <span class="t">${esc(t.title)}</span><span class="muted">${t.date ? esc(t.date === today() ? 'Today' : shortDay(t.date)) + (t.time ? ' · ' + esc(t.time) : '') : ''}${t.calEventId ? ' 📅' : ''}</span></div>`
           : `<div class="as-top-row"><span class="fc-dot" aria-hidden="true">•</span><span class="t">${esc(x.text)}</span></div>`; }).join('')}</div>`);
     }
@@ -4071,6 +4075,7 @@ Rules:
         case 'sched-remove': { const t = S.tasks[id]; if (t && t.calEventId) { const ev = t.calEventId; setTask(id, { calEventId: null, calLink: null }, { noCal: true }); unblockTask(ev); } sched = null; calNote = { kind: 'ok', text: 'Removed from your calendar. The task keeps its time here.' }; render(); break; }
         case 'outdoor': { const t = S.tasks[id]; if (t) setTask(id, { outdoor: el.checked }, { noCal: true }); break; }
         case 'cal-note-x': calNote = null; render(); break;
+        case 'focus-min': ui.focusMin = !ui.focusMin; saveUi(); render(); break;
         case 'wx-move': { const t = S.tasks[id]; if (t) moveTo(id, d); break; }
         case 'wx-keep': assistHidden()['wx-' + id + '-' + d] = 1; saveUi(); render(); break;
         case 'wx-indoor': setTask(id, { outdoor: false }, { noCal: true }); break;
