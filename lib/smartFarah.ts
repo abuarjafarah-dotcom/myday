@@ -93,10 +93,14 @@ function isModifier(piece: string, today: string): boolean {
   return /^(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?)?$|^(?:noon|tonight|this (?:morning|afternoon|evening))$/i.test(piece);
 }
 
+// "and" only splits a line when a new action follows it ("pay the bill and call the bank"), so "pick up Talal and Yousef" stays one task.
+const ACTION_AFTER_AND = /\s+and\s+(?=(?:please\s+)?(?:buy|get|grab|pick|drop|call|email|text|message|send|reply|schedule|book|pay|renew|cancel|order|make|bring|sign|fill|submit|register|return|check|find|look|finish|write|review|print|confirm|move|reschedule|plan|cook|clean|wash|fix|mail|sort|file|donate|follow|ask|take|put|set|add|go|do|prep|pack|apply|ship|vaccinate)\b)/i;
+
 // "Costco we need milk, yogurt pouches, eggs" -> one sentence, several pieces that share the store.
 function splitPieces(sentence: string, today: string): string[] {
   const raw = sentence
     .split(/,(?!\s*20\d{2}\b)|•|\s+-\s+/)
+    .flatMap((s) => s.split(ACTION_AFTER_AND))
     .map((s) => s.trim().replace(/^[-*\d.)\s]+(?=\D)/, "").trim())
     .filter((s) => s.replace(/[\s.,;!?]/g, "").length > 1);
   const out: string[] = [];
