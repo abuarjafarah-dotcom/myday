@@ -1834,7 +1834,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
           ${!done && t.status !== 'doing' ? `<button class="toggle-line" data-act="now-start" data-id="${id}">Start timer</button>` : ''}
           ${t.status === 'doing' ? `<button class="toggle-line" data-act="task-todo" data-id="${id}">Move back to To do</button>` : ''}
           ${!done ? `<button class="toggle-line" data-act="sched-open" data-id="${id}">${t.calEventId ? '📅 On your calendar · Move' : '📅 Schedule it'}</button>` : ''}
-          ${!done ? `<button class="toggle-line" data-act="drop" data-id="${id}">Let this go</button>` : ''}
+          ${!done ? `<button class="toggle-line" data-act="task-delete" data-id="${id}" aria-label="Delete ${esc(t.title)}">Delete task</button>` : ''}
           ${opts.board ? `<span class="ti-reorder">${dragHandle(t, opts.board)}<span>Drag to reorder</span></span>` : ''}
         </div>
         ${!done ? `<div class="ti-tgls">
@@ -1929,7 +1929,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     else if (st.length === 1) out.push(`Shopping: ${byStore[st[0]]} item${byStore[st[0]] > 1 ? 's' : ''} waiting at ${esc(st[0])}.`);
     const errands = todayOpen.filter(t => t.category === 'errands');
     if (errands.length >= 2) out.push(`${errands.length} errands today could go in one outing.`);
-    const mailAsks = (live.mail || []).filter(m => m.action && !mailTask(m)).length;
+    const mailAsks = (live.mail || []).filter(m => m.action && !mailGone(m)).length;
     if (mailAsks) out.push(`${mailAsks} unread email${mailAsks === 1 ? ' asks' : 's ask'} you to do something. <button class="mini" data-act="open-mail">Review</button>`);
     if (!todayOpen.length && anytime.length) out.push(`Nothing is scheduled, and ${anytime.length} anytime ${anytime.length === 1 ? 'task is' : 'tasks are'} ready if you get a window.`);
     setHeads(out);
@@ -2914,6 +2914,9 @@ Rules:
 
   // ---------- inbox -> task ----------
   const mailTask = m => Object.values(S.tasks).find(t => t.mailId === m.id && t.status !== 'dropped');
+  // An email is "handled" once it has a task (even a deleted one) or was dismissed. Deleted and dismissed emails never come back.
+  const mailDismissed = () => (meta().mailDismissed || []);
+  const mailGone = m => mailDismissed().includes(m.id) || Object.values(S.tasks).some(t => t.mailId === m.id);
   const mailUrl = m => `https://mail.google.com/mail/u/0/#inbox/${encodeURIComponent(m.threadId || m.id)}`;
   const mailWhen = ms => {
     if (!ms) return '';
@@ -2923,10 +2926,10 @@ Rules:
   };
   // One email: sender and time, subject, one-line summary. "Add task" shows only when the email asks for something.
   function mailRowHtml(m) {
-    const a = m.action, done = mailTask(m);
-    const sug = a ? `<div class="mail-sug"><span class="mail-sug-t">${esc(a.title)}${a.due ? ` · due ${esc(fmtShortDate(a.due))}` : ''}</span>${done
+    const a = m.action, done = mailTask(m), gone = !done && mailGone(m);
+    const sug = a && !gone ? `<div class="mail-sug"><span class="mail-sug-t">${esc(a.title)}${a.due ? ` · due ${esc(fmtShortDate(a.due))}` : ''}</span>${done
       ? `<button class="mini made" data-act="tab" data-tab="home" aria-label="Already a task">✓ Added</button>`
-      : `<button class="mini" data-act="mail-task" data-id="${esc(m.id)}">+ Add task</button>`}</div>` : '';
+      : `<button class="mini" data-act="mail-task" data-id="${esc(m.id)}">+ Add task</button><button class="mini ghost" data-act="mail-dismiss" data-id="${esc(m.id)}" aria-label="Dismiss this email's request">Dismiss</button>`}</div>` : '';
     return `<div class="mail-card ${m.unread ? 'unread' : ''}">
       <div class="mail-top"><span class="from">${esc(m.from || 'Unknown sender')}</span><span class="when">${esc(mailWhen(m.date))}</span></div>
       <div class="subj">${esc(m.subject)}</div>
@@ -3253,6 +3256,18 @@ Rules:
         case 'to-today': moveTo(id, today()); break;
         case 'to-tomorrow': moveTo(id, addDays(today(), 1)); break;
         case 'drop': setTask(id, { status: 'dropped', droppedAt: Date.now() }); break;
+        // Delete: hides the task everywhere, removes its calendar block, and keeps a tombstone (status dropped)
+        // so email, school and life-admin scanners never re-add it. Undo restores it exactly.
+        case 'task-delete': {
+          const t = S.tasks[id]; if (!t) break;
+          const undo = snapTasks([id]); infoOpen.delete(id);
+          setTask(id, { status: 'dropped', droppedAt: Date.now(), deleted: true });
+          toast(`Deleted “${t.title}”.`, undo); break;
+        }
+        case 'mail-dismiss': {
+          const list = mailDismissed(); if (!list.includes(el.dataset.id)) setMeta({ mailDismissed: list.concat(el.dataset.id).slice(-300) });
+          break;
+        }
         case 'carry-all-today': { const td = today(); views().carry.forEach(t => stage('tasks', Object.assign({}, t, { date: td, originalDate: t.originalDate || t.date }))); commit(); break; }
         case 'carry-drop-all': {
           if (confirmKey !== 'carry-drop') { armConfirm('carry-drop'); return; }
@@ -3351,7 +3366,7 @@ Rules:
     try {
       const seen = (ui.mailSeen || []).slice(-150).join(',');
       const d = await getJson(`/api/gmail?mode=tasks&today=${today()}&seen=${encodeURIComponent(seen)}`);
-      const have = new Set(Object.values(S.tasks).map(t => t.mailId).filter(Boolean));
+      const have = new Set(Object.values(S.tasks).map(t => t.mailId).concat(mailDismissed()).filter(Boolean));
       const raw = { tasks: (d.suggestions || []).filter(x => x && !have.has(x.mailId)).map(x => Object.assign({}, x, { date: planDate(x.due) })) };
       review = Object.assign(normalizeReview(raw, null, d.how === 'claude' ? 'claude' : 'rules'), { source: 'email', scanned: d.scanned || 0, scannedIds: d.scannedIds || [] });
       if (!review.tasks.length) { ui.mailSeen = (ui.mailSeen || []).concat(review.scannedIds).slice(-300); saveUi(); }
@@ -5498,7 +5513,7 @@ Rules:
     }
 
     // Emails that ask for something.
-    (live.mail || []).filter(m => m.action && !mailTask(m)).slice(0, 2).forEach(m => {
+    (live.mail || []).filter(m => m.action && !mailGone(m)).slice(0, 2).forEach(m => {
       out.push({ key: 'mail-' + m.id, w: 72, icon: '✉️', title: m.action.title, sub: `${m.from || 'Email'}${m.action.due ? ` · due ${fmtShortDate(m.action.due)}` : ''}`,
         acts: [
           { label: 'Add task', primary: true, run: () => { makeMailTask(m.id); toast('Added to your list.'); } },
