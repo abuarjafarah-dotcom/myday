@@ -440,7 +440,7 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 /* HOME layout: one column on phones (reading order set with order), two columns on wide screens */
 #home.active { display: flex; flex-direction: column; }
 .home-main, .home-side { display: contents; }
-.h-smart { order: 0; } .h-family { order: 1; } .h-now { order: 1; } .h-plan { order: 2; } .h-assist { order: 2; } .h-dump { order: 3; } .h-review { order: 3; } .h-waiting { order: 3; } .h-reset { order: 4; } .h-today { order: 5; } .h-carry { order: 6; } .h-time { order: 9; } .h-more { order: 10; }
+.h-smart { order: 0; } .h-family { order: 1; } .h-now { order: 3; } .h-plan { order: 2; } .h-assist { order: 2; } .h-dump { order: 3; } .h-review { order: 3; } .h-waiting { order: 3; } .h-reset { order: 4; } .h-today { order: 5; } .h-carry { order: 6; } .h-time { order: 9; } .h-more { order: 10; }
 @media (min-width: 1000px) {
   body { max-width: 1120px; padding-left: 32px; padding-right: 32px; }
   #home.active { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 48px; align-items: start; }
