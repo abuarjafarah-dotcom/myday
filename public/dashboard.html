@@ -736,9 +736,10 @@ details.fold.sub > summary { min-height: 48px; }
 .hh-row.done > .t { text-decoration: line-through; }
 .hh-row.done > .t .muted { text-decoration: none; }
 .hh-check { width: 20px; text-align: center; color: var(--muted); }
-.fam-line { display: flex; align-items: center; justify-content: flex-start; gap: 8px 12px; flex-wrap: wrap; padding: 10px 0 4px; font-size: 0.875rem; }
-.fam-line .fam-t { flex: 0 1 auto; min-width: 0; color: var(--text); }
-.fam-line .as-acts { flex-wrap: nowrap; }
+.fam-line { display: flex; align-items: center; justify-content: flex-start; gap: 6px 12px; flex-wrap: nowrap; padding: 10px 0 4px; font-size: 0.875rem; }
+.fam-line .fam-t { flex: 0 1 auto; min-width: 0; color: var(--text); overflow-wrap: anywhere; }
+.fam-line .as-acts { flex: 0 0 auto; flex-wrap: nowrap; }
+.fam-line .as-acts .mini { white-space: nowrap; }
 .as-top-min { font-size: 0.8125rem; min-height: 44px; padding: 0 12px; }
 .ho-card .ho-status { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .ho-sec { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; font-size: 0.8125rem; color: var(--muted); }
