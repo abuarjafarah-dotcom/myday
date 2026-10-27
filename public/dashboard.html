@@ -832,7 +832,7 @@ body.cmd-open { overflow: hidden; }
 .h-smart .dec-card { margin-top: 16px; }
 
 /* Today timeline */
-.h-today { order: 2; } .h-dump { display: none; } .h-carry { display: none; } .h-oldtoday { display: none; }
+.h-today { order: 2; } .ab-add > summary { cursor: pointer; font-weight: 600; font-size: 0.9375rem; list-style: none; min-height: 44px; display: flex; align-items: center; } .ab-add > summary::-webkit-details-marker { display: none; } .ab-body { padding-top: 6px; } .ab-add input[type="date"], .ab-add select { min-height: 44px; border-radius: 10px; }  .ab-hint { font-size: 0.8125rem; margin: 8px 0 0; } .h-dump { display: none; } .h-carry { display: none; } .h-oldtoday { display: none; }
 .tl-card { border-radius: 14px; }
 .tl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .tl-chip { font-size: 0.8125rem; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
@@ -1023,6 +1023,26 @@ input, select, textarea { font-size: max(16px, 1rem); }
   <div class="home-main">
     <div id="familyBox" class="h-family"></div>
     <div id="timelineBox" class="h-today"></div>
+    <details class="card h-today ab-add">
+      <summary><span>+ Add a timed block</span></summary>
+      <div class="ab-body">
+        <div class="add-row"><input type="text" id="abTitle" placeholder="Meeting or block, e.g. Team sync" aria-label="Block title"></div>
+        <div class="add-row">
+          <input type="date" id="abDate" aria-label="Day">
+          <input type="time" id="abTime" aria-label="Start time">
+          <select id="abMins" aria-label="Length">
+            <option value="30">30 min</option><option value="60" selected>1 hr</option><option value="90">1 hr 30 min</option>
+            <option value="120">2 hr</option><option value="180">3 hr</option><option value="240">4 hr</option>
+          </select>
+          <select id="abCat" aria-label="Category">
+            <option value="work" selected>Work</option><option value="kids">Kids</option><option value="home">Home</option>
+            <option value="errands">Errands</option><option value="self">Self</option><option value="activity">Activity</option><option value="omar">Omar</option>
+          </select>
+          <button class="btn-add" data-act="ab-add">Add block</button>
+        </div>
+        <p class="muted ab-hint">Blocks show on the timeline in their category color. Use "Schedule it" on a block to also put it on Google Calendar.</p>
+      </div>
+    </details>
     <div id="assistBox" class="h-assist"></div>
     <div id="nowBox" class="h-now"></div>
     <div class="card dump h-dump">
@@ -3425,6 +3445,17 @@ Rules:
       }
     });
   }
+  // Timed block from the timeline panel: a task with a start time and length, shown in its category color.
+  function addBlock() {
+    const title = $('abTitle').value.trim(); if (!title) { $('abTitle').focus(); return; }
+    const time = fmt24($('abTime').value); if (!time) { $('abTime').focus(); return; }
+    const date = $('abDate').value || today();
+    const t = makeTask({ title, category: $('abCat').value, date, time, source: 'block' });
+    t.duration = parseInt($('abMins').value, 10) || 60;
+    $('abTitle').value = ''; $('abTime').value = '';
+    put('tasks', t);
+    toast(`${title} added at ${time}.`);
+  }
   function addTaskFromForm() {
     const title = $('ntTitle').value.trim(); if (!title) { $('ntTitle').focus(); return; }
     const dv = $('ntDate').value;
@@ -5380,6 +5411,7 @@ Rules:
         case 'cap-menu': ui.capOpen = !ui.capOpen; saveUi(); renderNow(); break;
         case 'cap-set': ui.capOpen = false; saveUi(); renderNow(); break;
         case 'dress-pencil': editDress = !editDress; render(); break;
+        case 'ab-add': addBlock(); break;
       }
     });
     document.addEventListener('input', e => { if (e.target && e.target.id === 'dumpText') renderHint(); });
