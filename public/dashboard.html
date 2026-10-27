@@ -2188,6 +2188,7 @@ Rules:
       if (t.due) nt.due = t.due;
       if (t.priority) nt.priority = t.priority;
       stage('tasks', nt);
+      autoBlock(nt.id);
     });
     review.grocery.filter(g => g.include && g.item).forEach(g => {
       stage('grocery', { id: newId('g'), item: g.item, store: g.store, checked: false, archived: false, quantity: null, notes: '', createdAt: Date.now() });
@@ -3459,7 +3460,7 @@ Rules:
   }
   // Every timed task goes straight onto Google Calendar as a block with a 10-minute alert, so nothing waits for a manual "Schedule it".
   function autoBlock(id) {
-    const t = S.tasks[id]; if (!t || !t.date || !t.time || t.calEventId) return;
+    const t = S.tasks[id]; if (!t || !t.date || t.calEventId) return;
     blockTask(id).then(ok => { if (ok !== false) loadCal(); }).catch(() => {});
   }
   function addTaskFromForm() {
@@ -3946,10 +3947,12 @@ Rules:
   }
   // Create or move the block for a task that has a date and time. Returns true on success.
   async function blockTask(id, extra = {}) {
-    const t = S.tasks[id]; if (!t || !t.date || !t.time) return false;
-    const start = timeMin(t.time); if (start >= 9000) return false;
+    const t = S.tasks[id]; if (!t || !t.date) return false;
+    const timed = !!t.time;
+    const start = timed ? timeMin(t.time) : 8 * 60;   // no time: a 15-minute reminder at 8:00 AM that day
+    if (start >= 9000) return false;
     const inviteOmar = extra.inviteOmar ?? !!t.calOmar, emails = extra.emails ?? (t.calGuests || []);
-    const res = await calFetch('POST', '/api/calendar/block', { taskId: id, title: t.title, date: t.date, start, mins: taskMinutes(t), tz: TZ, eventId: t.calEventId || undefined, inviteOmar, emails });
+    const res = await calFetch('POST', '/api/calendar/block', { taskId: id, title: timed ? t.title : `Reminder: ${t.title}`, date: t.date, start, mins: timed ? taskMinutes(t) : 15, tz: TZ, eventId: t.calEventId || undefined, inviteOmar, emails });
     if (!res.ok) { calFail(res); render(); return false; }
     const cur = S.tasks[id]; if (!cur) return false;
     setTask(id, { calEventId: res.data.id, calLink: res.data.link || null, calOmar: !!inviteOmar, calGuests: emails }, { noCal: true });
@@ -3963,7 +3966,7 @@ Rules:
   }
   // Keeps a task's block in step when it is moved, renamed, unscheduled or let go. Called from setTask.
   function calFollow(old, n) {
-    if (n.status === 'dropped' || !n.date || !n.time) {
+    if (n.status === 'dropped' || !n.date) {
       const ev = old.calEventId; n.calEventId = null; n.calLink = null;
       setTimeout(() => unblockTask(ev), 0); return;
     }
