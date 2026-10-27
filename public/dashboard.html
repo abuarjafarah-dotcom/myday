@@ -2236,20 +2236,97 @@ Rules:
       <div class="t">${from}${doing}${esc(t.title)}</div>${withActs ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
   }
 
-  // Yousef's daycare menu (October 2026), from the monthly screenshot. Update by editing this block.
-  // "TBD" or a missing day shows nothing. placeholder: true labels the menu as not final.
-  const YOUSEF_MENU = { placeholder: true, days: {
-    '2026-10-20': { breakfast: 'Eggs w/Onions & Peppers, Oranges', lunch: 'Chicken Curry WG Pilaf, Apples' },
-    '2026-10-21': { breakfast: 'WG Zucchini Banana Bread, Watermelon', lunch: 'Spinach, Chicken & Feta WG Pasta, WG Bread & Pineapple' },
-    '2026-10-22': { breakfast: 'Apple French Toast Bake, Kiwi', lunch: 'Tofu, Black Bean & Bell Pepper WG Quesadilla, w/ Cantaloupe' },
-    '2026-10-23': { breakfast: 'Pumpkin Pancakes, Bananas', lunch: 'Beef Zucabagus Stir Fry, w/Brown Rice & Kiwi' },
-    '2026-10-26': { breakfast: 'Eggs w/Onions & Peppers, Oranges', lunch: 'Chicken Curry WG Pilaf, Apples' },
-    '2026-10-27': { breakfast: 'WG Zucchini Banana Bread, Watermelon', lunch: 'Spinach, Chicken & Feta WG Pasta, WG Bread & Pineapple' },
-    '2026-10-28': { breakfast: 'Apple French Toast Bake, Kiwi', lunch: 'Tofu, Black Bean & Bell Pepper WG Quesadilla, w/ Cantaloupe' },
-    '2026-10-29': { breakfast: 'Pumpkin Pancakes, Bananas', lunch: 'Beef Zucabagus Stir Fry, w/Brown Rice & Kiwi' },
-    '2026-10-30': { breakfast: 'Eggs w/Onions & Peppers, Oranges', lunch: 'Chicken Curry WG Pilaf, Apples' }
-  } };
-  const yousefLunch = d => { const m = YOUSEF_MENU.days[d]; return m && m.lunch && m.lunch !== 'TBD' ? m.lunch : ''; };
+  // Yousef's daycare menu (Tierra Encantada, Oct to Dec 2026), from the monthly menus. Edit a week here.
+  // Each day is [breakfast, lunch, snack, late snack]; a day that is closed is { closed: 'reason' }.
+  // Days not listed show no menu.
+  const YOUSEF_WEEKS = [
+    { mon: '2026-10-26', puree: 'Spinach Avocado Oat Puree & Black Bean Sweet Potato Puree', days: [
+      ['WG Cereal · Bananas', 'Shrimp Fresca WG Pasta · Watermelon', 'Celery w/Hummus', 'Cheddar Cubes & Kiwi'],
+      ['Eggs w/Onions & Peppers · Oranges', 'Tofu Sofritas · WG Brown Rice & Honeydew', 'Graham Bunnies & Yogurt', 'Whole Grain Crackers & Bananas'],
+      ['WG Zucchini Banana Bread · Watermelon', 'White Chicken Chili · Corn Tortilla & Pineapple', 'Cottage Cheese & Pita', 'Rice Roller & Yogurt'],
+      ['Apple French Toast Bake · Kiwi', 'Cheesy Cauliflower Rice w/ Ham & Corn · WG Bread & Apples', 'Whole Grain Crackers & Bananas', 'String Cheese & Apples'],
+      ['Pumpkin Pancakes · Bananas', 'Avocado Beef & Black Bean Taco Salad · Corn Tortilla & Cantaloupe', 'Cheddar Cubes & Oranges', 'Applesauce & Pita']
+    ] },
+    { mon: '2026-11-02', puree: 'Zucchini Tofu Sweet Potato Puree & Mango Banana Oat Puree', days: [
+      ['WG Buttered Toast & Bananas', 'Bolognese WG Pasta · Apples', 'String Cheese & Cucumbers', 'Rice Roller & Yogurt'],
+      ['WG Banana Oat Pancakes w/Apples', 'Ham & Bean Soup · WG Bread & Honeydew', 'Cheddar Bunnies & Oranges', 'Applesauce & Pita'],
+      ['Carrot Cake Baked Oatmeal Cups · Oranges', 'Turkey Cheddar WG Quesadilla w/Red Peppers, Onions, & Tomatoes · Watermelon', 'Celery w/Hummus', 'Mandarin Oranges & Graham Bunnies'],
+      ['WG Breakfast Quesadilla · Cantaloupe', 'Mushroom, Spinach, & Tofu Cheesy Pasta · Pineapple', 'Yogurt & Apples', 'Mini Cheese Sandwich Crackers'],
+      ['Pumpkin Pie French Toast · Kiwi', 'Moroccan Chickpea Stew · Watermelon', 'Rice Roller & Yogurt', 'Whole Grain Crackers & Bananas']
+    ] },
+    { mon: '2026-11-09', puree: 'Butternut Squash Lentil Puree & Carrot Apple Quinoa Puree', days: [
+      ['WG Cinnamon Toast · Apples', 'Tofu Ginger Veggie Stir Fry · Brown Rice & Pineapple', 'Celery w/Hummus', 'Cheddar Cubes & Kiwi'],
+      ['Green Smoothie Muffins · Oranges', 'Ghanaian Jollof WG Rice w/Black Beans & Chicken · Watermelon', 'Graham Bunnies & Yogurt', 'Whole Grain Crackers & Bananas'],
+      ['French Toast w/Caramelized Bananas', 'Ground Beef, Sweet Potatoes & Corn Skillet · Brown Rice & Kiwi', 'Cottage Cheese & Pita', 'Rice Roller & Yogurt'],
+      ['Scrambled Eggs w/Spinach & Tomatoes · WG Bread', 'Chicken Ratatouille · WG Bread & Cantaloupe', 'Whole Grain Crackers & Bananas', 'String Cheese & Apples'],
+      ['Apple Cinnamon Yogurt Parfait', 'Quinoa Skillet w/ Avocado & Black Beans · Honeydew', 'Cheddar Cubes & Oranges', 'Applesauce & Pita']
+    ] },
+    { mon: '2026-11-16', puree: 'Spinach Avocado Oat Puree & Black Bean Sweet Potato Puree', days: [
+      ['WG Cereal · Bananas', 'Turkey Taco Salad with black beans and corn', 'String Cheese & Cucumbers', 'Rice Roller & Yogurt'],
+      ['Eggs w/Onions & Peppers · Oranges', 'Chicken Curry WG Pilaf · Apples', 'Cheddar Bunnies & Oranges', 'Applesauce & Pita'],
+      ['WG Zucchini Banana Bread · Watermelon', 'Spinach, Chicken & Feta WG Pasta · WG Bread & Pineapple', 'Celery w/Hummus', 'Mandarin Oranges & Graham Bunnies'],
+      ['Apple French Toast Bake · Kiwi', 'Tofu, Black Bean & Bell Pepper WG Quesadilla · w/ Cantaloupe', 'Yogurt & Apples', 'Mini Cheese Sandwich Crackers'],
+      ['Pumpkin Pancakes · Bananas', 'Beef Zucabagus Stir Fry · w/Brown Rice & Kiwi', 'Rice Roller & Yogurt', 'Whole Grain Crackers & Bananas']
+    ] },
+    { mon: '2026-11-23', puree: 'Zucchini Tofu Sweet Potato Puree & Mango Banana Oat Puree', days: [
+      ['WG Buttered Toast & Bananas', 'WG Pasta w/Creamy Hidden Veggie Sauce · Pineapple', 'Celery w/Hummus', 'Cheddar Cubes & Kiwi'],
+      ['WG Banana Oat Pancakes w/Apples', 'Chicken Picadillo · Corn Tortilla & Oranges', 'Graham Bunnies & Yogurt', 'Whole Grain Crackers & Bananas'],
+      ['Carrot Cake Baked Oatmeal Cups · Oranges', 'Black Bean, Squash & Sweet Potato Stew · WG Bread', 'Cottage Cheese & Pita', 'Rice Roller & Yogurt'],
+      { closed: 'Thanksgiving Day' },
+      ['Pumpkin Pie French Toast · Kiwi', 'Cheesy Black Bean Veggie WG Wrap · Bananas', 'Cheddar Cubes & Oranges', 'Applesauce & Pita']
+    ] },
+    { mon: '2026-11-30', puree: 'Butternut Squash Lentil Puree & Carrot Apple Quinoa Puree', days: [
+      ['WG Cinnamon Toast · Apples', 'Sopa de Fideo · Watermelon', 'String Cheese & Cucumbers', 'Rice Roller & Yogurt'],
+      ['Green Smoothie Muffins · Oranges', 'Turkey Veggie WG Rice · Cantaloupe', 'Cheddar Bunnies & Oranges', 'Applesauce & Pita'],
+      ['French Toast w/Caramelized Bananas', 'Louisiana Style Red Beans · WG Brown Rice & Apples', 'Celery w/Hummus', 'Mandarin Oranges & Graham Bunnies'],
+      ['Scrambled Eggs w/Spinach & Tomatoes · WG Bread', 'Chicken, Bean, Asparagus WG Quesadilla · Honeydew', 'Yogurt & Apples', 'Mini Cheese Sandwich Crackers'],
+      ['Apple Cinnamon Yogurt Parfait', 'Beef Picadillo · Pineapple & WG Wheat Tortilla', 'Rice Roller & Yogurt', 'Whole Grain Crackers & Bananas']
+    ] },
+    { mon: '2026-12-07', puree: 'Spinach Avocado Oat Puree & Black Bean Sweet Potato Puree', days: [
+      ['WG Cereal · Bananas', 'Shrimp Fresca WG Pasta · Watermelon', 'Celery w/Hummus', 'Cheddar Cubes & Kiwi'],
+      ['Eggs w/Onions & Peppers · Oranges', 'Tofu Sofritas · WG Brown Rice & Honeydew', 'Graham Bunnies & Yogurt', 'Whole Grain Crackers & Bananas'],
+      ['WG Zucchini Banana Bread · Watermelon', 'White Chicken Chili · Corn Tortilla & Pineapple', 'Cottage Cheese & Pita', 'Rice Roller & Yogurt'],
+      ['Apple French Toast Bake · Kiwi', 'Cheesy Cauliflower Rice w/ Ham & Corn · WG Bread & Apples', 'Whole Grain Crackers & Bananas', 'String Cheese & Apples'],
+      ['Pumpkin Pancakes · Bananas', 'Avocado Beef & Black Bean Taco Salad · Corn Tortilla & Cantaloupe', 'Cheddar Cubes & Oranges', 'Applesauce & Pita']
+    ] },
+    { mon: '2026-12-14', puree: 'Zucchini Tofu Sweet Potato Puree & Mango Banana Oat Puree', days: [
+      ['WG Buttered Toast & Bananas', 'Bolognese WG Pasta · Apples', 'String Cheese & Cucumbers', 'Rice Roller & Yogurt'],
+      ['WG Banana Oat Pancakes w/Apples', 'Ham & Bean Soup · WG Bread & Honeydew', 'Cheddar Bunnies & Oranges', 'Applesauce & Pita'],
+      ['Carrot Cake Baked Oatmeal Cups · Oranges', 'Turkey Cheddar WG Quesadilla w/Red Peppers, Onions & Tomatoes · Watermelon', 'Celery w/Hummus', 'Mandarin Oranges & Graham Bunnies'],
+      ['WG Breakfast Quesadilla · Cantaloupe', 'Mushroom, Spinach & Tofu Cheesy Pasta · Pineapple', 'Yogurt & Apples', 'Mini Cheese Sandwich Crackers'],
+      ['Pumpkin Pie French Toast · Kiwi', 'Moroccan Chickpea Stew · Watermelon', 'Rice Roller & Yogurt', 'Whole Grain Crackers & Bananas']
+    ] },
+    { mon: '2026-12-21', puree: 'Butternut Squash Lentil Puree & Carrot Apple Quinoa Puree', days: [
+      ['WG Cinnamon Toast · Apples', 'Tofu Ginger Veggie Stir Fry · Brown Rice & Pineapple', 'Celery w/Hummus', 'Cheddar Cubes & Kiwi'],
+      ['Green Smoothie Muffins · Oranges', 'Ghanaian Jollof WG Rice w/Black Beans & Chicken · Watermelon', 'Graham Bunnies & Yogurt', 'Whole Grain Crackers & Bananas'],
+      ['French Toast w/Caramelized Bananas', 'Ground Beef, Sweet Potatoes & Corn Skillet · Brown Rice & Kiwi', 'Cottage Cheese & Pita', 'Rice Roller & Yogurt'],
+      { closed: 'Christmas Eve · Nochebuena' },
+      { closed: 'Christmas Day · Navidad' }
+    ] },
+    { mon: '2026-12-28', puree: 'Spinach Avocado Oat Puree & Black Bean Sweet Potato Puree', days: [
+      ['WG Cereal · Bananas', 'Turkey Taco Salad with black beans and corn', 'String Cheese & Cucumbers', 'Rice Roller & Yogurt'],
+      { closed: 'Winter Holiday & Revitalization Week' },
+      { closed: 'Winter Holiday & Revitalization Week' },
+      { closed: 'Winter Holiday & Revitalization Week' },
+      { closed: 'Winter Holiday & Revitalization Week' }
+    ] }
+  ];
+  // Built once from the weeks above, keyed by date (YYYY-MM-DD).
+  const YOUSEF_MENU = { placeholder: false, days: {} };
+  (function buildYousefMenu() {
+    const iso = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    YOUSEF_WEEKS.forEach(w => {
+      const base = new Date(w.mon + 'T12:00:00');
+      w.days.forEach((row, i) => {
+        const dt = new Date(base); dt.setDate(base.getDate() + i);
+        YOUSEF_MENU.days[iso(dt)] = Array.isArray(row)
+          ? { breakfast: row[0], lunch: row[1], snack: row[2], late: row[3], puree: w.puree }
+          : { closed: row.closed };
+      });
+    });
+  })();
+  const yousefOn = d => YOUSEF_MENU.days[d] || null;
+  const yousefLunch = d => { const m = yousefOn(d); return m && m.lunch ? m.lunch : ''; };
 
   function renderWeek() {
     const td = today(); const all = Object.values(S.tasks); const { carry } = views();
@@ -2297,8 +2374,10 @@ Rules:
         const sh = shiftsMap()[d] || '';
         const items = itemsFor(d, i), evs = eventsOn(d);
         const schHtml = schoolOn(d).filter(x => x.kind === 'noschool').map(x => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${esc(x.icon)} ${esc(x.title)}</span></div>`).join('');
-        const lunchY = yousefLunch(d);
-        const lunchHtml = lunchY ? `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>🍱 Yousef: ${esc(lunchY)}</span></div>` : '';
+        const ym = yousefOn(d);
+        const menuLine = (icon, txt) => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${icon} ${esc(txt)}</span></div>`;
+        const lunchHtml = !ym ? '' : ym.closed ? menuLine('🚫', `Center closed · ${ym.closed}`)
+          : menuLine('🥣', `Yousef breakfast: ${ym.breakfast}`) + menuLine('🍱', `Yousef lunch: ${ym.lunch}`) + menuLine('🍎', `Yousef snack: ${ym.snack} · late: ${ym.late}`);
         const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('') + lunchHtml;
         const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
         const open = items.filter(isOpen).length;
@@ -5381,6 +5460,8 @@ Rules:
     if (noSchoolOn(td) && !allDay.some(a => /no school|break|closed/i.test(a))) allDay.unshift('🏠 No school');
     const w = wxDay(td);
     if (w && wxBad(w)) allDay.push(`${wxIcon(w)} ${esc(wxWhy(w))}`);
+    const ymToday = yousefOn(td);
+    if (ymToday) allDay.push(ymToday.closed ? `🚫 Yousef's center closed · ${esc(ymToday.closed)}` : `🍱 Yousef's lunch: ${esc(ymToday.lunch)}`);
     chips.forEach(c => allDay.push(esc(c)));
     // Earlier items fold away; what's next stays in view.
     const earlier = items.filter(i => i.end <= nowMin && i.start < nowMin && !(i.kind === 'task' && S.tasks[i.id] && isOpen(S.tasks[i.id])));
