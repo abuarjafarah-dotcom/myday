@@ -13,10 +13,10 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
-  --accent: #262624; --on-accent: #F8F7F4; --now: #262624; --cal: #8C8579;
+  --accent: #5D6635; --on-accent: #F7F4E4; --now: #2A1F2B; --cal: #8C8579;
   --kids: #C4714A; --work: #B8893A; --home: #6E86A0; --errands: #8C6E9E; --self: #B47A86; --activity: #5E9690; --omar: #A68166;
-  --primary: #262624; --text: #262624; --body: #262624; --muted: #6B6A66; --faint: #74726D;
-  --border: #E3E1DC; --hair: #EEECE7; --bg: #F8F7F4; --card: #FFFFFF; --soft: #F0EEE9; --chip: #EEECE7;
+  --primary: #2A1F2B; --text: #2A1F2B; --body: #2A1F2B; --muted: #6B5B5F; --faint: #7D706B;
+  --border: #DDD0BD; --hair: #E8DCCB; --bg: #F5EFE4; --card: #FFFAF2; --soft: #EFE6D6; --chip: #EFE6D6;
   --carry: #FBF5E6; --carry-line: #E2D3AE; --carry-ink: #7A5C14;
   --serif: Georgia, "Times New Roman", serif;
   box-sizing: border-box;
@@ -25,16 +25,16 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --accent: #ECEAE4; --on-accent: #1A1A18; --now: #ECEAE4; --cal: #8F887C;
-    --primary: #ECEAE4; --text: #ECEAE4; --body: #E0DED8; --muted: #A3A19A; --faint: #8C8A84;
-    --border: #36352F; --hair: #2A2A27; --bg: #171715; --card: #1F1F1D; --soft: #242422; --chip: #2A2A27;
+    --accent: #B9BF72; --on-accent: #1D210F; --now: #F0E6D3; --cal: #8F887C;
+    --primary: #F0E6D3; --text: #F0E6D3; --body: #E8DCCB; --muted: #B7A79A; --faint: #8F8076;
+    --border: #3F2C44; --hair: #33243A; --bg: #15101A; --card: #22172A; --soft: #2D1D33; --chip: #2D1D33;
     --carry: #2B2718; --carry-line: #6B5A25; --carry-ink: #E3C77A;
   }
 }
 :root[data-theme="dark"] {
-  --accent: #ECEAE4; --on-accent: #1A1A18; --now: #ECEAE4; --cal: #8F887C;
-  --primary: #ECEAE4; --text: #ECEAE4; --body: #E0DED8; --muted: #A3A19A; --faint: #8C8A84;
-  --border: #36352F; --hair: #2A2A27; --bg: #171715; --card: #1F1F1D; --soft: #242422; --chip: #2A2A27;
+  --accent: #B9BF72; --on-accent: #1D210F; --now: #F0E6D3; --cal: #8F887C;
+  --primary: #F0E6D3; --text: #F0E6D3; --body: #E8DCCB; --muted: #B7A79A; --faint: #8F8076;
+  --border: #3F2C44; --hair: #33243A; --bg: #15101A; --card: #22172A; --soft: #2D1D33; --chip: #2D1D33;
   --carry: #2B2718; --carry-line: #6B5A25; --carry-ink: #E3C77A;
 }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); background: var(--bg); }
@@ -779,7 +779,7 @@ body { padding-bottom: calc(var(--dock-h) + 32px + env(safe-area-inset-bottom, 0
 input[type="checkbox"] { width: 24px; height: 24px; margin: 12px 6px; }
 
 /* bottom dock: command pill + 4 tabs, in the thumb zone */
-.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: color-mix(in srgb, var(--bg) 92%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px);
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bg);
   border-top: 1px solid var(--border); padding: 8px max(12px, calc((100vw - 736px) / 2)) calc(4px + env(safe-area-inset-bottom, 0px)); }
 .cmd-pill { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 0.9375rem; cursor: text; text-align: left; }
 .cmd-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -979,9 +979,9 @@ input, select, textarea { font-size: max(16px, 1rem); }
 
 /* night layout (8 PM–4 AM): darker, larger, only what's left tonight */
 :root[data-night="1"]:not([data-theme="light"]) {
-  --accent: #E6E3DC; --on-accent: #121211; --now: #E6E3DC; --cal: #8F887C;
-  --primary: #E6E3DC; --text: #E6E3DC; --body: #D6D3CC; --muted: #A3A19A; --faint: #8C8A84;
-  --border: #2E2D29; --hair: #23231F; --bg: #0F0F0E; --card: #181816; --soft: #1E1E1B; --chip: #23231F;
+  --accent: #B9BF72; --on-accent: #1D210F; --now: #F0E6D3; --cal: #8F887C;
+  --primary: #F0E6D3; --text: #F0E6D3; --body: #E8DCCB; --muted: #B7A79A; --faint: #8F8076;
+  --border: #2E2433; --hair: #241B29; --bg: #0F0B12; --card: #181219; --soft: #1E1722; --chip: #1E1722;
   --carry: #2B2718; --carry-line: #6B5A25; --carry-ink: #E3C77A; --ok: #7CC096; --ok-soft: #1B2B21; --move: #8DB1D8; --move-soft: #1A2532; --om-soft: #2E251C; --omar-ink: #D9B898;
 }
 :root[data-night="1"] body[data-tab="home"] .info-strip, :root[data-night="1"] body[data-tab="home"] #dressPanel,
