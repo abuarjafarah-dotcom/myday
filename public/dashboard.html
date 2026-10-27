@@ -3454,7 +3454,13 @@ Rules:
     t.duration = parseInt($('abMins').value, 10) || 60;
     $('abTitle').value = ''; $('abTime').value = '';
     put('tasks', t);
+    autoBlock(t.id);
     toast(`${title} added at ${time}.`);
+  }
+  // Every timed task goes straight onto Google Calendar as a block with a 10-minute alert, so nothing waits for a manual "Schedule it".
+  function autoBlock(id) {
+    const t = S.tasks[id]; if (!t || !t.date || !t.time || t.calEventId) return;
+    blockTask(id).then(ok => { if (ok !== false) loadCal(); }).catch(() => {});
   }
   function addTaskFromForm() {
     const title = $('ntTitle').value.trim(); if (!title) { $('ntTitle').focus(); return; }
@@ -3463,7 +3469,9 @@ Rules:
     $('ntTitle').value = ''; const time = fmt24($('ntTime').value); $('ntTime').value = '';
     const every = $('ntRepeat').value; $('ntRepeat').value = '';
     if (every) { addRoutine({ title, category: $('ntCat').value, freq: every, time, startDate: date || today() }); return; }
-    put('tasks', makeTask({ title, category: $('ntCat').value, date, time }));
+    const nt = makeTask({ title, category: $('ntCat').value, date, time });
+    put('tasks', nt);
+    autoBlock(nt.id);
   }
   // ---------- email -> tasks: scan the last 7 days, review, then add (nothing is added until approved) ----------
   let scanning = false;
