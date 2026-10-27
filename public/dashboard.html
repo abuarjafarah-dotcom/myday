@@ -699,6 +699,8 @@ details.fold.sub > summary { min-height: 48px; }
 .h-assist:empty { display: none; }
 .as-note, .as-wx { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.875rem; }
 .as-note.err { border-left: 3px solid var(--carry-line); }
+.dress-pen { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0; }
+.as-acts .mini.ico { min-width: 48px; min-height: 48px; padding: 0; font-size: 1.25rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
 .as-acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .as-acts a.mini { text-decoration: none; display: inline-flex; align-items: center; }
 .as-wx-t { flex: 1 1 220px; min-width: 0; color: var(--body); line-height: 1.45; }
@@ -1004,7 +1006,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div class="dress" id="dress"></div>
   </section>
   <div id="dressPanel"></div>
-  <section class="omar-card" id="omarCard" aria-label="Omar this week" hidden></section>
   <div class="dayline" id="dayline">
     <div class="dl-track" role="img" aria-label="Your day from 6 AM to bedtime at 9 PM. The dot marks where you are now.">
       <svg viewBox="0 0 1000 24" preserveAspectRatio="none"><path id="dlPath" d="M2 17 C 250 9, 500 8, 750 9 S 950 13, 998 17"></path></svg>
@@ -1124,6 +1125,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
       <details id="evePanel" class="rit-more"><summary>Wrap-up and handoff</summary><div id="ritualEve"></div></details>
     </div>
     <div id="ritualWeek" class="rit-panel">
+      <section class="omar-card" id="omarCard" aria-label="Omar this week" hidden></section>
     <div class="wkt-head">
       <div><span class="eyebrow">Plan · Week</span><h2 class="wkt-title" id="wkTitle"></h2></div>
       <div class="wkt-acts"><button class="btn-secondary" data-act="fridge">Fridge sheet</button></div>
@@ -1754,7 +1756,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     $('dress').innerHTML = `<div class="dc-row"><div class="dc-grid">
         <div class="dc-box"><span class="who">Boys</span> <span class="what">${esc(big || 'Not set')}</span></div>
         <div class="dc-box"><span class="who">Yousef</span> <span class="what">${esc(baby || 'Not set')}</span></div></div>
-      <button type="button" class="text-btn" data-act="dress-pencil" aria-label="${editDress ? 'Close outfit editor' : 'Edit outfits'}" aria-expanded="${editDress}">${editDress ? 'Close' : 'Edit'}</button></div>`;
+      <button type="button" class="text-btn dress-pen" data-act="dress-pencil" aria-label="${editDress ? 'Close outfit editor' : 'Edit outfits'}" aria-expanded="${editDress}" title="${editDress ? 'Close' : 'Edit outfits'}"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"/></svg></button></div>`;
     const wx = live.weather, range = wx && wx.lowFeels != null && wx.highFeels != null ? `Today feels like ${deg(wx.lowFeels)} to ${deg(wx.highFeels)}°${unitLetter()}. ` : '';
     $('dressPanel').innerHTML = editDress ? `<div class="dc-panel"><p class="muted">${esc(range)}${dr.manual ? 'Your choice for today. It goes back to automatic tomorrow.' : 'Outfits are picked from the forecast.'}</p>
         <label>Hamad &amp; Talal<input id="dcBig" value="${esc(big)}" placeholder="sweatshirt + light jacket"></label>
@@ -4550,7 +4552,7 @@ Rules:
 
   function familyHtml() {
     const parts = [], line = omarLine();
-    const buttons = `<span class="as-acts">${!fam.off && hh.me === 'farah' ? '<button class="mini" data-act="ho-open">📋 Handoff</button>' : ''}<button class="mini" data-act="sick-open">🤒 Kid sick</button></span>`;
+    const buttons = `<span class="as-acts">${!fam.off && hh.me === 'farah' ? '<button class="mini ico" data-act="ho-open" aria-label="Handoff to Omar" title="Handoff to Omar">📋</button>' : ''}<button class="mini ico" data-act="sick-open" aria-label="Kid sick" title="Kid sick">🤒</button></span>`;
     parts.push(`<div class="fam-line">${line ? `<span class="fam-t">${esc(line)}</span>` : '<span></span>'}${buttons}</div>`);
     parts.push(handoffInboxHtml());
     if (sickCfg().active && ui.sickOpen !== false) parts.push(sickHtml());
@@ -5679,7 +5681,7 @@ Rules:
   function renderDecide() {
     const box = $('smartBox'); if (!box) return;
     try { decList = decisions(); } catch (e) { console.warn('decisions', e); decList = []; }
-    if (!decList.length) { box.innerHTML = `<div class="calm" role="status"><span class="calm-i" aria-hidden="true">✓</span><span>${esc(calmLine())}</span></div>`; return; }
+    if (!decList.length) { box.innerHTML = ''; return; }
     const all = !!ui.decAll, shown = all ? decList : decList.slice(0, 3);
     box.innerHTML = `<div class="card dec-card" role="region" aria-label="Needs you"><h2><span>Needs you</span><span class="muted">${decList.length}</span></h2>
       ${shown.map(d => `<div class="dec" data-key="${esc(d.key)}"><div class="dec-h"><span class="dec-i" aria-hidden="true">${esc(d.icon)}</span><div class="dec-t"><b>${esc(d.title)}</b>${d.sub ? `<span>${d.html ? d.sub : esc(d.sub)}</span>` : ''}</div></div>
