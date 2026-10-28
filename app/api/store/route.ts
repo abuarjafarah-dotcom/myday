@@ -5,7 +5,7 @@ import { viewFor } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips"]);
+const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips", "rewards"]);
 const TABLE = "dashboard_docs";
 
 async function owner() {
