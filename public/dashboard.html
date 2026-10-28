@@ -899,7 +899,7 @@ body.cmd-open { overflow: hidden; }
 .tl-gap.quiet { border-style: dotted; padding: 4px 10px; min-height: 0; }
 .tl-gap.quiet > span:first-child { font-weight: 400; color: var(--muted); }
 .plan-row .plan-time { min-width: 128px; }
-body:not([data-tab="home"]) .info-strip, body:not([data-tab="home"]) #dressPanel, body:not([data-tab="home"]) .omar-card, body:not([data-tab="home"]) .dayline { display: none; }
+body:not([data-tab="home"]) .info-strip, body:not([data-tab="home"]) #dressPanel, body:not([data-tab="home"]) .dayline { display: none; }
 body:not([data-tab="home"]) .headline { font-size: 1.625rem; }
 body:not([data-tab="home"]) .header { gap: 8px; }
 .cmd-top { align-items: flex-start; }
@@ -984,8 +984,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
   --border: #2E2433; --hair: #241B29; --bg: #0F0B12; --card: #181219; --soft: #1E1722; --chip: #1E1722;
   --carry: #2B2718; --carry-line: #6B5A25; --carry-ink: #E3C77A; --ok: #7CC096; --ok-soft: #1B2B21; --move: #8DB1D8; --move-soft: #1A2532; --om-soft: #2E251C; --omar-ink: #D9B898;
 }
-:root[data-night="1"] body[data-tab="home"] .info-strip, :root[data-night="1"] body[data-tab="home"] #dressPanel,
-:root[data-night="1"] body[data-tab="home"] .omar-card, :root[data-night="1"] body[data-tab="home"] .dayline,
+:root[data-night="1"] body[data-tab="home"] .dayline,
 :root[data-night="1"] body[data-tab="home"] .h-time, :root[data-night="1"] body[data-tab="home"] .h-assist .as-top,
 :root[data-night="1"] .tl-gap, :root[data-night="1"] .tl-hint { display: none; }
 :root[data-night="1"] .tab-content { zoom: 1.08; }
@@ -1115,6 +1114,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <button class="sub-tab-btn" data-act="sub" data-sub="recap">Recap</button>
   </div>
   <div id="sub-plan">
+    <section class="omar-card" id="omarCard" aria-label="Omar this week" hidden></section>
     <div class="rit-modes" role="tablist" aria-label="Plan">
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="day"><b>Today</b></button>
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b></button>
@@ -1125,7 +1125,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
       <details id="evePanel" class="rit-more"><summary>Wrap-up and handoff</summary><div id="ritualEve"></div></details>
     </div>
     <div id="ritualWeek" class="rit-panel">
-      <section class="omar-card" id="omarCard" aria-label="Omar this week" hidden></section>
     <div class="wkt-head">
       <div><span class="eyebrow">Plan · Week</span><h2 class="wkt-title" id="wkTitle"></h2></div>
       <div class="wkt-acts"><button class="btn-secondary" data-act="fridge">Fridge sheet</button></div>
