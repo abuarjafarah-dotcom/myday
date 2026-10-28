@@ -1693,11 +1693,36 @@ input, select, textarea { font-size: max(16px, 1rem); }
   // ---------- Rewards: kids earn points, a parent approves, kids claim rewards ----------
   const RW_SEED = () => ({ id: 'main', updatedAt: 0, approvals: [], kids: {
     hamad: { name: 'Hamad', points: 0,
-      tasks: [{ id: 'h1', emoji: '👕', name: 'Get dressed', pts: 10 }, { id: 'h2', emoji: '🪥', name: 'Brush teeth', pts: 10 }, { id: 'h3', emoji: '🧹', name: 'Tidy room', pts: 15 }],
-      rewards: [{ id: 'hr1', emoji: '📱', name: 'Screen time', cost: 50 }, { id: 'hr2', emoji: '🍦', name: 'Ice cream', cost: 30 }, { id: 'hr3', emoji: '🎬', name: 'Movie night', cost: 100 }] },
+      tasks: [
+        { id: 'h1', emoji: '👕', name: 'Get dressed by himself', pts: 10 },
+        { id: 'h2', emoji: '🪥', name: 'Brush teeth (morning and night)', pts: 10 },
+        { id: 'h3', emoji: '🛏️', name: 'Make bed', pts: 10 },
+        { id: 'h4', emoji: '🧺', name: 'Dirty clothes in the hamper', pts: 5 },
+        { id: 'h5', emoji: '🧹', name: 'Tidy room (10-minute timer)', pts: 15 },
+        { id: 'h6', emoji: '🍽️', name: 'Clear his plate after meals', pts: 5 },
+        { id: 'h7', emoji: '🐾', name: 'Feed a pet or water plants', pts: 10 },
+        { id: 'h8', emoji: '🥄', name: 'Set the table', pts: 10 }],
+      rewards: [
+        { id: 'hr1', emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
+        { id: 'hr2', emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
+        { id: 'hr3', emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
+        { id: 'hr4', emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
+        { id: 'hr5', emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }] },
     talal: { name: 'Talal', points: 0,
-      tasks: [{ id: 't1', emoji: '🛏️', name: 'Make bed', pts: 10 }, { id: 't2', emoji: '📖', name: 'Reading', pts: 15 }, { id: 't3', emoji: '🗑️', name: 'Take out trash', pts: 10 }],
-      rewards: [{ id: 'tr1', emoji: '🎮', name: 'Play a game', cost: 50 }, { id: 'tr2', emoji: '🍿', name: 'Movie night', cost: 100 }] }
+      tasks: [
+        { id: 't1', emoji: '🧦', name: 'Put shoes by the door', pts: 5 },
+        { id: 't2', emoji: '🪥', name: 'Brush teeth with help', pts: 5 },
+        { id: 't3', emoji: '🛏️', name: 'Help make bed (pulls up the blanket)', pts: 5 },
+        { id: 't4', emoji: '🧺', name: 'Put toys in the bin', pts: 10 },
+        { id: 't5', emoji: '🗑️', name: 'Drop a trash item in the can', pts: 5 },
+        { id: 't6', emoji: '🍽️', name: 'Carry his plate to the sink', pts: 5 },
+        { id: 't7', emoji: '📚', name: 'Put books back on the shelf', pts: 5 }],
+      rewards: [
+        { id: 'tr1', emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
+        { id: 'tr2', emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
+        { id: 'tr3', emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
+        { id: 'tr4', emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
+        { id: 'tr5', emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }] }
   } });
   const rwDraft = {};
   const rwId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
