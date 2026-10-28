@@ -1691,9 +1691,10 @@ input, select, textarea { font-size: max(16px, 1rem); }
 
   // ---------- render ----------
   // ---------- Rewards: kids earn points, a parent approves, kids claim rewards ----------
-  const RW_SEED = () => ({ id: 'main', updatedAt: 0, approvals: [], kids: {
-    hamad: { name: 'Hamad', points: 0,
-      tasks: [
+  // Library of chores and rewards. Kids start empty; the parent picks items from these dropdowns.
+  const RW_LIB = {
+    chores: {
+      hamad: [
         { id: 'h1', emoji: '👕', name: 'Get dressed by himself', pts: 10 },
         { id: 'h2', emoji: '🪥', name: 'Brush teeth (morning and night)', pts: 10 },
         { id: 'h3', emoji: '🛏️', name: 'Make bed', pts: 10 },
@@ -1702,28 +1703,25 @@ input, select, textarea { font-size: max(16px, 1rem); }
         { id: 'h6', emoji: '🍽️', name: 'Clear his plate after meals', pts: 5 },
         { id: 'h7', emoji: '🐾', name: 'Feed a pet or water plants', pts: 10 },
         { id: 'h8', emoji: '🥄', name: 'Set the table', pts: 10 }],
-      rewards: [
-        { id: 'hr1', emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
-        { id: 'hr2', emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
-        { id: 'hr3', emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
-        { id: 'hr4', emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
-        { id: 'hr5', emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }] },
-    talal: { name: 'Talal', points: 0,
-      tasks: [
+      talal: [
         { id: 't1', emoji: '🧦', name: 'Put shoes by the door', pts: 5 },
         { id: 't2', emoji: '🪥', name: 'Brush teeth with help', pts: 5 },
         { id: 't3', emoji: '🛏️', name: 'Help make bed (pulls up the blanket)', pts: 5 },
         { id: 't4', emoji: '🧺', name: 'Put toys in the bin', pts: 10 },
         { id: 't5', emoji: '🗑️', name: 'Drop a trash item in the can', pts: 5 },
         { id: 't6', emoji: '🍽️', name: 'Carry his plate to the sink', pts: 5 },
-        { id: 't7', emoji: '📚', name: 'Put books back on the shelf', pts: 5 }],
-      rewards: [
-        { id: 'tr1', emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
-        { id: 'tr2', emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
-        { id: 'tr3', emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
-        { id: 'tr4', emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
-        { id: 'tr5', emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }] }
-  } });
+        { id: 't7', emoji: '📚', name: 'Put books back on the shelf', pts: 5 }]
+    },
+    rewards: [
+      { id: 'r1', emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
+      { id: 'r2', emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
+      { id: 'r3', emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
+      { id: 'r4', emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
+      { id: 'r5', emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }]
+  };
+  const RW_SEED = () => ({ id: 'main', updatedAt: 0, approvals: [], kids: {
+    hamad: { name: 'Hamad', points: 0, tasks: [], rewards: [] },
+    talal: { name: 'Talal', points: 0, tasks: [], rewards: [] } } });
   const rwDraft = {};
   const rwId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const rwData = () => (S.rewards && S.rewards.main && S.rewards.main.kids) ? S.rewards.main : RW_SEED();
@@ -1759,16 +1757,18 @@ input, select, textarea { font-size: max(16px, 1rem); }
       body = `<div class="card"><h2>Waiting for you</h2>${approvals || '<p class="muted">Nothing to approve.</p>'}</div>
         <div class="card"><h2>${esc(kid.name)}'s tasks</h2>
           ${kid.tasks.map(t => `<div class="task-item"><span class="grow">${esc(t.name)} <span class="muted">+${t.pts}</span></span><button class="mini" data-rw="del-task" data-id="${esc(t.id)}">Remove</button></div>`).join('')}
+          <div class="add-row"><select data-rw-in="pickTask" aria-label="Choose a chore"><option value="">Choose a chore…</option>${(RW_LIB.chores[ui.rwKid] || []).filter(c => !kid.tasks.some(t => t.src === c.id)).map(c => `<option value="${c.id}" ${rwDraft.pickTask === c.id ? 'selected' : ''}>${esc(c.emoji)} ${esc(c.name)} (+${c.pts})</option>`).join('')}</select><button class="btn-add" data-rw="pick-task">Add</button></div>
           <div class="add-row"><input type="text" data-rw-in="taskName" placeholder="New task" value="${esc(rwDraft.taskName || '')}"><input type="number" data-rw-in="taskPts" min="1" value="${esc(rwDraft.taskPts || 10)}" style="max-width:76px" aria-label="Points"><button class="btn-add" data-rw="add-task">Add</button></div>
         </div>
         <div class="card"><h2>${esc(kid.name)}'s rewards</h2>
           ${kid.rewards.map(r => `<div class="task-item"><span class="grow">${esc(r.name)} <span class="muted">${r.cost} pts</span></span><button class="mini" data-rw="del-reward" data-id="${esc(r.id)}">Remove</button></div>`).join('')}
+          <div class="add-row"><select data-rw-in="pickReward" aria-label="Choose a reward"><option value="">Choose a reward…</option>${RW_LIB.rewards.filter(c => !kid.rewards.some(r => r.src === c.id)).map(c => `<option value="${c.id}" ${rwDraft.pickReward === c.id ? 'selected' : ''}>${esc(c.emoji)} ${esc(c.name)} (${c.cost} pts)</option>`).join('')}</select><button class="btn-add" data-rw="pick-reward">Add</button></div>
           <div class="add-row"><input type="text" data-rw-in="rewardName" placeholder="New reward" value="${esc(rwDraft.rewardName || '')}"><input type="number" data-rw-in="rewardCost" min="1" value="${esc(rwDraft.rewardCost || 50)}" style="max-width:76px" aria-label="Cost"><button class="btn-add" data-rw="add-reward">Add</button></div>
         </div>`;
     }
     el.innerHTML = `<div class="chips">${kidChips}</div>${viewSeg}${body}`;
   }
-  document.addEventListener('input', e => { const k = e.target.dataset && e.target.dataset.rwIn; if (k) rwDraft[k] = e.target.value; });
+  ['input', 'change'].forEach(ev => document.addEventListener(ev, e => { const k = e.target.dataset && e.target.dataset.rwIn; if (k) rwDraft[k] = e.target.value; }));
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-rw]'); if (!el) return;
     const act = el.dataset.rw, id = el.dataset.id, d = clone(rwData()), kid = d.kids[ui.rwKid];
@@ -1799,6 +1799,16 @@ input, select, textarea { font-size: max(16px, 1rem); }
     }
     if (act === 'del-task') { kid.tasks = kid.tasks.filter(x => x.id !== id); return rwSave(d); }
     if (act === 'del-reward') { kid.rewards = kid.rewards.filter(x => x.id !== id); return rwSave(d); }
+    if (act === 'pick-task' || act === 'pick-reward') {
+      const isTask = act === 'pick-task', draftKey = isTask ? 'pickTask' : 'pickReward';
+      const lib = isTask ? (RW_LIB.chores[ui.rwKid] || []) : RW_LIB.rewards;
+      const item = lib.find(x => x.id === rwDraft[draftKey]); if (!item) return;
+      const list = isTask ? kid.tasks : kid.rewards;
+      if (list.some(x => x.src === item.id)) return;
+      list.push(Object.assign({}, item, { id: rwId(isTask ? 't' : 'r'), src: item.id }));
+      rwDraft[draftKey] = '';
+      return rwSave(d);
+    }
     if (act === 'add-task') {
       const name = (rwDraft.taskName || '').trim(); if (!name) return;
       kid.tasks.push({ id: rwId('t'), emoji: '⭐', name, pts: Math.max(1, parseInt(rwDraft.taskPts, 10) || 10) });
