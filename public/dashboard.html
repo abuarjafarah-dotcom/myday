@@ -992,6 +992,110 @@ input, select, textarea { font-size: max(16px, 1rem); }
 :root[data-night="1"] .headline { font-size: 1.9rem; }
 .load-send { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; margin-top: var(--sp-2); }
 .load-send .muted { flex: 1 1 200px; }
+.rw-app{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.rw-app{scroll-padding-top:env(safe-area-inset-top,0px)}
+.rw-app{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}
+.rw-app img{max-width:100%}
+.rw-app [hidden]:not([hidden=until-found i]){display:none!important}
+.rw-app{
+  --bg:#F6F5FF; --surface:#FFFFFF; --ink:#1D1247; --muted:#8C88B4; --line:#E3E0F6;
+  --primary:#6B63FF; --primary-deep:#4F46E5; --lilac:#EEEDFF;
+  --gold:#FFC53D; --sun:#FFF4CC; --teal:#2BA8A3; --teal-deep:#1C7F7B; --coral:#F06F78; --coral-deep:#D9535D;
+  color-scheme:light;
+}
+.rw-app *{box-sizing:border-box}
+.rw-app, .rw-app{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,sans-serif}
+.rw-app{min-height:100%;-webkit-font-smoothing:antialiased}
+.rw-app button{font-family:inherit}
+.rw-app .app{max-width:430px;margin:0 auto;padding-block:16px 128px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rw-app .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.rw-app .who{display:flex;align-items:center;gap:12px;min-width:0}
+.rw-app .who small{display:block;font-weight:800;color:var(--muted);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+.rw-app h1{font-size:28px;font-weight:900;margin:0;line-height:1.1}
+.rw-app .av{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:22px;flex:none}
+.rw-app .av.par{background:var(--ink)}
+.rw-app .pill{border:2px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:800;color:var(--ink);cursor:pointer;font-size:14px}
+.rw-app .switch{display:flex;gap:8px;background:var(--surface);border:2px solid var(--line);padding:6px;border-radius:999px;margin-bottom:16px}
+.rw-app .switch button{flex:1;border:0;background:transparent;border-radius:999px;padding:10px;font-weight:800;font-size:15px;color:var(--muted);cursor:pointer}
+.rw-app .switch button.on{background:var(--c);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.12)}
+.rw-app .dash{background:var(--primary);border-radius:28px;padding:16px;color:#fff;position:relative;overflow:hidden;margin-bottom:22px;box-shadow:0 6px 0 var(--primary-deep)}
+.rw-app .dash::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.12)}
+.rw-app .dash-lbl{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.85;margin-bottom:10px}
+.rw-app .tiles{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px;position:relative;z-index:1}
+.rw-app .tile{background:rgba(255,255,255,.16);border-radius:18px;padding:12px 8px;text-align:center}
+.rw-app .big{font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;font-variant-numeric:tabular-nums}
+.rw-app .lbl{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.9;margin-top:2px}
+.rw-app .gem{width:18px;height:18px;flex:none}
+.rw-app .sec{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.rw-app .stack{display:flex;flex-direction:column;gap:12px}
+.rw-app .task{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:12px 14px;min-width:0}
+.rw-app .task.pending{border-style:dashed;background:var(--sun);border-color:#F3DC8A}
+.rw-app .emo{font-size:34px;line-height:1;width:44px;text-align:center;flex:none}
+.rw-app .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.rw-app .tx b{font-size:18px;font-weight:900;overflow-wrap:anywhere}
+.rw-app .meta{display:flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:var(--muted);flex-wrap:wrap}
+.rw-app .acts{display:flex;gap:6px;flex:none}
+.rw-app .btn{border:0;border-radius:999px;padding:12px 18px;font-weight:900;font-size:15px;color:#fff;background:var(--primary);box-shadow:0 4px 0 var(--primary-deep);cursor:pointer;flex:none}
+.rw-app .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--primary-deep)}
+.rw-app .btn.sm{padding:9px 14px;font-size:14px}
+.rw-app .btn.teal{background:var(--teal);box-shadow:0 4px 0 var(--teal-deep)}
+.rw-app .btn.coral{background:var(--coral);box-shadow:0 4px 0 var(--coral-deep)}
+.rw-app .btn.ghost{background:var(--surface);color:var(--coral-deep);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line)}
+.rw-app .btn.wide{width:100%;padding:16px;font-size:17px;margin-top:8px}
+.rw-app .btn[disabled]{background:var(--lilac);color:#B4B0D6;box-shadow:none;cursor:default;transform:none}
+.rw-app .chip{font-size:13px;font-weight:900;border-radius:999px;padding:7px 12px;background:var(--lilac);color:var(--primary-deep);white-space:nowrap;flex:none}
+.rw-app .chip.ok{background:#DDF5F3;color:var(--teal-deep)}
+.rw-app .chip.gold{background:var(--sun);color:var(--ink);display:inline-flex;align-items:center;gap:4px}
+.rw-app .reward{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:12px 14px}
+.rw-app .reward .tx b{font-size:18px}
+.rw-app .empty{background:var(--surface);border:2px dashed var(--line);border-radius:22px;padding:22px 18px;text-align:center;color:var(--muted);font-weight:700;line-height:1.4}
+.rw-app .sum{background:var(--primary);color:#fff;border-radius:28px;padding:16px;box-shadow:0 6px 0 var(--primary-deep);margin-bottom:22px}
+.rw-app .sum h2{margin:0 0 2px;font-size:28px;font-weight:900}
+.rw-app .sum .sub{font-weight:700;opacity:.9;margin-bottom:12px}
+.rw-app .sum .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rw-app .sum .cell{background:rgba(255,255,255,.16);border-radius:18px;padding:12px}
+.rw-app .sum .cell .big{justify-content:flex-start;font-size:26px}
+.rw-app .bar-track{height:14px;border-radius:999px;background:rgba(255,255,255,.28);overflow:hidden;margin-top:12px}
+.rw-app .bar-track i{display:block;height:100%;background:var(--gold);border-radius:999px;transition:width .4s}
+.rw-app .days{display:flex;flex-direction:column;gap:10px}
+.rw-app .day{display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:12px 14px}
+.rw-app .day.future{opacity:.5}
+.rw-app .day .dn{text-align:center;font-weight:900;line-height:1.1}
+.rw-app .day .dn span{display:block;font-size:13px;color:var(--muted);font-weight:800}
+.rw-app .day .trk{height:12px;border-radius:999px;background:var(--lilac);overflow:hidden}
+.rw-app .day .trk i{display:block;height:100%;background:var(--teal);border-radius:999px}
+.rw-app .day .cnt{font-weight:900;font-variant-numeric:tabular-nums}
+.rw-app .note{font-size:13px;color:var(--muted);font-weight:700;margin:14px 2px 0;line-height:1.4}
+.rw-app .label{display:block;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.rw-app .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--surface);border:2px solid var(--line);padding:6px;border-radius:999px}
+.rw-app .chips{display:flex;flex-wrap:wrap;gap:8px}
+.rw-app .chipb{border:0;background:var(--lilac);border-radius:999px;padding:10px 14px;font-weight:800;font-size:15px;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.rw-app .chipb.on{background:var(--primary);color:#fff}
+.rw-app .seg .chipb{width:100%;justify-content:center;background:transparent}
+.rw-app .seg .chipb.on{background:var(--teal)}
+.rw-app .chipb.plain{background:var(--surface);box-shadow:inset 0 0 0 2px var(--line)}
+.rw-app .chipb.plain.on{background:var(--primary);color:#fff;box-shadow:none}
+.rw-app .stepper{display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0}
+.rw-app .stepper button{width:56px;height:56px;border-radius:18px;border:0;background:var(--surface);box-shadow:inset 0 0 0 2px var(--line),0 4px 0 var(--line);font-size:26px;font-weight:900;color:var(--ink);cursor:pointer}
+.rw-app .stepper output{min-width:110px;text-align:center;font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:6px;font-variant-numeric:tabular-nums}
+.rw-app input#draftName{width:100%;font:800 18px Nunito,system-ui,sans-serif;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:14px 16px;outline:none}
+.rw-app input#draftName::placeholder{color:#B4B0D6}
+.rw-app input#draftName:focus{border-color:var(--primary)}
+.rw-app .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom,0px));width:min(398px,calc(100% - 32px));display:flex;gap:4px;background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:6px;box-shadow:0 10px 30px rgba(29,18,71,.08);z-index:5}
+.rw-app .nav button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px 4px;font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.rw-app .nav button .ic{font-size:20px;line-height:1}
+.rw-app .nav button.on{background:var(--lilac);color:var(--primary)}
+.rw-app .badge{position:absolute;top:2px;right:14px;background:var(--coral);color:#fff;border-radius:999px;font-size:11px;padding:2px 6px;font-weight:900;min-width:20px;text-align:center}
+.rw-app .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 84px);background:var(--ink);color:#fff;font-weight:800;padding:12px 18px;border-radius:999px;max-width:min(380px,calc(100% - 32px));text-align:center;z-index:6;box-shadow:0 8px 20px rgba(29,18,71,.25)}
+.rw-app .toast[hidden]{display:none!important}
+.rw-app button:focus-visible, .rw-app input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.rw-app *{transition:none!important}}
+
+/* ---- Rewards tab: styled like the Hamad & Talal Rewards page (scoped to .rw-app) ---- */
+.rw-app{max-width:430px;margin:0 auto;padding:16px 16px 150px;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,sans-serif;border-radius:28px;position:relative}
+.rw-app .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:60}
+.rw-app .stack{display:flex;flex-direction:column;gap:12px}
+.rw-app .label{display:block}
 </style>
 </head>
 <body>
@@ -1218,8 +1322,9 @@ input, select, textarea { font-size: max(16px, 1rem); }
 </section>
 
 <!-- ======== REWARDS ======== -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap">
 <section id="rewards" class="tab-content">
-  <div id="rewardsView"></div>
+  <div id="rewardsView" class="rw-app"></div>
 </section>
 
 <div class="dock" id="dock">
@@ -1690,136 +1795,222 @@ input, select, textarea { font-size: max(16px, 1rem); }
   const projName = id => { const p = S.projects[id]; return p ? p.name : ''; };
 
   // ---------- render ----------
-  // ---------- Rewards: kids earn points, a parent approves, kids claim rewards ----------
-  // Library of chores and rewards. Kids start empty; the parent picks items from these dropdowns.
+  // ---------- Rewards tab: styled like the "Hamad & Talal Rewards" page, saved to Supabase ----------
   const RW_LIB = {
     chores: {
       hamad: [
-        { id: 'h1', emoji: '👕', name: 'Get dressed by himself', pts: 10 },
-        { id: 'h2', emoji: '🪥', name: 'Brush teeth (morning and night)', pts: 10 },
-        { id: 'h3', emoji: '🛏️', name: 'Make bed', pts: 10 },
-        { id: 'h4', emoji: '🧺', name: 'Dirty clothes in the hamper', pts: 5 },
-        { id: 'h5', emoji: '🧹', name: 'Tidy room (10-minute timer)', pts: 15 },
-        { id: 'h6', emoji: '🍽️', name: 'Clear his plate after meals', pts: 5 },
-        { id: 'h7', emoji: '🐾', name: 'Feed a pet or water plants', pts: 10 },
-        { id: 'h8', emoji: '🥄', name: 'Set the table', pts: 10 }],
+        { emoji: '👕', name: 'Get dressed by himself', pts: 10 },
+        { emoji: '🪥', name: 'Brush teeth (morning and night)', pts: 10 },
+        { emoji: '🛏️', name: 'Make bed', pts: 10 },
+        { emoji: '🧺', name: 'Dirty clothes in the hamper', pts: 5 },
+        { emoji: '🧹', name: 'Tidy room (10-minute timer)', pts: 15 },
+        { emoji: '🍽️', name: 'Clear his plate after meals', pts: 5 },
+        { emoji: '🐾', name: 'Feed a pet or water plants', pts: 10 },
+        { emoji: '🥄', name: 'Set the table', pts: 10 }],
       talal: [
-        { id: 't1', emoji: '🧦', name: 'Put shoes by the door', pts: 5 },
-        { id: 't2', emoji: '🪥', name: 'Brush teeth with help', pts: 5 },
-        { id: 't3', emoji: '🛏️', name: 'Help make bed (pulls up the blanket)', pts: 5 },
-        { id: 't4', emoji: '🧺', name: 'Put toys in the bin', pts: 10 },
-        { id: 't5', emoji: '🗑️', name: 'Drop a trash item in the can', pts: 5 },
-        { id: 't6', emoji: '🍽️', name: 'Carry his plate to the sink', pts: 5 },
-        { id: 't7', emoji: '📚', name: 'Put books back on the shelf', pts: 5 }]
+        { emoji: '🧦', name: 'Put shoes by the door', pts: 5 },
+        { emoji: '🪥', name: 'Brush teeth with help', pts: 5 },
+        { emoji: '🛏️', name: 'Help make bed (pulls up the blanket)', pts: 5 },
+        { emoji: '🧺', name: 'Put toys in the bin', pts: 10 },
+        { emoji: '🗑️', name: 'Drop a trash item in the can', pts: 5 },
+        { emoji: '🍽️', name: 'Carry his plate to the sink', pts: 5 },
+        { emoji: '📚', name: 'Put books back on the shelf', pts: 5 }]
     },
     rewards: [
-      { id: 'r1', emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
-      { id: 'r2', emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
-      { id: 'r3', emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
-      { id: 'r4', emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
-      { id: 'r5', emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }]
+      { emoji: '🍬', name: 'Candy (one piece)', cost: 15 },
+      { emoji: '📱', name: 'Screen time (15 minutes)', cost: 30 },
+      { emoji: '📱', name: 'Screen time (30 minutes)', cost: 50 },
+      { emoji: '🧸', name: 'Small toy (under $5)', cost: 75 },
+      { emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }]
   };
+  const RW_COLOR = { hamad: '#6B63FF', talal: '#2BA8A3' };
+  const RW_GEM = '<svg class="gem" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l4 5.5L12 21 2.5 8.5z" fill="#FFC53D"/><path d="M2.5 8.5h19M9 3l3 5.5L15 3M12 8.5 9.5 3M12 8.5 14.5 3M12 8.5 8.6 21M12 8.5l3.4 12.5" fill="none" stroke="#E79A12" stroke-width="1" stroke-linejoin="round"/></svg>';
   const RW_SEED = () => ({ id: 'main', updatedAt: 0, approvals: [], kids: {
-    hamad: { name: 'Hamad', points: 0, tasks: [], rewards: [] },
-    talal: { name: 'Talal', points: 0, tasks: [], rewards: [] } } });
-  const rwDraft = {};
+    hamad: { name: 'Hamad', points: 0, tasks: [], rewards: [], redeemed: [] },
+    talal: { name: 'Talal', points: 0, tasks: [], rewards: [], redeemed: [] } } });
+  const rwDraft = { name: '', emoji: '', pts: 10, cost: 50 };
+  let rwToast = '', rwToastTimer = null;
   const rwId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const rwData = () => (S.rewards && S.rewards.main && S.rewards.main.kids) ? S.rewards.main : RW_SEED();
+  const rwData = () => {
+    const d = (S.rewards && S.rewards.main && S.rewards.main.kids) ? S.rewards.main : RW_SEED();
+    d.approvals = d.approvals || [];
+    Object.values(d.kids).forEach(k => { k.redeemed = k.redeemed || []; });
+    return d;
+  };
   function rwSave(next) {
     next.updatedAt = Date.now();
     S.rewards = S.rewards || {};
     stage('rewards', next);
     commit();
   }
+  function rwFlash(msg) {
+    rwToast = msg; clearTimeout(rwToastTimer);
+    rwToastTimer = setTimeout(() => { rwToast = ''; renderRewards(); }, 2000);
+    renderRewards();
+  }
+  const rwEmpty = msg => `<div class="empty">${msg}</div>`;
+
+  function rwHeader(d, parent) {
+    if (parent) {
+      return `<header class="top"><div class="who"><div class="av par">P</div><div><small>Parent view</small><h1>Hamad &amp; Talal</h1></div></div><button class="pill" data-rw="parent">Kids' view</button></header>`;
+    }
+    const kid = d.kids[ui.rwKid];
+    return `<header class="top"><div class="who"><div class="av" style="background:${RW_COLOR[ui.rwKid] || '#6B63FF'}">${esc(kid.name[0])}</div><h1>${esc(kid.name)}</h1></div><button class="pill" data-rw="parent">Parent</button></header>
+      <div class="switch" role="tablist" aria-label="Choose child">${Object.keys(d.kids).map(k => `<button role="tab" aria-selected="${k === ui.rwKid}" class="${k === ui.rwKid ? 'on' : ''}" style="--c:${RW_COLOR[k]}" data-rw="kid" data-v="${k}">${esc(d.kids[k].name)}</button>`).join('')}</div>`;
+  }
+
+  function rwKidView(d) {
+    const k = ui.rwKid, kid = d.kids[k], tab = ui.rwTab || 'today';
+    const waiting = d.approvals.filter(a => a.kid === k).length;
+    const dash = `<section class="dash" aria-label="Dashboard"><div class="dash-lbl">Dashboard</div><div class="tiles">
+      <div class="tile"><div class="big">${RW_GEM}${kid.points}</div><div class="lbl">Points</div></div>
+      <div class="tile"><div class="big">${kid.tasks.length}</div><div class="lbl">Tasks</div></div>
+      <div class="tile"><div class="big">${waiting}</div><div class="lbl">Waiting</div></div></div></section>`;
+    const seg = `<div class="seg" style="margin-bottom:16px"><button class="chipb ${tab === 'today' ? 'on' : ''}" data-rw="tab" data-v="today">Today</button><button class="chipb ${tab === 'rewards' ? 'on' : ''}" data-rw="tab" data-v="rewards">Rewards</button></div>`;
+    let body;
+    if (tab === 'rewards') {
+      const cards = kid.rewards.map(r => {
+        const asked = d.approvals.some(a => a.kid === k && a.type === 'claim' && a.ref === r.id);
+        const can = kid.points >= r.cost;
+        const btn = asked ? `<span class="chip">Requested</span>`
+          : `<button class="btn sm teal" data-rw="claim" data-id="${esc(r.id)}" ${can ? '' : 'disabled'}>${can ? 'Claim' : 'Need ' + (r.cost - kid.points) + ' more'}</button>`;
+        return `<article class="reward"><span class="emo" aria-hidden="true">${esc(r.emoji)}</span><div class="tx"><b>${esc(r.name)}</b><span class="meta">Price: <span class="chip gold">${RW_GEM}${r.cost}</span></span></div>${btn}</article>`;
+      }).join('');
+      body = `<h2 class="sec"><span>Rewards</span></h2><div class="stack">${cards || rwEmpty('No rewards yet. A parent can add some.')}</div>`
+        + (kid.redeemed.length ? `<h2 class="sec" style="margin-top:22px"><span>Enjoyed</span></h2><div class="chips">${kid.redeemed.map(n => `<span class="chip ok">${esc(n)}</span>`).join('')}</div>` : '');
+    } else {
+      const cards = kid.tasks.map(t => {
+        const pending = d.approvals.some(a => a.kid === k && a.type === 'task' && a.ref === t.id);
+        const btn = pending ? `<span class="chip gold">Waiting</span>` : `<button class="btn sm" data-rw="done" data-id="${esc(t.id)}">Done!</button>`;
+        return `<article class="task ${pending ? 'pending' : ''}"><span class="emo" aria-hidden="true">${esc(t.emoji)}</span><div class="tx"><b>${esc(t.name)}</b><span class="meta">${RW_GEM}+${t.pts}</span></div>${btn}</article>`;
+      }).join('');
+      body = `<h2 class="sec"><span>Active tasks</span></h2><div class="stack">${cards || rwEmpty('No tasks yet. A parent can add some.')}</div>`;
+    }
+    return rwHeader(d, false) + dash + seg + body;
+  }
+
+  function rwParentView(d) {
+    const tab = ui.rwPTab || 'approve';
+    const seg = `<div class="seg" style="margin-bottom:16px"><button class="chipb ${tab === 'approve' ? 'on' : ''}" data-rw="ptab" data-v="approve">Approvals${d.approvals.length ? ' (' + d.approvals.length + ')' : ''}</button><button class="chipb ${tab === 'add' ? 'on' : ''}" data-rw="ptab" data-v="add">Add</button></div>`;
+    return rwHeader(d, true) + seg + (tab === 'add' ? rwAddView(d) : rwApprovalsView(d));
+  }
+
+  function rwApprovalsView(d) {
+    if (!d.approvals.length) return rwEmpty('Nothing waiting. Finished tasks and reward claims show up here for a yes or no.');
+    return `<div class="stack">${d.approvals.map(a => {
+      const kid = d.kids[a.kid];
+      const meta = a.type === 'task' ? `${esc(kid.name)} · Task · ${RW_GEM}+${a.pts}` : `${esc(kid.name)} · Reward claim · <span class="chip gold">${RW_GEM}${a.cost}</span>`;
+      return `<article class="task"><span class="emo" aria-hidden="true">${esc(a.emoji || '⭐')}</span><div class="tx"><b>${esc(a.name)}</b><span class="meta">${meta}</span></div><div class="acts"><button class="btn sm teal" data-rw="approve" data-id="${esc(a.id)}">Yes</button><button class="btn sm ghost" data-rw="decline" data-id="${esc(a.id)}">No</button></div></article>`;
+    }).join('')}</div>`;
+  }
+
+  function rwAddView(d) {
+    const t = ui.rwType || 'task', isTask = t === 'task', k = ui.rwAddKid;
+    const presets = isTask ? (RW_LIB.chores[k] || []) : RW_LIB.rewards;
+    const val = isTask ? rwDraft.pts : rwDraft.cost, step = isTask ? 5 : 10;
+    const current = isTask ? d.kids[k].tasks : d.kids[k].rewards;
+    const kidSeg = Object.keys(d.kids).map(x => `<button class="chipb ${x === k ? 'on' : ''}" data-rw="addkid" data-v="${x}">${esc(d.kids[x].name)}</button>`).join('');
+    const list = current.map(x => `<article class="${isTask ? 'task' : 'reward'}"><span class="emo" aria-hidden="true">${esc(x.emoji)}</span><div class="tx"><b>${esc(x.name)}</b><span class="meta">${isTask ? RW_GEM + '+' + x.pts : RW_GEM + x.cost}</span></div><button class="btn sm ghost" data-rw="remove" data-id="${esc(x.id)}">Remove</button></article>`).join('');
+    return `<h2 class="sec"><span>Who is it for?</span></h2>
+      <div class="seg">${kidSeg}</div>
+      <h2 class="sec" style="margin-top:20px"><span>Type</span></h2>
+      <div class="seg"><button class="chipb ${isTask ? 'on' : ''}" data-rw="addtype" data-v="task">Task</button><button class="chipb ${!isTask ? 'on' : ''}" data-rw="addtype" data-v="reward">Reward</button></div>
+      <span class="label">Quick presets</span>
+      <div class="chips">${presets.map((p, i) => `<button class="chipb plain" data-rw="preset" data-i="${i}">${esc(p.emoji)} ${esc(p.name)}</button>`).join('')}</div>
+      <span class="label">${isTask ? 'Points' : 'Cost in points'}</span>
+      <div class="stepper"><button data-rw="pts" data-d="-${step}" aria-label="Less">−</button><output>${RW_GEM}${val}</output><button data-rw="pts" data-d="${step}" aria-label="More">+</button></div>
+      <label class="label" for="rwName">${isTask ? 'Task name' : 'Reward name'}</label>
+      <input id="rwName" value="${esc(rwDraft.name)}" placeholder="${isTask ? 'What needs to be done?' : 'What can they earn?'}" autocomplete="off">
+      <button id="rwCreate" class="btn wide" data-rw="create" ${rwDraft.name.trim() ? '' : 'disabled'}>Create ${isTask ? 'task' : 'reward'}</button>
+      <h2 class="sec" style="margin-top:22px"><span>On the list now</span></h2>
+      <div class="stack">${list || rwEmpty('Nothing yet.')}</div>`;
+  }
+
   function renderRewards() {
     const el = $('rewardsView'); if (!el) return;
-    const d = rwData(), kidIds = Object.keys(d.kids);
-    if (!d.kids[ui.rwKid]) ui.rwKid = kidIds[0];
-    const parent = ui.rwView === 'parent', kid = d.kids[ui.rwKid];
-    const pendingFor = (type, ref) => d.approvals.some(a => a.type === type && a.kid === ui.rwKid && a.ref === ref);
-    const kidChips = kidIds.map(k => `<button class="chipb ${k === ui.rwKid ? 'on' : ''}" data-rw="kid" data-id="${k}">${esc(d.kids[k].name)} · ${d.kids[k].points} pts</button>`).join('');
-    const viewSeg = `<div class="seg" style="margin:12px 0"><button class="chipb ${!parent ? 'on' : ''}" data-rw="view" data-v="kid">Kid view</button><button class="chipb ${parent ? 'on' : ''}" data-rw="view" data-v="parent">Parent</button></div>`;
-    let body;
-    if (!parent) {
-      body = `<div class="card"><h2>Tasks</h2>${kid.tasks.length ? kid.tasks.map(t => {
-          const waiting = pendingFor('task', t.id);
-          return `<div class="task-item"><span>${esc(t.emoji)}</span><span class="grow">${esc(t.name)} <span class="muted">+${t.pts}</span></span>${waiting ? '<span class="muted">Waiting for approval</span>' : `<button class="mini" data-rw="done" data-id="${esc(t.id)}">Done</button>`}</div>`;
-        }).join('') : '<p class="muted">No tasks yet.</p>'}</div>
-        <div class="card"><h2>Rewards</h2>${kid.rewards.length ? kid.rewards.map(r => {
-          const asked = pendingFor('claim', r.id), can = kid.points >= r.cost;
-          return `<div class="task-item"><span>${esc(r.emoji)}</span><span class="grow">${esc(r.name)} <span class="muted">${r.cost} pts</span></span>${asked ? '<span class="muted">Requested</span>' : `<button class="mini" data-rw="claim" data-id="${esc(r.id)}" ${can ? '' : 'disabled'}>${can ? 'Claim' : 'Need ' + (r.cost - kid.points) + ' more'}</button>`}</div>`;
-        }).join('') : '<p class="muted">No rewards yet.</p>'}</div>`;
-    } else {
-      const approvals = d.approvals.map(a => {
-        const k = d.kids[a.kid];
-        return `<div class="task-item"><span>${esc(a.emoji || '⭐')}</span><span class="grow">${esc(k ? k.name : '')}: ${esc(a.name)} <span class="muted">${a.type === 'claim' ? '−' + a.cost : '+' + a.pts} pts</span></span><button class="mini" data-rw="approve" data-id="${esc(a.id)}">Approve</button><button class="mini" data-rw="decline" data-id="${esc(a.id)}">Decline</button></div>`;
-      }).join('');
-      body = `<div class="card"><h2>Waiting for you</h2>${approvals || '<p class="muted">Nothing to approve.</p>'}</div>
-        <div class="card"><h2>${esc(kid.name)}'s tasks</h2>
-          ${kid.tasks.map(t => `<div class="task-item"><span class="grow">${esc(t.name)} <span class="muted">+${t.pts}</span></span><button class="mini" data-rw="del-task" data-id="${esc(t.id)}">Remove</button></div>`).join('')}
-          <div class="add-row"><select data-rw-in="pickTask" aria-label="Choose a chore"><option value="">Choose a chore…</option>${(RW_LIB.chores[ui.rwKid] || []).filter(c => !kid.tasks.some(t => t.src === c.id)).map(c => `<option value="${c.id}" ${rwDraft.pickTask === c.id ? 'selected' : ''}>${esc(c.emoji)} ${esc(c.name)} (+${c.pts})</option>`).join('')}</select><button class="btn-add" data-rw="pick-task">Add</button></div>
-          <div class="add-row"><input type="text" data-rw-in="taskName" placeholder="New task" value="${esc(rwDraft.taskName || '')}"><input type="number" data-rw-in="taskPts" min="1" value="${esc(rwDraft.taskPts || 10)}" style="max-width:76px" aria-label="Points"><button class="btn-add" data-rw="add-task">Add</button></div>
-        </div>
-        <div class="card"><h2>${esc(kid.name)}'s rewards</h2>
-          ${kid.rewards.map(r => `<div class="task-item"><span class="grow">${esc(r.name)} <span class="muted">${r.cost} pts</span></span><button class="mini" data-rw="del-reward" data-id="${esc(r.id)}">Remove</button></div>`).join('')}
-          <div class="add-row"><select data-rw-in="pickReward" aria-label="Choose a reward"><option value="">Choose a reward…</option>${RW_LIB.rewards.filter(c => !kid.rewards.some(r => r.src === c.id)).map(c => `<option value="${c.id}" ${rwDraft.pickReward === c.id ? 'selected' : ''}>${esc(c.emoji)} ${esc(c.name)} (${c.cost} pts)</option>`).join('')}</select><button class="btn-add" data-rw="pick-reward">Add</button></div>
-          <div class="add-row"><input type="text" data-rw-in="rewardName" placeholder="New reward" value="${esc(rwDraft.rewardName || '')}"><input type="number" data-rw-in="rewardCost" min="1" value="${esc(rwDraft.rewardCost || 50)}" style="max-width:76px" aria-label="Cost"><button class="btn-add" data-rw="add-reward">Add</button></div>
-        </div>`;
-    }
-    el.innerHTML = `<div class="chips">${kidChips}</div>${viewSeg}${body}`;
+    const d = rwData(), keys = Object.keys(d.kids);
+    if (!d.kids[ui.rwKid]) ui.rwKid = keys[0];
+    if (!d.kids[ui.rwAddKid]) ui.rwAddKid = keys[0];
+    const body = ui.rwView === 'parent' ? rwParentView(d) : rwKidView(d);
+    el.innerHTML = body + (rwToast ? `<div class="toast" role="status">${esc(rwToast)}</div>` : '');
   }
-  ['input', 'change'].forEach(ev => document.addEventListener(ev, e => { const k = e.target.dataset && e.target.dataset.rwIn; if (k) rwDraft[k] = e.target.value; }));
+
+  document.addEventListener('input', e => {
+    if (e.target.id === 'rwName') {
+      rwDraft.name = e.target.value;
+      const b = document.getElementById('rwCreate'); if (b) b.disabled = !rwDraft.name.trim();
+    }
+  });
   document.addEventListener('click', e => {
-    const el = e.target.closest('[data-rw]'); if (!el) return;
-    const act = el.dataset.rw, id = el.dataset.id, d = clone(rwData()), kid = d.kids[ui.rwKid];
-    if (act === 'kid') { ui.rwKid = id; saveUi(); return render(); }
-    if (act === 'view') { ui.rwView = el.dataset.v; saveUi(); return render(); }
-    if (!kid) return;
-    if (act === 'done') {
-      const t = kid.tasks.find(x => x.id === id);
-      if (!t || d.approvals.some(a => a.type === 'task' && a.kid === ui.rwKid && a.ref === id)) return;
-      d.approvals.push({ id: rwId('a'), type: 'task', kid: ui.rwKid, ref: id, name: t.name, emoji: t.emoji, pts: t.pts });
-      return rwSave(d);
-    }
-    if (act === 'claim') {
-      const r = kid.rewards.find(x => x.id === id);
-      if (!r || kid.points < r.cost || d.approvals.some(a => a.type === 'claim' && a.kid === ui.rwKid && a.ref === id)) return;
-      d.approvals.push({ id: rwId('a'), type: 'claim', kid: ui.rwKid, ref: id, name: r.name, emoji: r.emoji, cost: r.cost });
-      return rwSave(d);
-    }
-    if (act === 'approve' || act === 'decline') {
-      const a = d.approvals.find(x => x.id === id); if (!a) return;
-      d.approvals = d.approvals.filter(x => x.id !== id);
-      const k = d.kids[a.kid];
-      if (act === 'approve' && k) {
-        if (a.type === 'task') k.points += a.pts;
-        else if (k.points >= a.cost) k.points -= a.cost;
+    const el = e.target.closest('[data-rw]'); if (!el || el.disabled) return;
+    const act = el.dataset.rw, id = el.dataset.id;
+    const d = clone(rwData()), k = ui.rwKid, kid = d.kids[k];
+    const isTask = (ui.rwType || 'task') === 'task';
+    const uiOnly = fn => { fn(); saveUi(); renderRewards(); };
+    switch (act) {
+      case 'kid': return uiOnly(() => { ui.rwKid = el.dataset.v; });
+      case 'parent': return uiOnly(() => { ui.rwView = ui.rwView === 'parent' ? 'kid' : 'parent'; });
+      case 'tab': return uiOnly(() => { ui.rwTab = el.dataset.v; });
+      case 'ptab': return uiOnly(() => { ui.rwPTab = el.dataset.v; });
+      case 'addkid': return uiOnly(() => { ui.rwAddKid = el.dataset.v; });
+      case 'addtype': return uiOnly(() => { ui.rwType = el.dataset.v; rwDraft.name = ''; rwDraft.emoji = ''; });
+      case 'preset': {
+        const lib = isTask ? (RW_LIB.chores[ui.rwAddKid] || []) : RW_LIB.rewards;
+        const p = lib[+el.dataset.i]; if (!p) return;
+        rwDraft.name = p.name; rwDraft.emoji = p.emoji;
+        if (isTask) rwDraft.pts = p.pts; else rwDraft.cost = p.cost;
+        return uiOnly(() => {});
       }
-      return rwSave(d);
-    }
-    if (act === 'del-task') { kid.tasks = kid.tasks.filter(x => x.id !== id); return rwSave(d); }
-    if (act === 'del-reward') { kid.rewards = kid.rewards.filter(x => x.id !== id); return rwSave(d); }
-    if (act === 'pick-task' || act === 'pick-reward') {
-      const isTask = act === 'pick-task', draftKey = isTask ? 'pickTask' : 'pickReward';
-      const lib = isTask ? (RW_LIB.chores[ui.rwKid] || []) : RW_LIB.rewards;
-      const item = lib.find(x => x.id === rwDraft[draftKey]); if (!item) return;
-      const list = isTask ? kid.tasks : kid.rewards;
-      if (list.some(x => x.src === item.id)) return;
-      list.push(Object.assign({}, item, { id: rwId(isTask ? 't' : 'r'), src: item.id }));
-      rwDraft[draftKey] = '';
-      return rwSave(d);
-    }
-    if (act === 'add-task') {
-      const name = (rwDraft.taskName || '').trim(); if (!name) return;
-      kid.tasks.push({ id: rwId('t'), emoji: '⭐', name, pts: Math.max(1, parseInt(rwDraft.taskPts, 10) || 10) });
-      rwDraft.taskName = '';
-      return rwSave(d);
-    }
-    if (act === 'add-reward') {
-      const name = (rwDraft.rewardName || '').trim(); if (!name) return;
-      kid.rewards.push({ id: rwId('r'), emoji: '🎁', name, cost: Math.max(1, parseInt(rwDraft.rewardCost, 10) || 50) });
-      rwDraft.rewardName = '';
-      return rwSave(d);
+      case 'pts': {
+        const key = isTask ? 'pts' : 'cost';
+        rwDraft[key] = Math.max(5, rwDraft[key] + +el.dataset.d);
+        return uiOnly(() => {});
+      }
+      case 'create': {
+        const name = rwDraft.name.trim(); if (!name) return;
+        const target = d.kids[ui.rwAddKid];
+        if (isTask) target.tasks.push({ id: rwId('t'), emoji: rwDraft.emoji || '⭐', name, pts: rwDraft.pts });
+        else target.rewards.push({ id: rwId('r'), emoji: rwDraft.emoji || '🎁', name, cost: rwDraft.cost });
+        rwDraft.name = ''; rwDraft.emoji = '';
+        rwSave(d); return rwFlash(`${isTask ? 'Task' : 'Reward'} added for ${target.name}`);
+      }
+      case 'remove': {
+        const target = d.kids[ui.rwAddKid];
+        if (isTask) target.tasks = target.tasks.filter(x => x.id !== id);
+        else target.rewards = target.rewards.filter(x => x.id !== id);
+        return rwSave(d);
+      }
+      case 'done': {
+        const t = kid && kid.tasks.find(x => x.id === id);
+        if (!t || d.approvals.some(a => a.type === 'task' && a.kid === k && a.ref === id)) return;
+        d.approvals.push({ id: rwId('a'), type: 'task', kid: k, ref: id, name: t.name, emoji: t.emoji, pts: t.pts });
+        rwSave(d); return rwFlash('Sent to a parent to approve');
+      }
+      case 'claim': {
+        const r = kid && kid.rewards.find(x => x.id === id); if (!r) return;
+        if (kid.points < r.cost) return rwFlash('Not enough points yet');
+        if (d.approvals.some(a => a.type === 'claim' && a.kid === k && a.ref === id)) return;
+        kid.points -= r.cost;
+        d.approvals.push({ id: rwId('a'), type: 'claim', kid: k, ref: id, name: r.name, emoji: r.emoji, cost: r.cost });
+        rwSave(d); return rwFlash('Claim sent. Points are held until a parent says yes');
+      }
+      case 'approve': {
+        const a = d.approvals.find(x => x.id === id); if (!a) return;
+        d.approvals = d.approvals.filter(x => x.id !== id);
+        const owner = d.kids[a.kid];
+        if (owner) {
+          if (a.type === 'task') owner.points += a.pts;
+          else owner.redeemed.push(a.name);
+        }
+        rwSave(d); return rwFlash(a.type === 'task' ? `+${a.pts} points for ${owner.name}` : `${a.name} approved for ${owner.name}`);
+      }
+      case 'decline': {
+        const a = d.approvals.find(x => x.id === id); if (!a) return;
+        d.approvals = d.approvals.filter(x => x.id !== id);
+        const owner = d.kids[a.kid];
+        if (owner && a.type === 'claim') owner.points += a.cost;
+        rwSave(d); return rwFlash('Declined');
+      }
     }
   });
 
