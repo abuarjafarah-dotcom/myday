@@ -1092,7 +1092,14 @@ input, select, textarea { font-size: max(16px, 1rem); }
 @media (prefers-reduced-motion:reduce){.rw-app *{transition:none!important}}
 
 /* ---- Rewards tab: styled like the Hamad & Talal Rewards page (scoped to .rw-app) ---- */
-.rw-app{max-width:430px;margin:0 auto;padding:16px 16px 150px;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,sans-serif;border-radius:28px;position:relative}
+.rw-app{max-width:none;margin:0;padding:14px 16px 150px;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,-apple-system,sans-serif;border-radius:0;position:relative;min-height:100vh}
+.rw-app .rw-title{font-size:30px;font-weight:900;margin:0;line-height:1.1}
+.rw-app .rw-newrow{display:flex;align-items:center;gap:8px;background:#FFFFFF;border:2px dashed var(--line);border-radius:22px;padding:4px 12px 4px 6px;margin-bottom:12px}
+.rw-app .rw-newrow:focus-within{border:2px solid var(--primary);border-style:solid}
+.rw-app .rw-ghost{flex:1;min-width:0;border:0;background:transparent;font:800 18px Nunito,system-ui,sans-serif;color:var(--ink);padding:12px 4px;outline:none}
+.rw-app .rw-ghost::placeholder{color:#B4B0D6;opacity:1}
+.rw-app .rw-emoji{position:relative;flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:28px;line-height:1;cursor:pointer;background:var(--lilac)}
+.rw-app .rw-emoji select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px}
 .rw-app .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:60}
 .rw-app .stack{display:flex;flex-direction:column;gap:12px}
 .rw-app .label{display:block}
@@ -1154,7 +1161,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
       <h2 class="sr-only">Brain dump</h2>
       <div class="dump-field">
         <textarea id="dumpText" rows="1" placeholder="Dump anything on your mind" aria-label="Brain dump"></textarea>
-        <a class="dump-mic" href="/capture.html" aria-label="Open the voice capture page"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></a>
+        
       </div>
       <div class="row dump-row">
         <span class="muted" id="dumpHint"></span>
@@ -1824,6 +1831,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
       { emoji: '🧸', name: 'Bigger toy (about $15)', cost: 150 }]
   };
   const RW_COLOR = { hamad: '#6B63FF', talal: '#2BA8A3' };
+  const RW_EMOJIS = [['⭐','Star'],['🧦','Socks'],['👕','Shirt'],['🪥','Brush teeth'],['🛏️','Bed'],['🧺','Laundry'],['🧹','Clean up'],['🍽️','Plate'],['🥄','Table'],['🐾','Pet'],['🪴','Plant'],['🗑️','Trash'],['📚','Books'],['🧸','Toy'],['🎮','Game'],['📖','Reading'],['🎨','Art'],['🏃','Play'],['🥕','Food'],['🍬','Candy'],['📱','Screen time'],['🎁','Gift'],['🚗','Car'],['💧','Water']];
   const RW_GEM = '<svg class="gem" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3h11l4 5.5L12 21 2.5 8.5z" fill="#FFC53D"/><path d="M2.5 8.5h19M9 3l3 5.5L15 3M12 8.5 9.5 3M12 8.5 14.5 3M12 8.5 8.6 21M12 8.5l3.4 12.5" fill="none" stroke="#E79A12" stroke-width="1" stroke-linejoin="round"/></svg>';
   const RW_SEED = () => ({ id: 'main', updatedAt: 0, approvals: [], kids: {
     hamad: { name: 'Hamad', points: 0, tasks: [], rewards: [], redeemed: [] },
@@ -1849,6 +1857,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
     renderRewards();
   }
   const rwEmpty = msg => `<div class="empty">${msg}</div>`;
+  // The emoji itself is the control: tap it to pick another picture (no visible dropdown box).
+  const rwEmojiPick = (current, kind, id) => `<label class="rw-emoji"><span aria-hidden="true">${esc(current)}</span><select aria-label="Change picture" data-rw-emoji="${kind}" data-id="${esc(id)}">${RW_EMOJIS.map(([e, n]) => `<option value="${e}" ${e === current ? 'selected' : ''}>${e} ${n}</option>`).join('')}</select></label>`;
 
   function rwHeader(d, parent) {
     if (parent) {
@@ -1862,10 +1872,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
   function rwKidView(d) {
     const k = ui.rwKid, kid = d.kids[k], tab = ui.rwTab || 'today';
     const waiting = d.approvals.filter(a => a.kid === k).length;
-    const dash = `<section class="dash" aria-label="Dashboard"><div class="dash-lbl">Dashboard</div><div class="tiles">
-      <div class="tile"><div class="big">${RW_GEM}${kid.points}</div><div class="lbl">Points</div></div>
-      <div class="tile"><div class="big">${kid.tasks.length}</div><div class="lbl">Tasks</div></div>
-      <div class="tile"><div class="big">${waiting}</div><div class="lbl">Waiting</div></div></div></section>`;
     const seg = `<div class="seg" style="margin-bottom:16px"><button class="chipb ${tab === 'today' ? 'on' : ''}" data-rw="tab" data-v="today">Today</button><button class="chipb ${tab === 'rewards' ? 'on' : ''}" data-rw="tab" data-v="rewards">Rewards</button></div>`;
     let body;
     if (tab === 'rewards') {
@@ -1886,7 +1892,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
       }).join('');
       body = `<h2 class="sec"><span>Active tasks</span></h2><div class="stack">${cards || rwEmpty('No tasks yet. A parent can add some.')}</div>`;
     }
-    return rwHeader(d, false) + dash + seg + body;
+    return rwHeader(d, false) + seg + body;
   }
 
   function rwParentView(d) {
@@ -1910,7 +1916,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     const val = isTask ? rwDraft.pts : rwDraft.cost, step = isTask ? 5 : 10;
     const current = isTask ? d.kids[k].tasks : d.kids[k].rewards;
     const kidSeg = Object.keys(d.kids).map(x => `<button class="chipb ${x === k ? 'on' : ''}" data-rw="addkid" data-v="${x}">${esc(d.kids[x].name)}</button>`).join('');
-    const list = current.map(x => `<article class="${isTask ? 'task' : 'reward'}"><span class="emo" aria-hidden="true">${esc(x.emoji)}</span><div class="tx"><b>${esc(x.name)}</b><span class="meta">${isTask ? RW_GEM + '+' + x.pts : RW_GEM + x.cost}</span></div><button class="btn sm ghost" data-rw="remove" data-id="${esc(x.id)}">Remove</button></article>`).join('');
+    const list = current.map(x => `<article class="${isTask ? 'task' : 'reward'}">${rwEmojiPick(x.emoji, isTask ? 'task' : 'reward', x.id)}<div class="tx"><b>${esc(x.name)}</b><span class="meta">${isTask ? RW_GEM + '+' + x.pts : RW_GEM + x.cost}</span></div><button class="btn sm ghost" data-rw="remove" data-id="${esc(x.id)}">Remove</button></article>`).join('');
     return `<h2 class="sec"><span>Who is it for?</span></h2>
       <div class="seg">${kidSeg}</div>
       <h2 class="sec" style="margin-top:20px"><span>Type</span></h2>
@@ -1919,9 +1925,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
       <div class="chips">${presets.map((p, i) => `<button class="chipb plain" data-rw="preset" data-i="${i}">${esc(p.emoji)} ${esc(p.name)}</button>`).join('')}</div>
       <span class="label">${isTask ? 'Points' : 'Cost in points'}</span>
       <div class="stepper"><button data-rw="pts" data-d="-${step}" aria-label="Less">−</button><output>${RW_GEM}${val}</output><button data-rw="pts" data-d="${step}" aria-label="More">+</button></div>
-      <label class="label" for="rwName">${isTask ? 'Task name' : 'Reward name'}</label>
-      <input id="rwName" value="${esc(rwDraft.name)}" placeholder="${isTask ? 'What needs to be done?' : 'What can they earn?'}" autocomplete="off">
-      <button id="rwCreate" class="btn wide" data-rw="create" ${rwDraft.name.trim() ? '' : 'disabled'}>Create ${isTask ? 'task' : 'reward'}</button>
+      <div class="rw-newrow">${rwEmojiPick(rwDraft.emoji || '⭐', 'draft', '')}<input id="rwName" class="rw-ghost" value="${esc(rwDraft.name)}" placeholder="${isTask ? 'Write a task…' : 'Write a reward…'}" autocomplete="off" aria-label="${isTask ? 'Task name' : 'Reward name'}"></div>
+      <button id="rwCreate" class="btn wide" data-rw="create" ${rwDraft.name.trim() ? '' : 'hidden'}>Add ${isTask ? 'task' : 'reward'}</button>
       <h2 class="sec" style="margin-top:22px"><span>On the list now</span></h2>
       <div class="stack">${list || rwEmpty('Nothing yet.')}</div>`;
   }
@@ -1935,11 +1940,24 @@ input, select, textarea { font-size: max(16px, 1rem); }
     el.innerHTML = body + (rwToast ? `<div class="toast" role="status">${esc(rwToast)}</div>` : '');
   }
 
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset && t.dataset.rwEmoji === 'draft') { rwDraft.emoji = t.value; return renderRewards(); }
+    if (t.dataset && (t.dataset.rwEmoji === 'task' || t.dataset.rwEmoji === 'reward')) {
+      const d = clone(rwData()), kid = d.kids[ui.rwAddKid];
+      const list = t.dataset.rwEmoji === 'task' ? kid.tasks : kid.rewards;
+      const item = list.find(x => x.id === t.dataset.id); if (!item) return;
+      item.emoji = t.value; rwSave(d); return;
+    }
+  });
   document.addEventListener('input', e => {
     if (e.target.id === 'rwName') {
       rwDraft.name = e.target.value;
-      const b = document.getElementById('rwCreate'); if (b) b.disabled = !rwDraft.name.trim();
+      const b = document.getElementById('rwCreate'); if (b) b.hidden = !rwDraft.name.trim();
     }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target.id === 'rwName' && e.key === 'Enter') { e.preventDefault(); const b = document.getElementById('rwCreate'); if (b && !b.hidden) b.click(); }
   });
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-rw]'); if (!el || el.disabled) return;
