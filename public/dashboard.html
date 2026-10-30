@@ -1230,7 +1230,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div class="rit-modes" role="tablist" aria-label="Plan">
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="day"><b>Today</b></button>
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b></button>
-      <button class="rit-mode" role="tab" data-act="ritual" data-mode="month"><b>Month</b></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="tax"><b>Tax</b></button>
     </div>
     <div id="ritualDay" class="rit-panel">
       <div id="ritualDayBrief"></div><div id="planBox"></div>
@@ -1276,7 +1276,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     </details>
       <details id="checkinPanel" class="rit-more"><summary>Weekly check-in</summary><div id="syncView"></div><div id="resetView" class="sy-reset"></div></details>
     </div>
-    <div id="ritualMonth" class="rit-panel"><div id="monthView"></div></div>
+    <div id="ritualTax" class="rit-panel"><iframe src="/tax.html" title="Tax tracker" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:#faf7f2"></iframe></div>
   </div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
@@ -6081,9 +6081,9 @@ Rules:
   }
   function renderRitual() {
     const wrap = $('sub-plan'); if (!wrap) return;
-    const mode = ritualMode(), tab = mode === 'evening' ? 'day' : mode;   // wrap-up lives inside Today
+    const mode = ritualMode(), tab = mode === 'evening' ? 'day' : mode === 'month' ? 'tax' : mode;   // wrap-up lives inside Today; a saved 'month' is now Tax
     document.querySelectorAll('.rit-mode').forEach(b => { const on = b.dataset.mode === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualMonth').hidden = tab !== 'month';
+    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualTax').hidden = tab !== 'tax';
     if (!(ui.tab === 'schedule' && ui.sub === 'plan')) { $('ritualEve').innerHTML = ''; return; }   // keeps ids unique while hidden
     // Wrap-up opens itself in the evening, and the check-in opens when you pick Week; otherwise the user's own toggle sticks.
     const ev = $('evePanel'); if (ev.dataset.m !== mode) { ev.dataset.m = mode; ev.open = mode === 'evening'; }
@@ -6097,9 +6097,7 @@ Rules:
       if (ui.hoScroll && $('handoffCard')) { ui.hoScroll = false; saveUi(); $('handoffCard').scrollIntoView({ block: 'start' }); }
     } else if (tab === 'week') {
       renderWeekSync();
-    } else {
-      renderRecap('mo', 'monthView');
-    }
+    }   // tax: the tracker is its own page in the iframe
   }
 
   // ---------- swipe: right = done, left = tomorrow, far left = Omar ----------
