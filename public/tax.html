@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tax Tracker</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#2b2622;--muted:#7a6f66;--line:#e6dfd5;--accent:#8a5a3b;--good:#3d7a4f;--warn:#a4572b}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{padding:18px 16px 0;max-width:1000px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:21px;margin:0;font-weight:600}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 12px}
+nav{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+nav button{background:none;border:none;padding:10px 12px;cursor:pointer;color:var(--muted);font-size:14px;border-bottom:2px solid transparent;font:inherit}
+nav button.active{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+main{padding:16px;max-width:1000px;margin:0 auto}
+#status{max-width:1000px;margin:10px auto 0;padding:0 16px;color:var(--good);font-size:13px;min-height:18px}
+section{display:none}section.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px;background:#fff;color:var(--ink);font:inherit}
+select.auto,input.auto{width:auto}
+button.primary{background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;font:inherit}
+button.ghost{background:none;border:1px solid var(--line);padding:8px 14px;border-radius:6px;cursor:pointer;color:var(--ink);font:inherit}
+button.danger{background:none;border:none;color:var(--warn);cursor:pointer;font:inherit}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#efe8dd}
+.tag.ded{background:#e0efe4;color:var(--good)}.tag.no{background:#f3e6df;color:var(--warn)}
+.muted{color:var(--muted);font-size:13px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div><h1>Tax Tracker</h1><div class="sub">Federal + Minnesota · Saved to your dashboard database</div></div>
+    <div class="row"><select id="year" class="auto"></select></div>
+  </div>
+  <nav id="nav" style="display:none">
+    <button data-tab="list" class="active">Transactions</button>
+    <button data-tab="add">Add</button>
+    <button data-tab="import">Import</button>
+    <button data-tab="summary">Summary</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+</header>
+<div id="status"></div>
+<main>
+  <div id="gate" class="card" style="max-width:420px;display:none">
+    <p id="gateMsg"></p>
+    <a href="/" class="ghost" style="text-decoration:none;display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:6px;color:var(--ink)">Go to sign-in</a>
+  </div>
+
+  <div id="app" style="display:none">
+    <section id="tab-list" class="active">
+      <div class="card row"><select id="filterBucket" class="auto"></select><span class="muted" id="count"></span></div>
+      <div class="card wrap">
+        <table><thead><tr><th>Date</th><th>Description</th><th>Bucket</th><th>Card</th><th class="num">Amount</th><th></th></tr></thead><tbody id="txBody"></tbody></table>
+        <p class="muted" id="emptyMsg" style="display:none">No transactions for this year yet. Use Import to add a statement.</p>
+      </div>
+    </section>
+
+    <section id="tab-add">
+      <div class="card">
+        <div class="grid">
+          <div><label>Date</label><input type="date" id="fDate"></div>
+          <div><label>Description</label><input id="fDesc" placeholder="e.g. Staples"></div>
+          <div><label>Amount ($)</label><input type="number" step="0.01" min="0" id="fAmt"></div>
+          <div><label>Card / account</label><input id="fCard"></div>
+          <div><label>Bucket</label><select id="fBucket"></select></div>
+          <div><label>Note</label><input id="fNote"></div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="primary" id="addBtn">Add transaction</button><span class="muted">Leave bucket on Auto-sort to apply your rules.</span></div>
+      </div>
+    </section>
+
+    <section id="tab-import">
+      <div class="card">
+        <p class="muted" style="margin-top:0">Upload a CSV from any card or bank. Rules sort each row into a bucket. Duplicates are skipped, so re-uploading a statement is safe.</p>
+        <input type="file" id="csvFile" accept=".csv,text/csv">
+      </div>
+      <div class="card" id="mapCard" style="display:none">
+        <div class="grid">
+          <div><label>Date column</label><select id="mDate"></select></div>
+          <div><label>Description column</label><select id="mDesc"></select></div>
+          <div><label>Amount column</label><select id="mAmt"></select></div>
+          <div><label>Card name</label><input id="mCard" placeholder="e.g. Chase Amazon Prime Visa"></div>
+        </div>
+        <label class="row" style="margin-top:12px;color:var(--ink);font-size:14px"><input type="checkbox" id="mNeg" class="auto"> Purchases show as negative numbers in this file</label>
+        <div class="row" style="margin-top:10px"><button class="primary" id="previewBtn">Preview</button></div>
+      </div>
+      <div class="card" id="previewCard" style="display:none">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong id="previewCount"></strong><button class="primary" id="saveImportBtn">Save all</button></div>
+        <div class="wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Bucket</th><th class="num">Amount</th></tr></thead><tbody id="previewBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="tab-summary">
+      <div class="card wrap">
+        <strong>Totals by bucket</strong>
+        <table style="margin-top:8px"><thead><tr><th>Bucket</th><th>Treatment</th><th class="num">Total</th></tr></thead><tbody id="bucketTotals"></tbody></table>
+      </div>
+      <div class="card">
+        <strong>Minnesota unreimbursed employee expenses</strong>
+        <p class="muted">Allowed only if you itemize on the MN return, and only the part above 2% of federal AGI. Enter AGI in Settings.</p>
+        <div class="grid">
+          <div><label>Work-expense total</label><input id="mnWork" readonly></div>
+          <div><label>2% floor</label><input id="mnFloor" readonly></div>
+          <div><label>MN deductible</label><input id="mnDed" readonly></div>
+        </div>
+      </div>
+      <div class="card">
+        <strong>Itemize or standard (Minnesota)</strong>
+        <p class="muted">Mortgage, property tax, charity and medical use this year's transactions when present; otherwise the annual figures in Settings.</p>
+        <div class="grid">
+          <div><label>Itemized total (incl. MN work expenses)</label><input id="itemTotal" readonly></div>
+          <div><label>Better option</label><input id="bestOpt" readonly></div>
+        </div>
+        <p class="muted" style="margin-top:10px">Minnesota reduces itemized deductions at higher incomes, so confirm the final numbers with your preparer.</p>
+      </div>
+      <div class="card">
+        <strong>Childcare</strong>
+        <div class="grid" style="margin-top:8px">
+          <div><label>Childcare paid this year</label><input id="childTotal" readonly></div>
+          <div><label>Federal credit base (max $6,000)</label><input id="childBase" readonly></div>
+        </div>
+        <p class="muted">Tracked for the federal dependent care credit, not as a deduction.</p>
+      </div>
+    </section>
+
+    <section id="tab-settings">
+      <div class="card">
+        <strong>Household figures</strong>
+        <p class="muted">Saved on change. Used by the summary.</p>
+        <div class="grid" style="margin-top:8px">
+          <div><label>Federal AGI (joint)</label><input type="number" id="agi" data-key="agi"></div>
+          <div><label>MN standard deduction (joint)</label><input type="number" id="mn_standard_deduction" data-key="mn_standard_deduction"></div>
+          <div><label>Mortgage interest (annual)</label><input type="number" id="mortgage_interest" data-key="mortgage_interest"></div>
+          <div><label>Property tax (annual)</label><input type="number" id="property_tax" data-key="property_tax"></div>
+          <div><label>Charitable gifts (annual)</label><input type="number" id="charitable_gifts" data-key="charitable_gifts"></div>
+        </div>
+      </div>
+      <div class="card">
+        <strong>Auto-sort rules</strong>
+        <p class="muted">A transaction whose description contains the keyword goes to that bucket on import.</p>
+        <div class="row" style="margin:10px 0">
+          <input id="ruleKw" placeholder="keyword, e.g. kindercare" style="max-width:260px">
+          <select id="ruleBucket" class="auto"></select>
+          <button class="ghost" id="addRule">Add rule</button>
+        </div>
+        <div class="wrap"><table><thead><tr><th>Keyword</th><th>Bucket</th><th></th></tr></thead><tbody id="rulesBody"></tbody></table></div>
+      </div>
+      <div class="card wrap">
+        <strong>Buckets</strong>
+        <table style="margin-top:8px"><thead><tr><th>Bucket</th><th>Federal</th><th>Minnesota</th></tr></thead><tbody id="bucketTable"></tbody></table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = n => (Number(n) || 0).toLocaleString("en-US", {style:"currency", currency:"USD"});
+const setMsg = t => { $("status").textContent = t; };
+const YR = () => $("year").value || String(new Date().getFullYear());
+
+let BUCKETS = [], BY = {}, RULES = [], TXS = [], S = {}, CSV = {rows: []}, PREVIEW = [];
+
+async function api(body){
+  const res = await fetch("/api/tax", {
+    method: body ? "POST" : "GET",
+    headers: body ? {"Content-Type": "application/json"} : {},
+    body: body ? JSON.stringify(body) : undefined,
+    cache: "no-store",
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ("Request failed (" + res.status + ")"));
+  return data;
+}
+
+function showGate(msg){
+  $("gateMsg").textContent = msg;
+  $("gate").style.display = "block";
+  $("app").style.display = "none";
+  $("nav").style.display = "none";
+}
+
+async function loadAll(){
+  try {
+    const d = await api();
+    BUCKETS = d.buckets; BY = Object.fromEntries(BUCKETS.map(b => [b.id, b]));
+    RULES = d.rules; S = d.settings; TXS = d.transactions;
+    $("gate").style.display = "none";
+    $("app").style.display = "block";
+    $("nav").style.display = "flex";
+    renderAll();
+  } catch (e) {
+    if (/Unauthorized|Not available/.test(e.message)) showGate("Sign in with your Farah account on the dashboard, then come back to this page.");
+    else setMsg(e.message);
+  }
+}
+
+function bucketOptions(sel){
+  return BUCKETS.map(b => `<option value="${b.id}" ${b.id === sel ? "selected" : ""}>${esc(b.name)}</option>`).join("");
+}
+function renderAll(){
+  const prev = $("year").value;
+  const years = new Set(TXS.map(t => t.date.slice(0, 4)));
+  years.add(String(new Date().getFullYear()));
+  const cur = prev || String(new Date().getFullYear());
+  $("year").innerHTML = [...years].sort().reverse().map(y => `<option ${y === cur ? "selected" : ""}>${y}</option>`).join("");
+  const fb = $("filterBucket").value;
+  const opts = bucketOptions("");
+  $("filterBucket").innerHTML = `<option value="">All buckets</option>` + opts;
+  $("filterBucket").value = fb;
+  $("fBucket").innerHTML = `<option value="">Auto-sort</option>` + opts;
+  $("ruleBucket").innerHTML = opts;
+  renderList(); renderSummary(); renderSettings();
+}
+
+function renderList(){
+  const bf = $("filterBucket").value;
+  const rows = TXS.filter(t => t.date.startsWith(YR()) && (!bf || t.bucket === bf));
+  $("count").textContent = `${rows.length} transactions`;
+  $("emptyMsg").style.display = rows.length ? "none" : "block";
+  $("txBody").innerHTML = rows.map(t => `<tr>
+    <td>${t.date}</td>
+    <td>${esc(t.desc)}${t.note ? `<div class="muted">${esc(t.note)}</div>` : ""}</td>
+    <td><select class="auto rb" data-id="${t.id}" data-desc="${esc(t.desc)}">${bucketOptions(t.bucket)}</select></td>
+    <td>${esc(t.card)}</td>
+    <td class="num">${money(t.amount)}</td>
+    <td><button class="danger del" data-id="${t.id}">Delete</button></td>
+  </tr>`).join("");
+  document.querySelectorAll(".rb").forEach(s => s.onchange = e => rebucket(e.target.dataset.id, e.target.value));
+  document.querySelectorAll(".del").forEach(b => b.onclick = () => removeTx(b.dataset.id));
+}
+
+function renderSummary(){
+  const txs = TXS.filter(t => t.date.startsWith(YR()));
+  const tot = id => txs.filter(t => t.bucket === id).reduce((a, t) => a + t.amount, 0);
+  $("bucketTotals").innerHTML = BUCKETS.map(b => `<tr>
+    <td>${esc(b.name)}</td>
+    <td><span class="tag ${b.kind === "ded" ? "ded" : b.kind === "no" ? "no" : ""}">Fed: ${esc(b.federal_treatment)}</span> <span class="tag">MN: ${esc(b.mn_treatment)}</span></td>
+    <td class="num">${money(tot(b.id))}</td></tr>`).join("");
+  const agi = Number(S.agi) || 0;
+  const work = tot("w2_work");
+  const floor = agi * 0.02;
+  const mnWork = Math.max(0, work - floor);
+  $("mnWork").value = money(work); $("mnFloor").value = money(floor); $("mnDed").value = money(mnWork);
+  const pick = (bucket, key) => tot(bucket) || Number(S[key]) || 0;
+  const itemized = pick("mortgage", "mortgage_interest") + pick("proptax", "property_tax") + pick("charity", "charitable_gifts") + tot("medical") + mnWork;
+  const std = Number(S.mn_standard_deduction) || 0;
+  $("itemTotal").value = money(itemized);
+  $("bestOpt").value = std ? `${itemized > std ? "Itemize" : "Standard"} (${money(Math.abs(itemized - std))} difference)` : "Enter MN standard deduction in Settings";
+  const child = tot("childcare");
+  $("childTotal").value = money(child); $("childBase").value = money(Math.min(child, 6000));
+}
+
+function renderSettings(){
+  document.querySelectorAll("[data-key]").forEach(i => i.value = S[i.dataset.key] ?? "");
+  $("bucketTable").innerHTML = BUCKETS.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.federal_treatment)}</td><td>${esc(b.mn_treatment)}</td></tr>`).join("");
+  $("rulesBody").innerHTML = RULES.map(r => `<tr><td>${esc(r.keyword)}</td><td>${esc(BY[r.bucket] ? BY[r.bucket].name : r.bucket)}</td><td><button class="danger delrule" data-k="${esc(r.keyword)}">Remove</button></td></tr>`).join("");
+  document.querySelectorAll(".delrule").forEach(b => b.onclick = async () => {
+    try { await api({op: "rule-del", keyword: b.dataset.k}); setMsg("Rule removed."); await loadAll(); } catch (e) { setMsg(e.message); }
+  });
+}
+
+function showTab(name){
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("active", s.id === "tab-" + name));
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+$("year").onchange = renderAll;
+$("filterBucket").onchange = renderList;
+
+async function rebucket(id, bucket){
+  const t = TXS.find(x => x.id === id);
+  const learn = confirm(`Always sort transactions like "${t.desc}" into ${BY[bucket].name}?\n\nOK = save a rule for future imports. Cancel = just this one.`);
+  try {
+    const r = await api({op: "rebucket", id, bucket, learn});
+    setMsg(r.learned ? `Saved. "${r.learned}" will go to ${BY[bucket].name} on future imports.` : "Updated.");
+    await loadAll();
+  } catch (e) { setMsg(e.message); }
+}
+async function removeTx(id){
+  if (!confirm("Delete this transaction?")) return;
+  try { await api({op: "delete", id}); await loadAll(); } catch (e) { setMsg(e.message); }
+}
+
+$("addBtn").onclick = async () => {
+  try {
+    await api({op: "add", txn_date: $("fDate").value, description: $("fDesc").value, amount: $("fAmt").value,
+      card: $("fCard").value, bucket: $("fBucket").value, note: $("fNote").value});
+    ["fDesc", "fAmt", "fNote"].forEach(i => $(i).value = "");
+    setMsg("Added.");
+    await loadAll();
+  } catch (e) { setMsg(e.message); }
+};
+
+document.querySelectorAll("[data-key]").forEach(i => i.onchange = async () => {
+  const value = i.value === "" ? null : Number(i.value);
+  S[i.dataset.key] = value;
+  try { await api({op: "setting", key: i.dataset.key, value}); setMsg("Saved."); renderSummary(); } catch (e) { setMsg(e.message); }
+});
+$("addRule").onclick = async () => {
+  try {
+    await api({op: "rule-add", keyword: $("ruleKw").value, bucket: $("ruleBucket").value});
+    $("ruleKw").value = ""; setMsg("Rule added."); await loadAll();
+  } catch (e) { setMsg(e.message); }
+};
+
+function parseCSV(text){
+  const rows = []; let row = [], cur = "", q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){
+      if (c === '"' && text[i + 1] === '"'){ cur += '"'; i++; }
+      else if (c === '"') q = false;
+      else cur += c;
+    } else {
+      if (c === '"') q = true;
+      else if (c === ","){ row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r"){
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        row.push(cur); rows.push(row); row = []; cur = "";
+      } else cur += c;
+    }
+  }
+  if (cur || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ""));
+}
+function guess(headers, words){
+  const h = headers.map(x => x.toLowerCase());
+  for (const w of words){ const i = h.findIndex(x => x.includes(w)); if (i >= 0) return i; }
+  return 0;
+}
+function normDate(s){
+  s = String(s || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (isNaN(d)) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+$("csvFile").onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  f.text().then(text => {
+    const rows = parseCSV(text);
+    CSV = {headers: rows[0] || [], rows: rows.slice(1)};
+    const opts = CSV.headers.map((h, i) => `<option value="${i}">${esc(h) || "Column " + (i + 1)}</option>`).join("");
+    ["mDate", "mDesc", "mAmt"].forEach(id => $(id).innerHTML = opts);
+    $("mDate").value = guess(CSV.headers, ["date", "posted", "trans"]);
+    $("mDesc").value = guess(CSV.headers, ["description", "merchant", "payee", "name", "memo"]);
+    $("mAmt").value = guess(CSV.headers, ["amount", "debit", "charge"]);
+    $("mapCard").style.display = "block";
+    $("previewCard").style.display = "none";
+  });
+};
+
+$("previewBtn").onclick = () => {
+  const di = +$("mDate").value, dsi = +$("mDesc").value, ai = +$("mAmt").value;
+  const card = $("mCard").value.trim(), flip = $("mNeg").checked;
+  PREVIEW = [];
+  for (const r of CSV.rows){
+    const date = normDate(r[di]);
+    let amt = parseFloat(String(r[ai] || "").replace(/[$,\s]/g, ""));
+    if (!date || isNaN(amt)) continue;
+    if (flip) amt = -amt;
+    if (amt <= 0) continue; // payments and credits
+    PREVIEW.push({date, desc: (r[dsi] || "").trim(), amount: Math.round(amt * 100) / 100, card});
+  }
+  renderPreview();
+};
+
+function renderPreview(){
+  $("previewCard").style.display = "block";
+  $("previewCount").textContent = `${PREVIEW.length} charges ready (sorted on save)`;
+  $("previewBody").innerHTML = PREVIEW.map(p => `<tr><td>${p.date}</td><td>${esc(p.desc)}</td><td class="muted">auto</td><td class="num">${money(p.amount)}</td></tr>`).join("");
+}
+
+$("saveImportBtn").onclick = async () => {
+  if (!PREVIEW.length) return;
+  try {
+    const r = await api({op: "import", rows: PREVIEW});
+    PREVIEW = [];
+    $("previewCard").style.display = "none"; $("mapCard").style.display = "none"; $("csvFile").value = "";
+    setMsg(`Imported ${r.inserted} new transactions. ${r.skipped} already existed and were skipped.`);
+    showTab("list");
+    await loadAll();
+  } catch (e) { setMsg(e.message); }
+};
+
+// Populate the add-form bucket list and the year selector before first data load.
+loadAll();
+</script>
+</body>
+</html>
