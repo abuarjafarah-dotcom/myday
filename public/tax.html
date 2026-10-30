@@ -83,8 +83,10 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 
     <section id="tab-import">
       <div class="card">
-        <p class="muted" style="margin-top:0">Upload a CSV from any card or bank. Rules sort each row into a bucket. Duplicates are skipped, so re-uploading a statement is safe.</p>
+        <p class="muted" style="margin-top:0">Upload a CSV from any card or bank, or a Chase statement PDF. Rules sort each row into a bucket. Duplicates are skipped, so re-uploading a statement is safe.</p>
         <input type="file" id="csvFile" accept=".csv,text/csv">
+        <p class="muted" style="margin:14px 0 6px">Chase statement PDF (read in your browser; nothing is saved until you press Save all):</p>
+        <input type="file" id="pdfFile" accept="application/pdf">
       </div>
       <div class="card" id="mapCard" style="display:none">
         <div class="grid">
@@ -165,6 +167,8 @@ th{font-size:12px;color:var(--muted);font-weight:600}
   </div>
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="/tax-pdf.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -364,6 +368,30 @@ $("csvFile").onchange = e => {
     $("mapCard").style.display = "block";
     $("previewCard").style.display = "none";
   });
+};
+
+$("pdfFile").onchange = async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    if (!window.pdfjsLib) throw new Error("The PDF reader didn't load. Check your connection and try again.");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+    const pages = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      pages.push((await page.getTextContent()).items);
+    }
+    const r = TaxPdf.parseStatement(pages);
+    const cardName = $("mCard").value.trim();
+    PREVIEW = r.rows.map(x => ({ ...x, card: cardName || x.card }));
+    $("csvFile").value = "";
+    $("mapCard").style.display = "none";
+    renderPreview();
+    setMsg(`Read ${PREVIEW.length} purchases from the statement closing ${r.statementClose}. Check them, then press Save all.`);
+  } catch (err) {
+    setMsg(err.message);
+  }
 };
 
 $("previewBtn").onclick = () => {
