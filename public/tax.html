@@ -60,6 +60,11 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 
   <div id="app" style="display:none">
     <section id="tab-list" class="active">
+      <div class="card" id="queueCard" style="display:none">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><strong>To sort</strong><span class="muted" id="queueCount"></span></div>
+        <p class="muted" style="margin-top:0">These didn't match a rule. Pick a bucket and the app remembers it for future imports.</p>
+        <div class="wrap"><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th><th>Bucket</th></tr></thead><tbody id="queueBody"></tbody></table></div>
+      </div>
       <div class="card row"><select id="filterBucket" class="auto"></select><span class="muted" id="count"></span></div>
       <div class="card wrap">
         <table><thead><tr><th>Date</th><th>Description</th><th>Bucket</th><th>Card</th><th class="num">Amount</th><th></th></tr></thead><tbody id="txBody"></tbody></table>
@@ -227,13 +232,15 @@ function renderAll(){
   $("filterBucket").value = fb;
   $("fBucket").innerHTML = `<option value="">Auto-sort</option>` + opts;
   $("ruleBucket").innerHTML = opts;
-  renderList(); renderSummary(); renderSettings();
+  renderQueue(); renderList(); renderSummary(); renderSettings();
 }
 
 function renderList(){
   const bf = $("filterBucket").value;
-  const rows = TXS.filter(t => t.date.startsWith(YR()) && (!bf || t.bucket === bf));
-  $("count").textContent = `${rows.length} transactions`;
+  const inYear = TXS.filter(t => t.date.startsWith(YR()));
+  const rows = inYear.filter(t => bf ? t.bucket === bf : (t.bucket !== "personal" && t.bucket !== "review"));
+  const personal = bf ? 0 : inYear.filter(t => t.bucket === "personal").length;
+  $("count").textContent = `${rows.length} transactions` + (personal ? ` · ${personal} personal hidden (pick Personal in the filter to see them)` : "");
   $("emptyMsg").style.display = rows.length ? "none" : "block";
   $("txBody").innerHTML = rows.map(t => `<tr>
     <td>${t.date}</td>
@@ -245,6 +252,20 @@ function renderList(){
   </tr>`).join("");
   document.querySelectorAll(".rb").forEach(s => s.onchange = e => rebucket(e.target.dataset.id, e.target.value));
   document.querySelectorAll(".del").forEach(b => b.onclick = () => removeTx(b.dataset.id));
+}
+
+function renderQueue(){
+  const q = TXS.filter(t => t.date.startsWith(YR()) && t.bucket === "review");
+  $("queueCard").style.display = q.length ? "block" : "none";
+  $("queueCount").textContent = `${q.length} to sort`;
+  const opts = BUCKETS.filter(b => b.id !== "review").map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join("");
+  $("queueBody").innerHTML = q.map(t => `<tr>
+    <td>${t.date}</td>
+    <td>${esc(t.desc)}</td>
+    <td class="num">${money(t.amount)}</td>
+    <td><select class="auto qb" data-id="${t.id}"><option value="">Choose…</option>${opts}</select></td>
+  </tr>`).join("");
+  document.querySelectorAll(".qb").forEach(s => s.onchange = e => { if (e.target.value) rebucket(e.target.dataset.id, e.target.value); });
 }
 
 function renderSummary(){
