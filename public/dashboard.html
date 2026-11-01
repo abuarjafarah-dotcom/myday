@@ -1103,6 +1103,37 @@ input, select, textarea { font-size: max(16px, 1rem); }
 .rw-app .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:60}
 .rw-app .stack{display:flex;flex-direction:column;gap:12px}
 .rw-app .label{display:block}
+
+/* ---- Rewards: kid-friendly pastel blocks (own palette, no third-party branding) ---- */
+.rw-app{background:#FFF8E8}
+.rw-app .top{margin-bottom:12px;flex-wrap:nowrap;gap:8px}
+.rw-app .top .who{min-width:0;flex:1}
+.rw-app .top .who h1{font-size:26px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rw-app .top .pill{flex:none}
+.rw-app .rw-row{display:flex;align-items:center;gap:10px}
+.rw-app .rw-earn{background:#FFE58A;border-radius:999px;padding:8px 14px;font-weight:900;font-size:16px;color:#1D1247;box-shadow:0 3px 0 #E9C64E;white-space:nowrap}
+.rw-app .switch{border-radius:999px;border:0;background:#FFFFFF;box-shadow:0 3px 0 #EFE6CC}
+.rw-app .switch button.on{background:#FF8A65;box-shadow:0 3px 0 #D9643F}
+.rw-app .seg{border:0;background:#FFFFFF;box-shadow:0 3px 0 #EFE6CC}
+.rw-app .seg .chipb.on{background:#7CC8F5}
+.rw-app .sec{color:#7A6A4F;letter-spacing:.06em}
+.rw-app .stack{gap:14px}
+.rw-app .task,.rw-app .reward{border:0;border-radius:30px;padding:16px;box-shadow:0 5px 0 rgba(29,18,71,.08)}
+.rw-app .stack > *:nth-child(5n+1){background:#FFE9A8}
+.rw-app .stack > *:nth-child(5n+2){background:#CFE8FF}
+.rw-app .stack > *:nth-child(5n+3){background:#E7DDFF}
+.rw-app .stack > *:nth-child(5n+4){background:#CFF4E4}
+.rw-app .stack > *:nth-child(5n+5){background:#FFD9C7}
+.rw-app .task .emo,.rw-app .reward .emo{width:64px;height:64px;border-radius:50%;background:#FFFFFF;display:grid;place-items:center;font-size:34px;flex:none;box-shadow:0 3px 0 rgba(29,18,71,.08)}
+.rw-app .tx b{font-size:20px;font-weight:900}
+.rw-app .btn{border-radius:999px;padding:14px 22px;font-size:16px;background:#FF8A65;box-shadow:0 4px 0 #D9643F}
+.rw-app .btn.teal{background:#4FBF9F;box-shadow:0 4px 0 #2F9C7C}
+.rw-app .chip{background:#FFFFFF}
+.rw-app .chip.gold{background:#FFF1B8}
+.rw-app .empty{background:#FFFFFF;border:0;border-radius:30px;color:#7A6A4F;box-shadow:0 5px 0 rgba(29,18,71,.06)}
+.rw-app .rw-newrow{border:0;border-radius:30px;background:#FFFFFF;box-shadow:0 4px 0 rgba(29,18,71,.06)}
+.rw-app .rw-newrow:focus-within{border:0;box-shadow:0 0 0 3px #7CC8F5}
+.rw-app .rw-emoji{background:#FFE9A8;border-radius:22px}
 </style>
 </head>
 <body>
@@ -1872,7 +1903,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
   function rwKidView(d) {
     const k = ui.rwKid, kid = d.kids[k], tab = ui.rwTab || 'today';
     const waiting = d.approvals.filter(a => a.kid === k).length;
-    const seg = `<div class="seg" style="margin-bottom:16px"><button class="chipb ${tab === 'today' ? 'on' : ''}" data-rw="tab" data-v="today">Today</button><button class="chipb ${tab === 'rewards' ? 'on' : ''}" data-rw="tab" data-v="rewards">Rewards</button></div>`;
+    const seg = `<div class="rw-row" style="margin-bottom:16px"><div class="seg" style="flex:1"><button class="chipb ${tab === 'today' ? 'on' : ''}" data-rw="tab" data-v="today">Today</button><button class="chipb ${tab === 'rewards' ? 'on' : ''}" data-rw="tab" data-v="rewards">Rewards</button></div><span class="rw-earn" aria-label="Points">⭐ ${kid.points}</span></div>`;
     let body;
     if (tab === 'rewards') {
       const cards = kid.rewards.map(r => {
