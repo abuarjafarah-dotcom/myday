@@ -834,7 +834,7 @@ body.cmd-open { overflow: hidden; }
 .h-smart .dec-card { margin-top: 16px; }
 
 /* Today timeline */
-.h-today { order: 2; } .ab-add > summary { cursor: pointer; font-weight: 600; font-size: 0.9375rem; list-style: none; min-height: 44px; display: flex; align-items: center; } .ab-add > summary::-webkit-details-marker { display: none; } .ab-body { padding-top: 6px; } .ab-add input[type="date"], .ab-add select { min-height: 44px; border-radius: 10px; }  .ab-hint { font-size: 0.8125rem; margin: 8px 0 0; } .h-dump { display: none; } .h-carry { display: none; } .h-oldtoday { display: none; }
+.h-today { order: 2; } .ab-add > summary { cursor: pointer; font-weight: 600; font-size: 0.9375rem; list-style: none; min-height: 44px; display: flex; align-items: center; } .ab-add > summary::-webkit-details-marker { display: none; } .ab-body { padding-top: 6px; } .ab-add input[type="date"], .ab-add select { min-height: 44px; border-radius: 10px; }  .ab-hint { font-size: 0.8125rem; margin: 8px 0 0; } .h-dump { display: none; } .h-carry { display: none; } .h-oldtoday { display: none; } .h-video { order: 11; } .dayvid .btn-add { width: 100%; min-height: 44px; }
 .tl-card { border-radius: 14px; }
 .tl-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .tl-chip { font-size: 0.8125rem; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--text); border: 1px solid var(--border); }
@@ -1247,6 +1247,10 @@ input, select, textarea { font-size: max(16px, 1rem); }
         </details>
       </div>
     </details>
+    <div class="card h-video dayvid">
+      <button type="button" class="btn-add" data-act="day-video">🎬 Copy today's kids prompt for Gemini video</button>
+      <p class="muted ab-hint">Copies a prompt built from today's kids' tasks. Paste it into Gemini to make a short video of the day.</p>
+    </div>
   </div>
 </section>
 
@@ -5876,6 +5880,25 @@ Rules:
     const ev = i;   // calendar
     return `<div class="tl-row ${past ? 'past' : ''}">${when}<div class="tl-body"><div class="tl-ev"><span class="tl-ev-t">${esc(tidyTitle(ev.title))}</span><span class="muted">${ev.end > ev.start ? 'until ' + esc(clockShort(ev.end)) : ''}</span></div></div></div>`;
   }
+  // ---------- day video prompt: copied for pasting into Gemini ----------
+  const KID_RE = /\b(hamad|talal|yousef|kids?|sons?|school|pick-?up|drop[- ]?off|bedtime|nap|swim|soccer|playdate)\b/i;
+  function isKidTask(t) { return t.category === 'kids' || KID_RE.test(t.title || ''); }
+  function dayVideoPrompt(tasks) {
+    const at = t => (t.time ? timeMin(t.time) : 9999);
+    const lines = tasks.slice().sort((a, b) => at(a) - at(b))
+      .map(t => `- ${t.time ? clockShort(timeMin(t.time)) + ' ' : ''}${tidyTitle(t.title)}`).join('\n');
+    return `Create a short vertical video (about 15 seconds) visualizing a family's day in a warm, friendly illustration style. Show these moments in order:\n${lines}\nSoft morning-to-bedtime light, simple cheerful characters, no readable text, no real children's faces.`;
+  }
+  function copyDayVideoPrompt() {
+    const td = today();
+    const kids = Object.values(S.tasks).filter(t => t.date === td && isKidTask(t) && (isOpen(t) || t.status === 'done'));
+    if (!kids.length) return toast('No kids’ tasks today');
+    const text = dayVideoPrompt(kids);
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+      .then(() => toast('Prompt copied. Paste it into Gemini.'))
+      .catch(() => window.prompt('Copy this prompt for Gemini:', text));
+  }
+
   function renderTimeline() {
     const box = $('timelineBox'); if (!box) return;
     const td = today(), nowMin = nowMinutes();
@@ -6438,6 +6461,7 @@ Rules:
         case 'dec': { const d = decList.find(x => x.key === el.dataset.key); const a = d && d.acts[+el.dataset.i]; if (a) a.run(); break; }
         case 'dec-all': ui.decAll = !ui.decAll; saveUi(); renderDecide(); break;
         case 'toast-undo': { const u = toastUndo; hideToast(); if (u) u(); break; }
+        case 'day-video': copyDayVideoPrompt(); break;
         case 'tl-earlier': ui.open.tlEarlier = !ui.open.tlEarlier; saveUi(); renderTimeline(); break;
         case 'tl-all': ui.open.tlAll = !ui.open.tlAll; saveUi(); renderTimeline(); break;
         case 'tl-slot': { const t = S.tasks[id]; if (!t) break; const undo = snapTasks([id]); setTask(id, { date: today(), time: clockLabel(+el.dataset.min), duration: taskMinutes(t), originalDate: t.originalDate || (t.date && t.date !== today() ? t.date : null) }); toast(`${t.title} at ${clockLabel(+el.dataset.min)}.`, undo); break; }
