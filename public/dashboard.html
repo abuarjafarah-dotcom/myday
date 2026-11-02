@@ -6115,7 +6115,26 @@ Rules:
     if (wh) lines.push(`Work ${clockShort(wh.start)} to ${clockShort(wh.end)}.`);
     lines.push(items.length ? `${items.length} timed thing${items.length === 1 ? '' : 's'} left, first: ${tidyTitle(items[0].title)} at ${clockShort(items[0].start)}.` : 'Nothing else timed today.');
     if (free >= 20) lines.push(`About ${minLabel(Math.round(free / 15) * 15)} of free time before wind-down.`);
-    return `<div class="card rit-brief"><h2>Today at a glance</h2>${lines.map(l => `<p>${esc(l)}</p>`).join('')}</div>`;
+    return todayDayCardHtml(lines);
+  }
+  // Today as a Week-style day card (same look as the Week tab), with the at-a-glance lines underneath.
+  function todayDayCardHtml(lines) {
+    const td = today(), w = wxDay(td), { carry } = views();
+    const base = Object.values(S.tasks).filter(t => t.date === td && (isOpen(t) || t.status === 'done'));
+    const items = [...carry, ...base].sort(byTime);
+    const timed = items.filter(t => timeMin(t.time) < 9998), anytime = items.filter(t => !(timeMin(t.time) < 9998));
+    const evs = eventsOn(td).filter(ev => !ev.allDay);
+    const rows = [
+      ...evs.map(ev => ({ m: evMin(ev), html: `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${esc(evTime(ev))} ${esc(ev.title || '(No title)')}</span></div>` })),
+      ...timed.map(t => ({ m: timeMin(t.time), html: wktRow(t, true) }))
+    ].sort((a, b) => a.m - b.m).map(r => r.html).join('');
+    const anyHtml = anytime.length ? `<div class="wkt-anytime"><p class="eyebrow">Anytime</p>${anytime.map(t => wktRow(t, true)).join('')}</div>` : '';
+    const empty = !rows && !anyHtml ? '<div class="muted">Nothing planned</div>' : '';
+    return `<div class="wkt-cards"><div class="week-day is-today rit-brief">
+      <div class="week-day-title"><span class="wkt-dname">Today</span><span class="week-tools">${w ? `<span class="wx-chip">${esc(wxShort(w))}</span>` : ''}</span></div>
+      ${rows}${anyHtml}${empty}
+      <div class="wkt-glance">${lines.map(l => `<p class="muted">${esc(l)}</p>`).join('')}</div>
+    </div></div>`;
   }
   function eveningHtml() {
     const parts = [];
