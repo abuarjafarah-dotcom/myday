@@ -2463,7 +2463,11 @@ Rules:
     let dumpDate = null;
     const head = s.match(/^\s*brain\s*dump\s*([a-z]*)\s*:/i);
     if (head) { dumpDate = guessDate(head[1] || '', null) || today(); s = s.slice(head[0].length); }
-    const parts = s.split(/\n|,|;|•|\.\s+/).map(x => x.trim().replace(/^[-*\d.)\s]+/, '').replace(/\.$/, '')).filter(x => x.length > 1);
+    // Spoken text has no commas: split on "and", "then", "also", "plus", and on "I wanna / I'm gonna / we need to" starts.
+    const SPOKEN_SPLIT = /\n|,|;|•|\.\s+|\s+(?:and then|and also|and|then|also|plus)\s+|\s+(?=\b(?:i|we)(?:'m|\s+am)?\s+(?:wanna|want to|need to|gonna|have to|got to|gotta|should)\b)/i;
+    const parts = s.split(SPOKEN_SPLIT).map(x => x.trim().replace(/^[-*\d.)\s]+/, '').replace(/\.$/, '')
+      .replace(/^(?:and\s+|so\s+|ok(?:ay)?\s+|um+\s+)+/i, '')
+      .replace(/^(?:i'?m\s+gonna|i\s+wanna|i\s+want\s+to|i\s+need\s+to|i\s+gotta|i\s+have\s+to|we\s+need\s+to|we\s+have\s+to|gonna|i)\s+/i, '')).filter(x => x.length > 1);
     const storeList = stores();
     const out = { tasks: [], grocery: [], ideas: [] };
     parts.forEach(p => {
