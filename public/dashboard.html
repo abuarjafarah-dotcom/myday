@@ -946,6 +946,11 @@ input, select, textarea { font-size: max(16px, 1rem); }
 .ti-facts { font-size: var(--fs-sm); color: var(--muted); }
 .text-btn { min-height: 44px; padding: 0 10px; border: 0; background: none; color: var(--text); font-size: var(--fs-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .cmd-mic { flex: 0 0 auto; width: auto; padding: 0 6px; display: flex; flex-direction: column; gap: 0; font-size: var(--fs-xs); text-decoration: none; }
+.cmd-mic { border: 0; background: none; cursor: pointer; font: inherit; }
+.cmd-mic[aria-pressed="true"] { color: var(--danger, #b42318); }
+.cmd-mic[aria-pressed="true"] svg { animation: cmd-mic-pulse 1.2s ease-in-out infinite; }
+@keyframes cmd-mic-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .cmd-mic[aria-pressed="true"] svg { animation: none; } }
 .shift-btn { display: inline-flex; align-items: center; gap: 4px; min-width: 48px; }
 .shift-btn span { font-size: var(--fs-xs); }
 
@@ -1381,7 +1386,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <div class="cmd-sheet" id="cmdSheet" hidden role="dialog" aria-modal="true" aria-label="Ask or do anything">
-  <div class="cmd-top"><textarea id="cmdInput" rows="1" enterkeyhint="go" autocomplete="off" autocapitalize="sentences" placeholder="Dump anything, or: move swim to Thursday" aria-label="Add, ask or do anything" aria-controls="cmdList"></textarea><a class="cmd-mic" href="/capture.html"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg><span>Voice</span></a><button type="button" class="cmd-x" data-act="cmd-close">Cancel</button></div>
+  <div class="cmd-top"><textarea id="cmdInput" rows="1" enterkeyhint="go" autocomplete="off" autocapitalize="sentences" placeholder="Dump anything, or: move swim to Thursday" aria-label="Add, ask or do anything" aria-controls="cmdList"></textarea><button type="button" class="cmd-mic" id="cmdMic" data-act="cmd-mic" aria-pressed="false" aria-label="Brain dump by voice"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg><span id="cmdMicLabel">Voice</span></button><button type="button" class="cmd-x" data-act="cmd-close">Cancel</button></div>
   <div class="cmd-list" id="cmdList" role="listbox"></div>
 </div>
 <footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 11, v2 Home</span></footer>
@@ -6401,6 +6406,42 @@ Rules:
       return head + `<button type="button" class="cmd-r ${r.top && i === 0 ? 'top' : ''}" data-act="cmd-run" data-i="${i}" role="option"><b>${esc(r.title)}</b>${r.sub ? `<span>${esc(r.sub)}</span>` : ''}${r.top && i === 0 ? '<kbd>↵</kbd>' : ''}</button>`;
     }).join('');
   }
+  // Voice: dictate straight into the command box. When you stop (tap again, or the phone stops listening),
+  // the words are sorted with the same review as "Sort N things", so you can tick, edit or drop items before anything is added.
+  let voice = null, voiceBase = '';
+  function setMic(on) {
+    const b = $('cmdMic'); if (!b) return;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    const l = $('cmdMicLabel'); if (l) l.textContent = on ? 'Stop' : 'Voice';
+  }
+  function toggleVoice() {
+    if (voice) { try { voice.stop(); } catch (e) {} return; }
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const inp = $('cmdInput');
+    if (!Rec) { toast('Voice isn’t available in this browser. Tap the keyboard’s mic instead.'); inp.focus(); return; }
+    inp.blur();
+    voiceBase = inp.value.trim() ? inp.value.replace(/\s+$/, '') + ' ' : '';
+    const r = new Rec();
+    r.lang = 'en-US'; r.continuous = true; r.interimResults = true;
+    let done = '';
+    r.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) done += t.trim() + ' '; else interim += t;
+      }
+      inp.value = (voiceBase + done + interim).replace(/[ \t]{2,}/g, ' ');
+      growCmd(); lsSet(LS.draft, inp.value); renderCmd();
+    };
+    r.onerror = e => { if (e.error !== 'no-speech' && e.error !== 'aborted') toast('Voice stopped. Your words are still here.'); };
+    r.onend = () => {
+      voice = null; setMic(false);
+      const text = inp.value.trim();
+      if (text) runDump(text);
+    };
+    voice = r; setMic(true);
+    try { r.start(); } catch (e) { voice = null; setMic(false); toast('Couldn’t start voice. Try again.'); }
+  }
   function openCmd(q) {
     const sh = $('cmdSheet'); if (!sh) return;
     sh.hidden = false; document.body.classList.add('cmd-open');
@@ -6493,6 +6534,7 @@ Rules:
         case 'done-toggle': case 'paused-toggle': renderTimeline(); break;
         case 'cmd-open': openCmd(); break;
         case 'cmd-close': closeCmd(); break;
+        case 'cmd-mic': toggleVoice(); break;
         case 'cmd-try': $('cmdInput').value = el.dataset.q; renderCmd(); $('cmdInput').focus(); break;
         case 'cmd-nav': { const n = NAV[+el.dataset.i]; if (n) n[3](); break; }
         case 'cmd-run': { const r = cmdRes[+el.dataset.i]; if (r && r.run) { if (r.kind === 'do') { lsSet(LS.draft, ''); $('cmdInput').value = ''; } r.run(); } break; }
