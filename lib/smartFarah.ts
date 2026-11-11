@@ -35,7 +35,9 @@ function matchedTag(text: string): FarahTag | null {
   return null;
 }
 
-const GROCERY_WORDS = /\b(yogh?urts?|milk|eggs?|bread|berr(?:y|ies)|blueberr\w*|strawberr\w*|raspberr\w*|chicken|beef|ground beef|lamb|turkey|fish|salmon|shrimp|rice|cheese|fruits?|apples?|bananas?|grapes|oranges?|clementines?|avocados?|lemons?|limes?|water|oil|diapers?|wipes|formula|puffs|pouch(?:es)?|pasta|tomato(?:es)?|onions?|garlic|potato(?:es)?|cucumbers?|lettuce|spinach|carrots?|peppers?|zucchini|eggplant|cauliflower|broccoli|parsley|mint|cilantro|butter|labneh|hummus|za'?atar|olives?|dates|flour|sugar|cereal|oats|oatmeal|snacks?|crackers|juice|coffee|tea|paper towels?|toilet paper|tissues|detergent|soap|dish soap|shampoo|toothpaste|pita|tortillas?|beans|lentils|chickpeas|nuts|almonds|honey|jam|peanut butter|ketchup|spices?|salt|frozen|ice cream|popsicles|pumpkins?|squash|corn|vitamins|trash bags|ziploc\w*|foil)\b/i;
+// "Groceries many raisins from target": the word "groceries" alone means it's a grocery run, whatever the item.
+const GROCERY_LEAD = /\bgrocer(?:y|ies)\b/i;
+const GROCERY_WORDS = /\b(yogh?urts?|milk|eggs?|bread|berr(?:y|ies)|blueberr\w*|strawberr\w*|raspberr\w*|raisins?|chicken|beef|ground beef|lamb|turkey|fish|salmon|shrimp|rice|cheese|fruits?|apples?|bananas?|grapes|oranges?|clementines?|avocados?|lemons?|limes?|water|oil|diapers?|wipes|formula|puffs|pouch(?:es)?|pasta|tomato(?:es)?|onions?|garlic|potato(?:es)?|cucumbers?|lettuce|spinach|carrots?|peppers?|zucchini|eggplant|cauliflower|broccoli|parsley|mint|cilantro|butter|labneh|hummus|za'?atar|olives?|dates|flour|sugar|cereal|oats|oatmeal|snacks?|crackers|juice|coffee|tea|paper towels?|toilet paper|tissues|detergent|soap|dish soap|shampoo|toothpaste|pita|tortillas?|beans|lentils|chickpeas|nuts|almonds|honey|jam|peanut butter|ketchup|spices?|salt|frozen|ice cream|popsicles|pumpkins?|squash|corn|vitamins|trash bags|ziploc\w*|foil)\b/i;
 const TASKY = /\b(call|clean|fold|carv\w*|cook|make|bake|wash|book|schedule|pay|email|text|fix|plan|prep|return|exchange|patch|picking)\b/i;
 // "Kids buy pumpkins", "we carve pumpkins": someone doing something, so a task even with a grocery word in it.
 const SUBJECT_VERB = /\b(?:kids?|boys|hamad|talal|yousef|yusuf|omar|we|i)\s+(?:will\s+|can\s+|should\s+)?(?:buy|eat|carve|make|pick|bake|cook|go|bring|try)\b/i;
@@ -77,7 +79,8 @@ function stripStore(piece: string, store: string): string {
 function cleanGrocery(piece: string): string[] {
   return piece
     .replace(/^\s*(?:and\s+)?(?:we\s+|i\s+)?(?:need(?:\s+to\s+(?:buy|get))?|buy|get|grab|pick ?up|order|add|more|also)\s+/i, "")
-    .replace(/^\s*(?:some|more|a|an)\s+/i, "")
+    .replace(/^\s*(?:groceries|grocery)\s*[:,-]?\s*(?=\S)/i, "")
+    .replace(/^\s*(?:some|more|many|few|a few|a couple of|a|an)\s+/i, "")
     .replace(/[.,;!]+$/, "")
     .split(/\s+(?:and|&)\s+/i)
     .map((s) => s.trim())
@@ -148,7 +151,7 @@ export function sortCapture(text: string, today: string, ctx: SortContext): Fara
       const bare = store !== null && !rest;
       const hasDate = !!findDate(piece, today) || /\b\d{1,2}(?::\d{2})?\s*[ap]\.?m\b/i.test(piece);
       const short = piece.split(/\s+/).length <= 5;
-      const grocery = !bare && !TASKY.test(piece) && !SUBJECT_VERB.test(piece) && (GROCERY_WORDS.test(piece) || (groceryRun && !!storeCtx && short && !hasDate && !matchedTag(piece)));
+      const grocery = !bare && !TASKY.test(piece) && !SUBJECT_VERB.test(piece) && (GROCERY_WORDS.test(piece) || GROCERY_LEAD.test(piece) || (groceryRun && !!storeCtx && short && !hasDate && !matchedTag(piece)));
       if (store) storeCtx = store;
 
       if (grocery) {
