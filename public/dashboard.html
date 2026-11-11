@@ -1216,10 +1216,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div id="carryBox" class="h-carry"></div>
   </div>
   <div class="home-side">
-    <details class="card fold h-time" data-fold="timer">
-      <summary><span>Time a task</span></summary>
-      <div class="fold-body"><div id="trackerBox"></div></div>
-    </details>
     <details class="card fold h-more" data-fold="more">
       <summary><span>More</span><span class="count" id="moreCount"></span></summary>
       <div class="fold-body more-list">
@@ -6286,7 +6282,6 @@ Rules:
     [/^(school( radar)?|school email)$/, 'School radar', 'From school emails', () => openFold('school', 'schoolBox')],
     [/^(life admin|admin|taxes?|deadlines?)$/, 'Life admin', 'Yearly deadlines', () => openFold('admin', 'adminBox')],
     [/^(settings|reminders|notifications|work( day| hours)?)$/, 'Reminders and work day', 'Settings', () => openFold('reminders', 'settingsBody')],
-    [/^(timer|time a task)$/, 'Time a task', 'Focus timer', () => openFold('timer', 'trackerBox')],
     [/^(energy|survival( mode)?|light( mode)?|low energy)$/, 'Energy today', 'Full, light or survival', () => { ui.tab = 'home'; ui.capOpen = true; saveUi(); closeCmd(); render(); window.scrollTo({ top: 0 }); }],
   ];
   function openFold(name, target) {
