@@ -1234,7 +1234,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
           <summary><span>Calendar today</span><span class="count" id="calCount"></span></summary>
           <div class="fold-body"><div id="calTodayBox"></div></div>
         </details>
-        <details class="fold sub" data-fold="anytime">
+        <details class="fold sub" data-fold="anytime" style="display:none" hidden>
           <summary><span>Anytime</span><span class="count" id="anyCount"></span></summary>
           <div class="fold-body"><div id="anytimeBox"></div></div>
         </details>
@@ -5940,8 +5940,11 @@ Rules:
     const earlierHtml = earlier.length ? `<button class="toggle-line tl-earlier" data-act="tl-earlier" aria-expanded="${earlierOpen}">${earlierOpen ? 'Hide' : 'Show'} earlier (${earlier.length})</button>${earlierOpen ? earlier.map(i => tlRow(i, nowMin)).join('') : ''}` : '';
 
     // Untimed: today's and carried-over tasks. Kid routines with a time are in the timeline above.
-    const { carry, todayOpen, doneToday } = views();
-    let untimed = carry.concat(todayOpen.filter(t => !(t.time && timeMin(t.time) < 9000)))
+    const { carry, todayOpen, doneToday, anytime: undated } = views();
+    // One Anytime list: today's and carried-over untimed tasks plus undated tasks (the old separate Anytime list).
+    const seen = new Set();
+    let untimed = carry.concat(todayOpen.filter(t => !(t.time && timeMin(t.time) < 9000)), undated)
+      .filter(t => { if (seen.has(t.id)) return false; seen.add(t.id); return true; })
       .sort((a, b) => priorityScore(b.priority) - priorityScore(a.priority) || (a.date || '').localeCompare(b.date || '') || (a.createdAt || 0) - (b.createdAt || 0));
     if (workFold) { const keep = t => t.category === 'work' || isPinned(t); waiting += untimed.filter(t => !keep(t)).length; untimed = untimed.filter(keep); }
     const workLine = wk ? `<button class="tl-workfold" data-act="tl-work" aria-expanded="${!workFold}"><span aria-hidden="true">💼</span><span>${workFold ? (waiting ? `${waiting} family item${waiting === 1 ? '' : 's'} wait until ${esc(clockShort(wk.end))}. Pickup and anything urgent stay here.` : `Work until ${esc(clockShort(wk.end))}. Pickup and anything urgent stay here.`) : `Showing everything during work hours.`}</span><span class="tl-wf-a">${workFold ? (waiting ? 'Show' : '') : 'Work view'}</span></button>` : '';
@@ -5962,7 +5965,7 @@ Rules:
       ${allDay.length ? `<div class="tl-chips">${allDay.map(a => `<span class="tl-chip">${a}</span>`).join('')}</div>` : ''}
       ${workLine}${earlierHtml}
       <div class="tl-list">${seq.map(x => x.html).join('') || stateHtml('empty', 'Nothing timed today. The day is yours.')}</div>
-      <div class="tl-sub"><span>Anytime today</span><span class="muted">${untimed.length}</span></div>
+      <div class="tl-sub"><span>Anytime</span><span class="muted">${untimed.length}</span></div>
       ${hint}
       ${shown.map(t => taskRow(t, { tomorrow: true })).join('') || stateHtml('empty', capMode() === 'survival' ? 'Nothing essential left. Rest counts.' : calmLine())}
       ${more > 0 ? `<button class="toggle-line" data-act="tl-all">Show ${more} more</button>` : all && untimed.length > TL_SHOW ? '<button class="toggle-line" data-act="tl-all">Show fewer</button>' : ''}
