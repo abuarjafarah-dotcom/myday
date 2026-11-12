@@ -164,6 +164,10 @@ input[type="checkbox"] { width: 22px; height: 22px; margin: 11px 4px; accent-col
 
 /* DONUT + STATUS */
 .donut-container { display: flex; gap: 16px; margin-bottom: 16px; align-items: center; }
+.energy-block { margin-bottom: 16px; }
+.energy-strip { display: flex; gap: 2px; height: 18px; border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+.energy-strip span { height: 100%; transition: opacity .2s; }
+.energy-block .donut-legend { flex-direction: row; flex-wrap: wrap; gap: 6px 14px; }
 .donut-svg { flex: 0 0 120px; width: 120px; height: 120px; }
 .donut-legend { flex: 1; font-size: 0.8125rem; display: flex; flex-direction: column; gap: 6px; }
 .legend-item { display: flex; align-items: center; gap: 6px; color: var(--body); }
@@ -1280,8 +1284,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div id="wkSummary"></div>
     <div class="card energy-card">
       <div class="energy-head"><h2>Where your energy went</h2><div class="seg sm" id="energySeg" role="group" aria-label="Energy scope"></div></div>
-      <div class="donut-container">
-        <svg class="donut-svg" viewBox="0 0 120 120" id="donut" role="img" aria-label="Finished tasks by category"></svg>
+      <div class="energy-block">
+        <div class="energy-strip" id="donut" role="img" aria-label="Finished tasks by category"></div>
         <div class="donut-legend" id="donutLegend"></div>
       </div>
     </div>
@@ -2611,19 +2615,15 @@ Rules:
       return scope === 'week' ? (d >= mon && d <= sun) : d.slice(0, 7) === td.slice(0, 7);
     });
     const counts = {}; pool.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
-    const total = pool.length; const C = 2 * Math.PI * 45; let off = 0;
-    let svg = `<circle cx="60" cy="60" r="45" fill="none" style="stroke:var(--border)" stroke-width="20"></circle>`;
+    const total = pool.length;
+    // one strip: each segment is a category's share of the period (sample-free, from real tasks)
     const legendRows = [];
-    Object.entries(counts).forEach(([c, n]) => {
-      const len = (n / total) * C;
-      svg += `<circle cx="60" cy="60" r="45" fill="none" stroke="${catColor(c)}" stroke-width="20" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"></circle>`;
-      off += len;
+    const segs = Object.entries(counts).map(([c, n]) => {
       legendRows.push(`<div class="legend-item"><div class="legend-color" style="background:${catColor(c)}"></div><span><span class="legend-count">${n}</span> ${esc((CATS[c] || {}).label || c)}</span></div>`);
+      return `<span style="width:${(n / total * 100).toFixed(2)}%;background:${catColor(c)}" title="${esc((CATS[c] || {}).label || c)}: ${n}"></span>`;
     });
-    const centre = scope === 'today'
-      ? `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${total ? Math.round(doneTodayCount / total * 100) : 0}%</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">done</text>`
-      : `<text x="60" y="58" text-anchor="middle" font-size="18" font-weight="700" style="fill:var(--primary)">${total}</text><text x="60" y="77" text-anchor="middle" font-size="13" style="fill:var(--muted)">finished</text>`;
-    $('donut').innerHTML = svg + centre;
+    $('donut').innerHTML = total ? segs.join('') : '<span style="width:100%;background:var(--border)"></span>';
+    $('donut').setAttribute('aria-label', total ? `${total} ${scope === 'today' ? 'tasks today' : 'finished'}` : 'Nothing finished yet');
     $('donutLegend').innerHTML = legendRows.length ? legendRows.join('')
       : `<div class="empty">${scope === 'today' ? 'No tasks today yet.' : 'Nothing finished in this period yet.'}</div>`;
     $('energySeg').innerHTML = [['today', 'Today'], ['week', 'This week'], ['month', 'This month']]
@@ -5489,26 +5489,42 @@ Rules:
     // where the energy went
     label(y, 'Where your energy went'); y += 30;
     if (cats.length) {
-      // donut: each slice is a category's share of the month's finished tasks; total in the middle
-      const total = cats.reduce((a, [, n]) => a + n, 0);
-      const R = 112, SW = 46, dcx = X + R + SW / 2, dcy = y + R + SW / 2 + 16, C = 2 * Math.PI * R, gap = cats.length > 1 ? 4 : 0;
-      o.push(`<circle cx="${dcx}" cy="${dcy}" r="${R}" fill="none" stroke="${LINE}" stroke-width="${SW}"/>`);
-      let acc = 0;
-      cats.forEach(([c, n]) => {
-        const len = C * n / total;
-        o.push(`<circle cx="${dcx}" cy="${dcy}" r="${R}" fill="none" stroke="${catColor(c)}" stroke-width="${SW}" stroke-dasharray="${Math.max(1, len - gap).toFixed(1)} ${C.toFixed(1)}" stroke-dashoffset="${(-acc).toFixed(1)}" transform="rotate(-90 ${dcx} ${dcy})"/>`);
-        acc += len;
+      // one strip per week of the month: each bar is that week's finished tasks split by category
+      const nWeeks = Math.ceil((off + d.dim) / 7), RH = 116, BH = 34, mon = new Date(d.year, d.month - 1, 1).toLocaleString('en-US', { month: 'short' });
+      const weekDays = j => [Math.max(1, 7 * j - off + 1), Math.min(d.dim, 7 * (j + 1) - off)];
+      const wk = [];
+      for (let j = 0; j < nWeeks; j++) {
+        const c = {}; let n = 0;
+        for (let i = 0; i < d.dim; i++) {
+          if (Math.floor((off + i) / 7) !== j) continue;
+          Object.entries(d.dayCat[i] || {}).forEach(([cat, v]) => { c[cat] = (c[cat] || 0) + v; n += v; });
+        }
+        wk.push({ j, c, n });
+      }
+      wk.forEach(w => {
+        const ry = y + w.j * RH, [s, e] = weekDays(w.j);
+        text(X, ry + 26, `${mon} ${s}–${e}`, { size: 24, fill: MUTED });
+        text(W - X, ry + 26, `${w.n} done`, { anchor: 'end', size: 26, fill: w.n ? INK : MUTED, bold: true });
+        const barY = ry + 46;
+        if (!w.n) { o.push(`<rect x="${X}" y="${barY}" width="${IW}" height="${BH}" rx="8" fill="${LINE}"/>`); return; }
+        let bx = X;
+        Object.entries(w.c).sort((a, b) => b[1] - a[1]).forEach(([cat, v]) => {
+          const ww = IW * v / w.n;
+          o.push(`<rect x="${bx.toFixed(1)}" y="${barY}" width="${ww.toFixed(1)}" height="${BH}" fill="${catColor(cat)}"/>`);
+          bx += ww;
+        });
       });
-      text(dcx, dcy + 18, String(total), { anchor: 'middle', serif: true, bold: true, size: 60 });
-      text(dcx, dcy + 52, 'done', { anchor: 'middle', size: 22, fill: MUTED });
-      const lx = X + 2 * R + SW + 44, rows = Math.min(8, cats.length), rowH = 48, ly0 = dcy - (rows - 1) * rowH / 2 + 9;
-      cats.slice(0, 8).forEach(([c, n], i) => {
-        const ry = ly0 + i * rowH;
-        o.push(`<circle cx="${lx + 9}" cy="${ry - 9}" r="9" fill="${catColor(c)}"/>`);
-        text(lx + 30, ry, (CATS[c] || {}).label || c, { size: 28 });
-        text(W - X, ry, `${n} · ${Math.round(n / total * 100)}%`, { anchor: 'end', size: 26, fill: MUTED });
+      y += nWeeks * RH + 4;
+      // legend: category colors, wrapping to a second line when needed
+      let lx = X, ly = y;
+      cats.slice(0, 8).forEach(([c]) => {
+        const name = (CATS[c] || {}).label || c, w2 = 30 + name.length * 14 + 30;
+        if (lx + w2 > W - X) { lx = X; ly += 40; }
+        o.push(`<circle cx="${lx + 9}" cy="${ly - 8}" r="9" fill="${catColor(c)}"/>`);
+        text(lx + 26, ly, name, { size: 24, fill: MUTED });
+        lx += w2;
       });
-      y = Math.max(dcy + R + SW / 2, ly0 + (rows - 1) * rowH + 10) + 24;
+      y = ly + 16;
     } else { text(X, y + 30, 'Nothing finished yet. The first one starts the picture.', { size: 26, fill: MUTED }); y += 60; }
     y += 20; rule(y); y += 56;
 
