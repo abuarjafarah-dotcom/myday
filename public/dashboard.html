@@ -522,6 +522,8 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 .rc-month { font-family: var(--serif); font-size: 1.375rem; font-weight: 700; }
 .rc-card { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: #F8F7F4; }
 .rc-card svg { display: block; width: 100%; height: auto; }
+.rc-card [data-w], .rc-card [data-c] { cursor: pointer; transition: opacity .2s; }
+.rc-detail { margin: 10px 2px 0; font-size: 0.875rem; }
 .rc-acts { margin-top: 14px; display: flex; }
 .rc-acts .btn-add { width: 100%; }
 
@@ -5440,6 +5442,19 @@ Rules:
       projects: Object.values(S.projects).filter(p => p.status === 'done' && inMonth(p.completedAt)).sort((a, b) => a.completedAt - b.completedAt)
     };
   }
+  // the month split into Sunday-start weeks: per week its day range, done count and category counts
+  function weeksOf(d) {
+    const off = new Date(d.year, d.month - 1, 1).getDay(), n = Math.ceil((off + d.dim) / 7), out = [];
+    for (let j = 0; j < n; j++) {
+      const c = {}; let t = 0;
+      for (let i = 0; i < d.dim; i++) {
+        if (Math.floor((off + i) / 7) !== j) continue;
+        Object.entries(d.dayCat[i] || {}).forEach(([k, v]) => { c[k] = (c[k] || 0) + v; t += v; });
+      }
+      out.push({ j, c, n: t, s: Math.max(1, 7 * j - off + 1), e: Math.min(d.dim, 7 * (j + 1) - off) });
+    }
+    return out;
+  }
   function recapSvg(d) {
     const W = 720, X = 48, IW = W - 2 * X;
     const INK = '#262624', MUTED = '#6B6A66', LINE = '#E3E1DC', BG = '#F8F7F4', SOFT = '#CFCBC2';
@@ -5490,38 +5505,36 @@ Rules:
     label(y, 'Where your energy went'); y += 30;
     if (cats.length) {
       // one strip per week of the month: each bar is that week's finished tasks split by category
-      const nWeeks = Math.ceil((off + d.dim) / 7), RH = 116, BH = 34, mon = new Date(d.year, d.month - 1, 1).toLocaleString('en-US', { month: 'short' });
-      const weekDays = j => [Math.max(1, 7 * j - off + 1), Math.min(d.dim, 7 * (j + 1) - off)];
-      const wk = [];
-      for (let j = 0; j < nWeeks; j++) {
-        const c = {}; let n = 0;
-        for (let i = 0; i < d.dim; i++) {
-          if (Math.floor((off + i) / 7) !== j) continue;
-          Object.entries(d.dayCat[i] || {}).forEach(([cat, v]) => { c[cat] = (c[cat] || 0) + v; n += v; });
-        }
-        wk.push({ j, c, n });
-      }
-      wk.forEach(w => {
-        const ry = y + w.j * RH, [s, e] = weekDays(w.j);
-        text(X, ry + 26, `${mon} ${s}–${e}`, { size: 24, fill: MUTED });
+      // tap a week to focus it, tap a category (strip or legend) to focus it across weeks; the share image is static
+      const RH = 116, BH = 34, mon = new Date(d.year, d.month - 1, 1).toLocaleString('en-US', { month: 'short' });
+      const hiC = ui.recapCat, hiW = ui.recapWeek, weeks = weeksOf(d);
+      weeks.forEach(w => {
+        const ry = y + w.j * RH, barY = ry + 46;
+        o.push(`<g data-w="${w.j}" opacity="${hiW != null && hiW !== w.j ? .35 : 1}">`);
+        o.push(`<rect data-w="${w.j}" x="${X - 12}" y="${ry - 8}" width="${IW + 24}" height="${RH - 4}" fill="transparent"/>`);
+        text(X, ry + 26, `${mon} ${w.s}–${w.e}`, { size: 24, fill: MUTED });
         text(W - X, ry + 26, `${w.n} done`, { anchor: 'end', size: 26, fill: w.n ? INK : MUTED, bold: true });
-        const barY = ry + 46;
-        if (!w.n) { o.push(`<rect x="${X}" y="${barY}" width="${IW}" height="${BH}" rx="8" fill="${LINE}"/>`); return; }
-        let bx = X;
-        Object.entries(w.c).sort((a, b) => b[1] - a[1]).forEach(([cat, v]) => {
-          const ww = IW * v / w.n;
-          o.push(`<rect x="${bx.toFixed(1)}" y="${barY}" width="${ww.toFixed(1)}" height="${BH}" fill="${catColor(cat)}"/>`);
-          bx += ww;
-        });
+        if (!w.n) o.push(`<rect x="${X}" y="${barY}" width="${IW}" height="${BH}" rx="8" fill="${LINE}"/>`);
+        else {
+          let bx = X;
+          Object.entries(w.c).sort((a, b) => b[1] - a[1]).forEach(([cat, v]) => {
+            const ww = IW * v / w.n;
+            o.push(`<rect data-w="${w.j}" data-c="${cat}" x="${bx.toFixed(1)}" y="${barY}" width="${ww.toFixed(1)}" height="${BH}" fill="${catColor(cat)}" opacity="${hiC && hiC !== cat ? .22 : 1}"/>`);
+            bx += ww;
+          });
+        }
+        o.push('</g>');
       });
-      y += nWeeks * RH + 4;
+      y += weeks.length * RH + 4;
       // legend: category colors, wrapping to a second line when needed
       let lx = X, ly = y;
       cats.slice(0, 8).forEach(([c]) => {
         const name = (CATS[c] || {}).label || c, w2 = 30 + name.length * 14 + 30;
         if (lx + w2 > W - X) { lx = X; ly += 40; }
+        o.push(`<g data-c="${c}" opacity="${hiC && hiC !== c ? .4 : 1}">`);
         o.push(`<circle cx="${lx + 9}" cy="${ly - 8}" r="9" fill="${catColor(c)}"/>`);
         text(lx + 26, ly, name, { size: 24, fill: MUTED });
+        o.push('</g>');
         lx += w2;
       });
       y = ly + 16;
@@ -5595,10 +5608,28 @@ Rules:
     const el = $(target); if (!el) return;
     const months = recapMonths(), ym = months.includes(ui.recapMonth) ? ui.recapMonth : curYm(), i = months.indexOf(ym), d = recapData(ym);
     const keepMsg = $(p + 'Msg') ? $(p + 'Msg').textContent : '';
+    if (ui.recapFocusYm !== ym) { ui.recapFocusYm = ym; ui.recapCat = null; ui.recapWeek = null; }
+    // what the tapped week or category says, under the picture
+    let det = '';
+    if (ui.recapWeek != null) {
+      const w = weeksOf(d)[ui.recapWeek];
+      if (w) det = `${d.monthName} ${w.s}–${w.e}: ${w.n} done. ` + Object.entries(w.c).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${esc((CATS[k] || {}).label || k)} ${v}`).join(' · ');
+    } else if (ui.recapCat) {
+      const tot = weeksOf(d).reduce((a, w) => a + (w.c[ui.recapCat] || 0), 0);
+      det = `${esc((CATS[ui.recapCat] || {}).label || ui.recapCat)}: ${tot} done in ${esc(d.monthName)}. Tap it again to clear.`;
+    }
+    el.onclick = e => {
+      const c = e.target.closest('[data-c]'), w = e.target.closest('[data-w]');
+      if (c) ui.recapCat = ui.recapCat === c.dataset.c ? null : c.dataset.c;
+      else if (w) ui.recapWeek = ui.recapWeek === +w.dataset.w ? null : +w.dataset.w;
+      else return;
+      renderRecap(p, target);
+    };
     el.innerHTML = `<div class="rc-nav"><button class="mini" data-act="recap-prev" ${i <= 0 ? 'disabled' : ''} aria-label="Previous month">‹</button>
         <span class="rc-month">${esc(d.monthName)} ${d.year}</span>
         <button class="mini" data-act="recap-next" ${i >= months.length - 1 ? 'disabled' : ''} aria-label="Next month">›</button></div>
       <div class="rc-card" id="${p}SvgWrap">${recapSvg(d)}</div>
+      ${det ? `<p class="muted rc-detail">${det}</p>` : '<p class="muted rc-detail">Tap a week or a color to focus it.</p>'}
       <div class="rc-acts"><button class="btn-add" data-act="recap-save">Save or share image</button></div>
       <p class="muted" id="${p}Msg">${esc(keepMsg)}</p>`;
   }
@@ -5607,6 +5638,7 @@ Rules:
     if (!svg) return;
     try {
       const clone = svg.cloneNode(true), vb = svg.getAttribute('viewBox').split(' ').map(Number);
+      clone.querySelectorAll('[opacity]').forEach(n => n.removeAttribute('opacity')); // the shared image is never dimmed
       clone.setAttribute('width', vb[2]); clone.setAttribute('height', vb[3]);
       const img = new Image();
       await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone)); });
