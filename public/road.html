@@ -63,6 +63,12 @@ svg text { font-family: -apple-system, system-ui, sans-serif; }
 details summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; }
 details summary::-webkit-details-marker { display: none; }
 .vault-item { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
+.ybar { display: grid; grid-template-columns: 96px 1fr 28px; align-items: center; gap: 8px; font-size: 0.8125rem; padding: 3px 0; }
+.ybar i { height: 10px; border-radius: 6px; background: var(--soft); overflow: hidden; display: block; }
+.ybar i b { display: block; height: 10px; border-radius: 6px; background: var(--accent); min-width: 2px; }
+.ybar em { font-style: normal; text-align: right; color: var(--muted); }
+.grp { font-size: 0.75rem; font-weight: 600; color: var(--muted); margin: 10px 0 0; }
+body.print-year .card:not(#yearCard), body.print-year #note, body.print-year #toast, body.print-year .noprint { display: none !important; }
 #toast { position: fixed; left: 12px; right: 12px; bottom: 12px; display: none; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 12px; background: var(--text); color: var(--bg); z-index: 9; }
 #toast button { background: none; border: 0; color: var(--bg); font-weight: 600; text-decoration: underline; min-height: 44px; }
 #note { font-size: 0.8125rem; color: var(--muted); min-height: 18px; margin: 0 2px 8px; }
@@ -109,14 +115,28 @@ details summary::-webkit-details-marker { display: none; }
       cp: ['Tax tracker logged every month', 'Monthly SPUS and HLAL review reminder set', 'Monthly spending check in place', 'Expense and recipe pipeline feeds the grocery lists'] }
   ];
   var PARKED = ['Portfolio redesign and weekly posts', 'Strategy and AI courses beyond what work needs', 'Mastery World as a separate build', 'Grade 1 curriculum platform and daily storybook', 'Bowling game refinements', 'New family apps: the dashboard covers this'];
+  var BOYS = ['Hamad', 'Talal', 'Yousef'];
+  var RITUAL = ["Log this month's tax deductions", 'Review SPUS and HLAL, place any trades by hand', 'Spending check against the savings target', "Write this month's wins note", 'Download a backup (button in Year so far)'];
+  var TRIPS = [
+    { id: 'kw', name: 'Kuwait and Egypt', from: '2027-02-22', to: '2027-03-08' },
+    { id: 'ky', name: 'Kyoto', from: '2027-05-09', to: '2027-05-20' },
+    { id: 'am', name: "Amman, Kareem's wedding", from: '2027-09-21', to: '2027-10-01' }
+  ];
+  var PACK = [
+    ['Family', ['Passports and travel documents', 'Chargers and plug adapters', 'Medicine kit', 'Car seats or booking for them']],
+    ['Hamad', ['Outfits, light layers', 'Pajamas', 'Comfort toy', 'Headphones and tablet', 'Snacks for the flight']],
+    ['Talal', ['Outfits, light layers', 'Pajamas', 'Comfort toy', 'Headphones and tablet', 'His safe foods and snacks']],
+    ['Yousef', ['Outfits and warm layers', 'Diapers and wipes', 'Bottles and food', 'Sleep sack', 'Stroller']]
+  ];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var STOPS = [
     { f: 0, t: 'Q1', q: 1 }, { d: '02-22', t: 'Kuwait, Egypt' }, { d: '04-01', t: 'Q2', q: 1 }, { d: '05-09', t: 'Kyoto' },
     { d: '07-01', t: 'Q3', q: 1 }, { d: '09-21', t: 'Amman' }, { d: '10-01', t: 'Q4', q: 1 }
   ];
 
   var anchorY = 0;
-  var st = blank(), sugIdx = {}, adding = null, pending = null, lastUndo = null, saveT = null, cloud = 'off';
-  function blank() { return { v: 1, logs: [], blocks: [], checks: {}, vault: [], custom: {}, gone: [], at: 0 }; }
+  var st = blank(), sugIdx = {}, adding = null, pending = null, lastUndo = null, saveT = null, cloud = 'off', openBox = {}, taskMonths = null;
+  function blank() { return { v: 1, logs: [], blocks: [], checks: {}, vault: [], packs: [], custom: {}, opens: {}, gone: [], at: 0 }; }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
@@ -128,7 +148,8 @@ details summary::-webkit-details-marker { display: none; }
   // ---------- storage: this device first, then the dashboard database ----------
   function clean(o) {
     var b = blank(); if (!o || typeof o !== 'object') return b;
-    ['logs', 'blocks', 'vault', 'gone'].forEach(function (k) { if (Array.isArray(o[k])) b[k] = o[k]; });
+    ['logs', 'blocks', 'vault', 'packs', 'gone'].forEach(function (k) { if (Array.isArray(o[k])) b[k] = o[k]; });
+    if (o.opens && typeof o.opens === 'object') b.opens = o.opens;
     if (o.checks && typeof o.checks === 'object') b.checks = o.checks;
     if (o.custom && typeof o.custom === 'object') b.custom = o.custom;
     b.at = +o.at || 0; return b;
@@ -137,7 +158,8 @@ details summary::-webkit-details-marker { display: none; }
     var out = blank(), gone = {};
     a.gone.concat(b.gone).forEach(function (id) { gone[id] = 1; });
     out.gone = Object.keys(gone).slice(-500);
-    ['logs', 'blocks', 'vault'].forEach(function (k) {
+    [a.opens, b.opens].forEach(function (o) { Object.keys(o).forEach(function (d) { out.opens[d] = 1; }); });
+    ['logs', 'blocks', 'vault', 'packs'].forEach(function (k) {
       var seen = {};
       a[k].concat(b[k]).forEach(function (x) { if (x && x.id && !seen[x.id] && !gone[x.id]) { seen[x.id] = 1; out[k].push(x); } });
     });
@@ -156,6 +178,7 @@ details summary::-webkit-details-marker { display: none; }
         var remote = j && j.docs && j.docs.road && j.docs.road[DOC];
         cloud = 'on'; note('');
         if (remote) { var before = JSON.stringify(st); st = merge(st, clean(remote)); saveLocal(); if (JSON.stringify(st) !== before) render(); }
+        if (remote && JSON.stringify(st.opens) !== JSON.stringify(clean(remote).opens)) st.at = Date.now();
         if (!remote || st.at > (+remote.at || 0)) pushCloud();
       });
     }).catch(function () { cloud = 'off'; note('Offline: saving on this device.'); });
@@ -181,7 +204,72 @@ details summary::-webkit-details-marker { display: none; }
     return { bal: bal, calm: calm, now: Object.keys(cur).length, cur: cur };
   }
   function countThisWeek(a) { var wk = weekOf(today()); return st.logs.filter(function (l) { return l.a === a && weekOf(l.d) === wk; }).length; }
-  function sugList(a) { var c = st.custom[a.id]; return ((c && c.list) || []).concat(a.sug); }
+  function dueBoy() {   // whoever has gone longest without logged one-on-one time
+    var last = {};
+    st.logs.forEach(function (l) { if (l.a === 'family') BOYS.forEach(function (b) { if (l.t.indexOf(b) >= 0 && (!last[b] || l.d > last[b])) last[b] = l.d; }); });
+    var order = BOYS.slice().sort(function (x, y) { var a = last[x] || '', b = last[y] || ''; return a < b ? -1 : a > b ? 1 : 0; });
+    return { boy: order[0], last: last[order[0]] || '' };
+  }
+  function sugList(a) {
+    var c = st.custom[a.id], base = a.sug;
+    if (a.id === 'family') base = ['One-on-one with ' + dueBoy().boy + ', 15 min'].concat(a.sug.filter(function (s) { return sugText(s).indexOf('One-on-one') < 0; }));
+    return ((c && c.list) || []).concat(base);
+  }
+  function niceDate(s) { var d = new Date(s + 'T12:00:00'); return MONTHS[d.getMonth()] + ' ' + d.getDate(); }
+  function daysTo(s) { return Math.ceil((new Date(s + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 864e5); }
+  function chk(key, label) { return '<label class="check"><input type="checkbox" data-chk="' + esc(key) + '"' + (st.checks[key] && st.checks[key].on ? ' checked' : '') + '><span>' + esc(label) + '</span></label>'; }
+  function isChk(key) { return !!(st.checks[key] && st.checks[key].on); }
+  // mornings the dashboard was opened (the dashboard notes them on this device; they are merged here)
+  function pullOpens() {
+    try { var o = JSON.parse(localStorage.getItem('myday-opens') || '{}'), n = 0; Object.keys(o).forEach(function (d) { if (/^\d{4}-\d\d-\d\d$/.test(d) && !st.opens[d]) { st.opens[d] = 1; n++; } }); return n; } catch (e) { return 0; }
+  }
+  function openStats() {
+    var w = {}; Object.keys(st.opens).forEach(function (d) { var k = weekOf(d); w[k] = (w[k] || 0) + 1; });
+    var cur = weekOf(today()), streak = 0, d = new Date(cur + 'T12:00:00');
+    if ((w[cur] || 0) >= 5) streak = 1;
+    for (var i = 0; i < 60; i++) { d.setDate(d.getDate() - 7); if ((w[ymd(d)] || 0) >= 5) streak++; else break; }
+    return { week: w[cur] || 0, streak: streak };
+  }
+  function firstSunday(y, m) { var d = new Date(y, m, 1); d.setDate(1 + ((7 - d.getDay()) % 7)); return d; }
+  function ritualState() {
+    var n = new Date(), ym = n.getFullYear() + '-' + pad(n.getMonth() + 1), done = 0, stamps = {};
+    RITUAL.forEach(function (_, i) { if (isChk('rit.' + ym + '.' + i)) done++; });
+    Object.keys(st.checks).forEach(function (k) { var m = /^rit\.(\d{4}-\d\d)\.(\d)$/.exec(k); if (m && st.checks[k].on) stamps[m[1]] = (stamps[m[1]] || 0) + 1; });
+    var count = Object.keys(stamps).filter(function (k) { return stamps[k] >= RITUAL.length; }).length;
+    return { ym: ym, done: done, due: n >= firstSunday(n.getFullYear(), n.getMonth()), stamps: count, month: MONTHS[n.getMonth()] };
+  }
+  function packList(t) {
+    var groups = PACK.map(function (g) { return [g[0], g[1].map(function (label, i) { return ['pk.' + t.id + '.' + g[0] + '.' + i, label]; })]; });
+    var extra = st.packs.filter(function (x) { return x.trip === t.id; }).map(function (x) { return ['pk.' + t.id + '.x.' + x.id, x.t]; });
+    if (extra.length) groups.push(['Added by you', extra]);
+    return groups;
+  }
+  function loadTasks() {   // finished tasks by month, for the year card
+    fetch('/api/store?kind=tasks', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.docs || !j.docs.tasks) return;
+      var m = {}; Object.keys(j.docs.tasks).forEach(function (id) { var t = j.docs.tasks[id]; if (t && t.status === 'done' && t.completedAt) { var d = new Date(t.completedAt); if (!isNaN(d)) { var k = d.getFullYear() + '-' + pad(d.getMonth() + 1); m[k] = (m[k] || 0) + 1; } } });
+      taskMonths = m; render();
+    }).catch(function () {});
+  }
+  function yearHtml() {
+    var by = {}, top = {}, max = 1, s = stats();
+    st.logs.forEach(function (l) { by[l.a] = (by[l.a] || 0) + 1; top[l.t] = (top[l.t] || 0) + 1; });
+    AREAS.forEach(function (a) { max = Math.max(max, by[a.id] || 0); });
+    var mins = st.blocks.reduce(function (t, b) { return t + (+b.m || 0); }, 0), cp = 0, cpAll = 0;
+    QUESTS.forEach(function (q) { q.cp.forEach(function (_, i) { cpAll++; if (isOn(q.id, i)) cp++; }); });
+    var h = '<div class="card" id="yearCard"><details' + (openBox.year ? ' open' : '') + ' data-box="year"><summary><span><h2 style="display:inline">Year so far</h2> <span class="muted">' + st.logs.length + ' logged</span></span><span class="muted">Show</span></summary>' +
+      '<div class="cap" style="margin:6px 0">Where your weeks went</div>' +
+      AREAS.map(function (a) { var n = by[a.id] || 0; return '<div class="ybar"><span>' + esc(a.name) + '</span><i><b style="width:' + Math.round(100 * n / max) + '%"></b></i><em>' + n + '</em></div>'; }).join('') +
+      '<div class="stats"><div class="stat"><span class="cap">Balanced</span><b>' + s.bal + '</b><span class="muted">weeks</span></div><div class="stat"><span class="cap">Hours</span><b>' + (Math.round(mins / 6) / 10) + '</b><span class="muted">of ' + GOAL_H + '</span></div><div class="stat"><span class="cap">Quests</span><b>' + cp + '/' + cpAll + '</b><span class="muted">checkpoints</span></div></div>';
+    var tops = Object.keys(top).sort(function (a, b) { return top[b] - top[a]; }).slice(0, 5);
+    if (tops.length) h += '<div class="cap" style="margin:12px 0 4px">Most logged</div>' + tops.map(function (t) { return '<div class="vault-item"><span>' + esc(t) + '</span><span class="muted">x' + top[t] + '</span></div>'; }).join('');
+    if (taskMonths) {
+      var keys = Object.keys(taskMonths).sort().slice(-12), tm = Math.max.apply(null, keys.map(function (k) { return taskMonths[k]; }).concat([1]));
+      if (keys.length) h += '<div class="cap" style="margin:12px 0 4px">Tasks finished by month</div>' + keys.map(function (k) { return '<div class="ybar"><span>' + MONTHS[+k.slice(5) - 1] + ' ' + k.slice(0, 4) + '</span><i><b style="width:' + Math.round(100 * taskMonths[k] / tm) + '%"></b></i><em>' + taskMonths[k] + '</em></div>'; }).join('');
+    }
+    h += '<div class="row noprint" style="margin-top:12px"><button type="button" class="btn" style="flex:1" data-act="print">Print or save as PDF</button><button type="button" class="btn" style="flex:1" data-act="backup">Download a backup</button></div></details></div>';
+    return h;
+  }
   function sugText(s) { return Array.isArray(s) ? s[0] : s; }
   function isOn(q, i) { var c = st.checks[q + '.' + i]; return !!(c && c.on); }
   function questDone(q) { return q.cp.every(function (_, i) { return isOn(q.id, i); }); }
@@ -262,6 +350,7 @@ details summary::-webkit-details-marker { display: none; }
       h += '<div class="area"><div class="area-h"><b>' + esc(a.name) + '</b><span class="badge' + (c ? ' on' : '') + '">' + (c ? 'Done' + (c > 1 ? ' x' + c : '') : 'Not yet') + '</span></div>' +
         '<div class="row"><button type="button" class="sug" data-act="log" data-a="' + a.id + '" data-i="' + i + '">' + TICK + '<span>' + esc(sugText(list[i])) + '</span></button>' +
         '<button type="button" class="btn sq" data-act="swap" data-a="' + a.id + '" aria-label="Next suggestion for ' + esc(a.name) + '">' + SWAP + '</button></div>';
+      if (a.id === 'family') { var db = dueBoy(); h += '<div class="muted" style="margin-top:6px">Due for one-on-one: ' + db.boy + (db.last ? ' (last on ' + niceDate(db.last) + ')' : ' (none logged yet)') + '</div>'; }
       if (adding === a.id) h += '<form class="say" data-form="own" data-a="' + a.id + '"><input name="t" autocomplete="off" placeholder="Your own, e.g. Walk with a friend" aria-label="Your own suggestion for ' + esc(a.name) + '"><button type="submit" class="btn primary">Save</button></form>';
       else h += '<button type="button" class="link" data-act="own" data-a="' + a.id + '">Add your own</button>';
       h += '</div>';
@@ -275,6 +364,7 @@ details summary::-webkit-details-marker { display: none; }
       if (qi === ai) {
         h += '<div class="row" style="gap:14px;margin:10px 0">' + ring(pct) + '<div><h2>Quest ' + (qi + 1) + ': ' + esc(q.name) + '</h2><div class="muted">' + esc(q.line) + '</div></div></div>' +
           q.cp.map(function (t, i) { return '<label class="check"><input type="checkbox" data-chk="' + q.id + '.' + i + '"' + (isOn(q.id, i) ? ' checked' : '') + '><span>' + esc(t) + '</span></label>'; }).join('');
+        if (q.id === 'q1') { var os = openStats(); h += '<div class="muted" style="padding-top:8px;border-top:1px solid var(--border)">Counted for you: opened ' + os.week + ' of 7 mornings this week. ' + os.streak + ' of 4 weeks with 5 or more.</div>'; }
       } else {
         h += '<div class="locked"><span>Quest ' + (qi + 1) + ': ' + esc(q.name) + '</span><span class="badge' + (qi < ai || ai < 0 ? ' on' : '') + '">' + (qi < ai || ai < 0 ? 'Finished' : 'Locked') + '</span></div>';
       }
@@ -288,6 +378,25 @@ details summary::-webkit-details-marker { display: none; }
       '<div class="muted" style="margin-bottom:8px">' + wb + ' of 2 project blocks this week</div>' +
       '<div class="row"><button type="button" class="btn" data-act="block" data-m="90">Log 90 min</button><button type="button" class="btn" data-act="block" data-m="120">Log 2 hours</button></div></div>';
 
+    var rs = ritualState();
+    if (rs.due || rs.done) {
+      h += '<div class="card"><div class="between"><h2>' + rs.month + ' ritual</h2><span class="badge' + (rs.done >= RITUAL.length ? ' on' : '') + '">' + (rs.done >= RITUAL.length ? 'Stamp earned' : rs.done + ' of ' + RITUAL.length) + '</span></div>' +
+        '<div class="muted" style="margin:2px 0 6px">First Sunday, about 30 minutes. ' + rs.stamps + ' monthly stamp' + (rs.stamps === 1 ? '' : 's') + ' so far.</div>' +
+        RITUAL.map(function (t, i) { return chk('rit.' + rs.ym + '.' + i, t); }).join('') + '</div>';
+    }
+    var trips = TRIPS.filter(function (t) { return daysTo(t.to) >= 0; });
+    if (trips.length) {
+      h += '<div class="card"><h2>Trips</h2>';
+      trips.forEach(function (t) {
+        var groups = packList(t), all = 0, got = 0, d = daysTo(t.from);
+        groups.forEach(function (g) { g[1].forEach(function (it) { all++; if (isChk(it[0])) got++; }); });
+        h += '<details' + (openBox['trip-' + t.id] ? ' open' : '') + ' data-box="trip-' + t.id + '" style="border-top:1px solid var(--border)"><summary><span><b>' + esc(t.name) + '</b><br><span class="muted">' + niceDate(t.from) + ' to ' + niceDate(t.to) + ' · ' + (d > 0 ? 'in ' + d + ' days' : 'now') + '</span></span><span class="badge' + (got === all ? ' on' : '') + '">Packed ' + got + '/' + all + '</span></summary>' +
+          groups.map(function (g) { return '<div class="grp">' + esc(g[0]) + '</div>' + g[1].map(function (it) { return chk(it[0], it[1]); }).join(''); }).join('') +
+          '<form class="say" data-form="pack" data-trip="' + t.id + '"><input name="t" autocomplete="off" placeholder="Add to this packing list" aria-label="Add to the packing list for ' + esc(t.name) + '"><button type="submit" class="btn">Add</button></form></details>';
+      });
+      h += '</div>';
+    }
+    h += yearHtml();
     var vault = PARKED.map(function (t, i) { return { id: 'seed-' + i, t: t }; }).filter(function (v) { return st.gone.indexOf(v.id) < 0; }).concat(st.vault);
     h += '<div class="card"><details' + (vaultOpen ? ' open' : '') + ' data-vault><summary><span><h2 style="display:inline">The vault</h2> <span class="muted">' + vault.length + ' parked. Opens December ' + YEAR + '.</span></span><span class="muted">Show</span></summary>' +
       vault.map(function (v) { return '<div class="vault-item"><span>' + esc(v.t) + '</span><button type="button" class="link" style="padding:0" data-act="unpark" data-id="' + esc(v.id) + '">Remove</button></div>'; }).join('') +
@@ -312,13 +421,20 @@ details summary::-webkit-details-marker { display: none; }
     $('toast').lastElementChild.style.display = undo ? '' : 'none';
     clearTimeout(toast.t); toast.t = setTimeout(function () { $('toast').style.display = 'none'; }, 5000);
   }
-  function remove(ids) { st.gone = st.gone.concat(ids); ['logs', 'blocks', 'vault'].forEach(function (k) { st[k] = st[k].filter(function (x) { return ids.indexOf(x.id) < 0; }); }); save(); render(); }
+  function remove(ids) { st.gone = st.gone.concat(ids); ['logs', 'blocks', 'vault', 'packs'].forEach(function (k) { st[k] = st[k].filter(function (x) { return ids.indexOf(x.id) < 0; }); }); save(); render(); }
   function logTo(areas, text) {
     var was = stats().now, ids = [];
     areas.forEach(function (a) { var id = uid(); ids.push(id); st.logs.push({ id: id, d: today(), a: a, t: String(text).slice(0, 140) }); });
     save(); render();
     var now = stats().now, names = areas.map(function (a) { return AREAS.filter(function (x) { return x.id === a; })[0].name; }).join(' and ');
     toast(now >= 7 && was < 7 ? 'Balanced week. All 7 areas touched.' : 'Logged to ' + names + '.', function () { remove(ids); });
+  }
+  function backup() {
+    fetch('/api/store', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
+      var blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), docs: j.docs }, null, 1)], { type: 'application/json' }), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'myday-backup-' + today() + '.json'; document.body.appendChild(a); a.click(); a.remove();
+      toast('Backup downloaded. Keep it somewhere safe.');
+    }).catch(function () { toast('Could not make a backup. Sign in on the dashboard and try again.'); });
   }
   function classify(text) {
     var t = ' ' + text.toLowerCase() + ' ', best = 0, hit = [];
@@ -356,6 +472,8 @@ details summary::-webkit-details-marker { display: none; }
       case 'mic': mic(); break;
       case 'block': { var id = uid(); st.blocks.push({ id: id, d: today(), m: +el.dataset.m }); save(); render(); toast('Block logged. ' + el.dataset.m + ' minutes in the bank.', function () { remove([id]); }); break; }
       case 'unpark': st.gone.push(el.dataset.id); st.vault = st.vault.filter(function (v) { return v.id !== el.dataset.id; }); vaultOpen = true; save(); render(); break;
+      case 'print': openBox.year = true; render(); document.body.classList.add('print-year'); setTimeout(function () { window.print(); setTimeout(function () { document.body.classList.remove('print-year'); }, 500); }, 50); break;
+      case 'backup': backup(); break;
       case 'undo': if (lastUndo) { lastUndo(); lastUndo = null; } $('toast').style.display = 'none'; break;
     }
   });
@@ -367,6 +485,7 @@ details summary::-webkit-details-marker { display: none; }
     else if (f.dataset.form === 'own') {
       var a = f.dataset.a, cur = (st.custom[a] && st.custom[a].list) || [];
       st.custom[a] = { list: [t.slice(0, 80)].concat(cur).slice(0, 12), at: Date.now() }; sugIdx[a] = 0; adding = null; save(); render(); toast('Added. It is now the first suggestion.');
+    } else if (f.dataset.form === 'pack') { st.packs.push({ id: uid(), trip: f.dataset.trip, t: t.slice(0, 80) }); openBox['trip-' + f.dataset.trip] = true; save(); render(); toast('Added to the packing list.');
     } else if (f.dataset.form === 'park') { st.vault.push({ id: uid(), t: t.slice(0, 140), d: today() }); vaultOpen = true; save(); render(); toast('Parked. Focus protected.'); }
   });
   document.addEventListener('change', function (e) {
@@ -375,11 +494,20 @@ details summary::-webkit-details-marker { display: none; }
     var was = activeQuest(); st.checks[k] = { on: e.target.checked, at: Date.now() }; save(); render();
     var now = activeQuest(); if (now !== was && e.target.checked) toast(now < 0 ? 'All three quests finished.' : 'Quest finished. Quest ' + (now + 1) + ' is unlocked.');
   });
-  document.addEventListener('toggle', function (e) { if (e.target.matches && e.target.matches('details[data-vault]')) { vaultOpen = e.target.open; fit(); } }, true);
+  document.addEventListener('toggle', function (e) {
+    if (!e.target.matches) return;
+    if (e.target.matches('details[data-vault]')) { vaultOpen = e.target.open; fit(); }
+    else if (e.target.matches('details[data-box]')) { openBox[e.target.dataset.box] = e.target.open; fit(); }
+  }, true);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { matchTheme(); loadCloud(); } });
   if (window.ResizeObserver) new ResizeObserver(fit).observe(document.body);
 
-  loadLocal(); render(); loadCloud();
+  function autoQuest() {   // tick the mornings checkpoint once four weeks reach 5 of 7
+    if (openStats().streak >= 4 && !isOn('q1', 3)) { st.checks['q1.3'] = { on: true, at: Date.now() }; return true; }
+    return false;
+  }
+  loadLocal(); var changed = pullOpens() > 0; if (autoQuest()) changed = true; if (changed) save();
+  render(); loadCloud().then(function () { if (autoQuest()) { save(); render(); } }); loadTasks();
 })();
 </script>
 </body>

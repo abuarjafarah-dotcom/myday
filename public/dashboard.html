@@ -1145,6 +1145,15 @@ input, select, textarea { font-size: max(16px, 1rem); }
 .rw-app .rw-newrow{border:0;border-radius:30px;background:#FFFFFF;box-shadow:0 4px 0 rgba(29,18,71,.06)}
 .rw-app .rw-newrow:focus-within{border:0;box-shadow:0 0 0 3px #7CC8F5}
 .rw-app .rw-emoji{background:#FFE9A8;border-radius:22px}
+
+/* Nov 14: compact headline off Today, one-line row actions, dinner ingredients, read-aloud */
+:root body:not([data-tab="home"]) .headline { font-size: 1.125rem; line-height: 1.25; }
+:root body:not([data-tab="home"]) .headline .l1 { display: none; }
+.wkt-item .acts { flex-wrap: nowrap; }
+.wkt-item .acts .mini { padding: 6px 9px; min-width: 44px; white-space: nowrap; }
+.sy-mealrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.sy-mealrow textarea { width: 100%; min-height: 96px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; font-size: 1rem; }
+.rw-read { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; margin: 0 0 16px; border: 0; border-radius: 16px; background: #FFE9A8; color: #2A1F2B; font: inherit; font-size: 1.0625rem; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -1319,7 +1328,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     </details>
       <details id="checkinPanel" class="rit-more"><summary>Weekly check-in</summary><div id="syncView"></div><div id="resetView" class="sy-reset"></div></details>
     </div>
-    <div id="ritualTax" class="rit-panel"><iframe src="/tax.html" title="Tax tracker" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:#faf7f2"></iframe></div>
+    <div id="ritualTax" class="rit-panel"><iframe src="/tax.html" title="Tax tracker" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
     <div id="ritualRoad" class="rit-panel"><iframe src="/road.html" title="Mom Mastery Road" loading="lazy" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
   </div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
@@ -1393,7 +1402,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
   <div class="cmd-top"><textarea id="cmdInput" rows="1" enterkeyhint="go" autocomplete="off" autocapitalize="sentences" placeholder="Dump anything, or: move swim to Thursday" aria-label="Add, ask or do anything" aria-controls="cmdList"></textarea><button type="button" class="cmd-mic" id="cmdMic" data-act="cmd-mic" aria-pressed="false" aria-label="Brain dump by voice"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg><span id="cmdMicLabel">Voice</span></button><button type="button" class="cmd-x" data-act="cmd-close">Cancel</button></div>
   <div class="cmd-list" id="cmdList" role="listbox"></div>
 </div>
-<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Oct 11, v2 Home</span></footer>
+<footer class="page-foot"><a href="/api/auth/signout?callbackUrl=/">Sign out</a><span class="build" id="buildTag">Version: Nov 14, Mastery Road and calm forecast</span></footer>
 
 <script>
 (() => {
@@ -1581,6 +1590,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
       getJson(`/api/gmail?today=${today()}`).then(d => { live.mail = d.emails || []; live.mailErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.mailErr = 'Couldn\'t load Gmail right now.'; }),
       getJson('/api/partner').then(d => { live.omar = d; }).catch(() => { live.omar = null; }),
+      getJson('/api/store?kind=overnight').then(d => { live.overnight = (d && d.docs && d.docs.overnight && d.docs.overnight.latest) || null; }).catch(() => {}),
+      getJson(`/api/prayer?date=${today()}`).then(d => { if (d && d.times) live.prayer = d; }).catch(() => {}),
       getJson('/api/calendar').then(d => { live.cal = d.events || []; live.calInfo = d.info || null; live.calErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.calErr = 'Couldn\'t load your calendar right now.'; })
     ];
@@ -1654,6 +1665,10 @@ input, select, textarea { font-size: max(16px, 1rem); }
     wireV2();
     wireP1();
     render();
+    try {   // note mornings the dashboard was opened; the Mastery Road counts them for Quest 1
+      const h = new Date().getHours();
+      if (h >= 4 && h < 12) { const o = lsGet('myday-opens', {}); if (!o[today()]) { o[today()] = 1; Object.keys(o).sort().slice(0, -400).forEach(k => delete o[k]); localStorage.setItem('myday-opens', JSON.stringify(o)); } }
+    } catch (e) {}
     loadLive();
     setInterval(loadLive, 10 * 60000);
     setInterval(checkDay, 60000);
@@ -1935,7 +1950,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
         const btn = pending ? `<span class="chip gold">Waiting</span>` : `<button class="btn sm" data-rw="done" data-id="${esc(t.id)}">Done!</button>`;
         return `<article class="task ${pending ? 'pending' : ''}"><span class="emo" aria-hidden="true">${esc(t.emoji)}</span><div class="tx"><b>${esc(t.name)}</b><span class="meta">${RW_GEM}+${t.pts}</span></div>${btn}</article>`;
       }).join('');
-      body = `<h2 class="sec"><span>Active tasks</span></h2><div class="stack">${cards || rwEmpty('No tasks yet. A parent can add some.')}</div>`;
+      body = `<button type="button" class="rw-read" data-act="read-day" aria-label="Read today aloud in Arabic">🔊 <span lang="ar" dir="rtl">شو عنا اليوم؟</span></button><h2 class="sec"><span>Active tasks</span></h2><div class="stack">${cards || rwEmpty('No tasks yet. A parent can add some.')}</div>`;
     }
     return rwHeader(d, false) + seg + body;
   }
@@ -5172,6 +5187,25 @@ Rules:
     const first = a => (a.label === 'School' || a.label === 'No school' ? 0 : 1);
     return [...seen.values()].sort((a, b) => first(a) - first(b) || timeMin(a.time || '11:59 PM') - timeMin(b.time || '11:59 PM'));
   }
+  // Reads the boys' day aloud in Arabic with the phone's own Arabic voice (free, no account).
+  const AR_ACT = { 'No school': 'ما في مدرسة', 'Photos': 'يوم التصوير', 'Field trip': 'رحلة مع المدرسة', 'PJ day': 'يوم البيجاما', 'Dress up': 'يوم لبس خاص', 'Early out': 'طلعة بكير من المدرسة', 'Swim': 'سباحة', 'Soccer': 'كرة قدم', 'Gym': 'جمباز', 'Dance': 'رقص', 'Music': 'موسيقى', 'Art': 'رسم', 'Library': 'مكتبة', 'Quran': 'قرآن', 'Dentist': 'دكتور الأسنان', 'Doctor': 'دكتور', 'Haircut': 'حلاقة', 'Birthday': 'عيد ميلاد', 'Party': 'حفلة', 'Playdate': 'لعب مع الأصحاب', 'Outing': 'مشوار', 'Trip': 'سفر', 'School': 'مدرسة' };
+  const AR_BABA = { 'Baba works tonight': 'بابا عنده شغل الليلة', 'Baba at work': 'بابا بالشغل اليوم', 'Baba away': 'بابا مسافر', 'Baba sleeps in': 'بابا نايم الصبح', 'Baba home': 'بابا بالبيت اليوم' };
+  const AR_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  function dayInArabic(d) {
+    const acts = fridgeDay(d).map(a => AR_ACT[a.label]).filter(Boolean), baba = babaOf(d);
+    const hello = new Date().getHours() < 12 ? 'صباح الخير' : 'مرحبا';
+    return [`${hello} يا حمد وطلال ويوسف.`, `اليوم يوم ${AR_DAYS[parseYmd(d).getDay()]}.`,
+      acts.length ? `اليوم عنا: ${acts.join('، ')}.` : 'اليوم ما عنا مواعيد.',
+      baba && AR_BABA[baba[1]] ? AR_BABA[baba[1]] + '.' : '', 'يلا نبدأ!'].filter(Boolean).join(' ');
+  }
+  function readDayAloud() {
+    if (!('speechSynthesis' in window)) { toast('This browser cannot read aloud.'); return; }
+    const text = dayInArabic(today()), u = new SpeechSynthesisUtterance(text);
+    const v = speechSynthesis.getVoices().find(x => /^ar/i.test(x.lang));
+    u.lang = v ? v.lang : 'ar-SA'; if (v) u.voice = v; u.rate = 0.9;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+    toast(v ? 'Reading today in Arabic.' : 'Reading today. If you hear nothing, add an Arabic voice in iPhone Settings → Accessibility → Spoken Content → Voices.');
+  }
   function babaOf(d) {
     const o = omarDay(d); if (!o) return null;
     if (o.kind === 'night') return ['🌙', 'Baba works tonight'];
@@ -5355,7 +5389,8 @@ Rules:
         <div class="set-grid">
           <label>Theme on this phone<select data-ui="theme">${[['auto', 'Match phone'], ['light', 'Light'], ['dark', 'Dark']].map(([v, l]) => `<option value="${v}" ${(ui.theme || 'auto') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         </div>
-        <label class="set-row"><input type="checkbox" data-ui="night" ${ui.night !== false ? 'checked' : ''}><span><b>Night layout, 8 PM to 4 AM</b><span class="muted">Darker, larger text, only what’s left tonight.</span></span></label></div>
+        <label class="set-row"><input type="checkbox" data-ui="night" ${ui.night !== false ? 'checked' : ''}><span><b>Night layout, 8 PM to 4 AM</b><span class="muted">Darker, larger text, only what’s left tonight.</span></span></label>
+        <label class="set-row"><input type="checkbox" data-ui="prayer" ${ui.prayer !== false ? 'checked' : ''}><span><b>Prayer times on Today</b><span class="muted">The next prayer for Rochester as a chip; suhoor and iftar in Ramadan.</span></span></label></div>
       <div class="set-sec"><div class="set-h">Work day</div>
         <label class="set-row"><input type="checkbox" data-set="work.on" ${w.on ? 'checked' : ''}><span><b>Work-day mode</b><span class="muted">During work hours, Today shows work and anything urgent. Pickup stays pinned; family items wait.</span></span></label>
         <div class="set-grid">
@@ -5688,6 +5723,17 @@ Rules:
   const shiftTag = d => shiftsMap()[d] ? `<span class="shift-tag">${SHIFT_LABEL[shiftsMap()[d]]}</span>` : '';
   const syncAll = () => meta().sync || {};
   const syncWeekOf = mon => Object.assign({ meals: {}, assign: {}, top: ['', '', ''], note: '', doneAt: null }, syncAll()[mon] || {});
+  // Dinner ingredients: saved once per dinner name, then one tap adds them to the store lists.
+  const mealKey = n => String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const mealLines = k => String((meta().mealItems || {})[k] || '').split(/\n/).map(x => x.trim()).filter(Boolean);
+  function mealRow(d, wk) {
+    const name = (wk.meals || {})[d], k = mealKey(name); if (!k) return '';
+    if (ui.mealEdit === d) return `<div class="sy-mealrow"><textarea id="mi-${d}" aria-label="Ingredients for ${esc(name)}" placeholder="One per line. Add the store if you like: rice at Costco">${esc((meta().mealItems || {})[k] || '')}</textarea>
+      <button class="mini primary" data-act="meal-save" data-d="${d}">Save ingredients</button><button class="mini" data-act="meal-cancel">Cancel</button></div>`;
+    const lines = mealLines(k), added = (wk.mealAdded || {})[d] === k;
+    if (!lines.length) return `<div class="sy-mealrow"><button class="mini" data-act="meal-edit" data-d="${d}">Save ingredients for ${esc(name)}</button></div>`;
+    return `<div class="sy-mealrow"><button class="mini ${added ? '' : 'primary'}" data-act="meal-add" data-d="${d}" ${added ? 'disabled' : ''}>${added ? 'On your grocery lists' : `Add ${lines.length} ingredient${lines.length === 1 ? '' : 's'} to grocery`}</button><button class="mini" data-act="meal-edit" data-d="${d}">Edit</button></div>`;
+  }
   function saveSync(mon, patch) {
     const all = Object.assign({}, syncAll()); all[mon] = Object.assign(syncWeekOf(mon), patch);
     Object.keys(all).sort().slice(0, -10).forEach(k => delete all[k]);          // keep the last 10 weeks
@@ -5763,6 +5809,7 @@ Rules:
         ${allDay.length ? `<div class="sy-allday">${allDay.map(a => `<span class="sy-chip">${esc(a)}</span>`).join('')}</div>` : ''}
         ${items.map(i => `<div class="sy-item ${i.done ? 'done' : ''}"><span class="sy-time">${esc(clockLabel(i.start))}</span><span class="sy-title">${esc(i.title)}</span>${i.assignable ? `<button class="sy-pill ${i.who !== 'me' ? 'on' : ''}" data-act="sy-who" data-k="${esc(i.key)}" data-dflt="${i.dflt}" aria-label="Who covers ${esc(i.title)}: ${WHO_LABEL[i.who]}. Tap to change.">${WHO_LABEL[i.who]}</button>` : ''}</div>`).join('') || (allDay.length ? '' : `<div class="sy-empty muted">${d > through ? 'Calendar not loaded yet for this day.' : d < addDays(td, -1) ? "Calendar history isn't kept here." : 'Nothing scheduled.'}</div>`)}
         <label class="sy-meal"><span>Dinner</span><input type="text" data-sy="meal" data-d="${d}" value="${esc(wk.meals[d] || '')}" placeholder="What's for dinner?"></label>
+        ${mealRow(d, wk)}
       </div>`;
     }).join('');
     el.innerHTML = `<div class="card">
@@ -5955,6 +6002,20 @@ Rules:
       .catch(() => window.prompt('Copy this prompt for Gemini:', text));
   }
 
+  // Next prayer for Rochester as one chip; in Ramadan, suhoor and iftar too. Off in Settings → Display.
+  function prayerChips(td, nowMin) {
+    const p = live.prayer; if (ui.prayer === false || !p || p.date !== td || !p.times) return [];
+    const mins = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
+    const list = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map(n => [n, mins(p.times[n])]).filter(x => x[1] != null);
+    const out = [], next = list.find(x => x[1] > nowMin);
+    if (next) out.push(`🕌 ${next[0]} ${clockShort(next[1])}`);
+    if (p.hijri && +p.hijri.month === 9) {
+      const fajr = list.find(x => x[0] === 'Fajr'), mag = list.find(x => x[0] === 'Maghrib');
+      if (fajr && nowMin < fajr[1]) out.push(`🌙 Suhoor ends ${clockShort(fajr[1])}`);
+      if (mag && nowMin < mag[1]) out.push(`🌙 Ramadan day ${+p.hijri.day} · Iftar ${clockShort(mag[1])}`);
+    }
+    return out;
+  }
   function renderTimeline() {
     const box = $('timelineBox'); if (!box) return;
     const td = today(), nowMin = nowMinutes();
@@ -5965,6 +6026,7 @@ Rules:
     if (w && wxBad(w)) allDay.push(`${wxIcon(w)} ${esc(wxWhy(w))}`);
     const ymToday = yousefOn(td);
     if (ymToday) allDay.push(ymToday.closed ? `🚫 Yousef's center closed · ${esc(ymToday.closed)}` : `🍱 Yousef's lunch: ${esc(ymToday.lunch)}`);
+    prayerChips(td, nowMin).forEach(c => allDay.push(esc(c)));
     chips.forEach(c => allDay.push(esc(c)));
     // Earlier items fold away; what's next stays in view.
     const earlier = items.filter(i => i.end <= nowMin && i.start < nowMin && !(i.kind === 'task' && S.tasks[i.id] && isOpen(S.tasks[i.id])));
@@ -6028,6 +6090,44 @@ Rules:
   const careOf = () => meta().care || {};
   function setCare(d, who) { const c = Object.assign({}, careOf()); if (who) c[d] = who; else delete c[d]; Object.keys(c).forEach(k => { if (k < addDays(today(), -7)) delete c[k]; }); setMeta({ care: c }); }
   const capFirst = s => String(s).replace(/^./, c => c.toUpperCase());
+  // "Needs you" learns: pick the same answer three times in a row and it becomes the first, highlighted button.
+  const decKind = k => String(k).split('-')[0];
+  const decNorm = l => String(l).replace(/^Move to .*/, 'Move').replace(/^Move \d+ .*/, 'Move some');
+  function learnDec(key, label) {
+    const k = decKind(key); if (k === 'care') return;          // who covers the kids is decided fresh each time
+    const p = (ui.decPick = ui.decPick || {}), L = decNorm(label), cur = p[k];
+    p[k] = cur && cur.l === L ? { l: L, n: cur.n + 1 } : { l: L, n: 1 }; saveUi();
+  }
+  function decUsual(d) {
+    const p = (ui.decPick || {})[decKind(d.key)]; if (!p || p.n < 3) return d;
+    const i = d.acts.findIndex(a => decNorm(a.label) === p.l);
+    if (i < 0 || (i === 0 && d.acts[0].primary)) return d;
+    const acts = d.acts.map((a, j) => Object.assign({}, a, { primary: j === i })); acts.unshift(acts.splice(i, 1)[0]);
+    return Object.assign({}, d, { acts, usual: true });
+  }
+  // Calm forecast: how heavy a day looks, from Omar's shift, school, weather, open tasks and your energy setting.
+  function calmForecast(d) {
+    let s = 0; const why = [];
+    try {
+      const o = omarDay(d);
+      if (o) {
+        if (o.kind === 'travel') { s += 3; why.push('Omar is away'); }
+        else if (o.kind === 'night') { s += 2; why.push('Omar works that night'); }
+        else if (o.kind === 'day' || o.kind === 'oncall') { s += 2; why.push('Omar is at work'); }
+        else if (o.sleepUntil) { s += 1; why.push(`Omar sleeps until about ${clockShort(o.sleepUntil)}`); }
+      }
+      if (parseYmd(d).getDay() % 6 && noSchoolOn(d) && !careOf()[d]) { s += 3; why.push('no school and no cover yet'); }
+      const w = wxDay(d); if (w && wxBad(w)) { s += 1; why.push(wxWhy(w)); }
+      const open = Object.values(S.tasks).filter(t => isOpen(t) && t.date && t.date <= d).length;
+      if (open >= 9) { s += 2; why.push(`${open} open tasks`); } else if (open >= 6) { s += 1; why.push(`${open} open tasks`); }
+      const timed = dayItems(d, -1).filter(i => !i.done).length;
+      if (timed >= 6) { s += 1; why.push(`${timed} timed items`); }
+      const cap = capMode();
+      if (cap === 'survival') { s += 2; why.push('you are in survival mode'); } else if (cap === 'light') { s += 1; why.push('you set a light day'); }
+    } catch (e) {}
+    return { score: s, level: s >= 5 ? 'heavy' : s >= 3 ? 'full' : 'light', why };
+  }
+  const calmMovable = d => Object.values(S.tasks).filter(t => isOpen(t) && t.date === d && !t.time && !isPinned(t) && t.category !== 'work' && !/^t-(sch|schp|adm|hh)-/.test(t.id));
   function decisions() {
     const td = today(), nowMin = nowMinutes(), out = [];
     const fam_ok = hh.me === 'farah' && !fam.off;
@@ -6066,6 +6166,31 @@ Rules:
           { label: 'Review and send', primary: true, run: () => { ui.handoffOpen = true; ui.hoScroll = true; openRitual('evening'); } },
           { label: 'Not tonight', run: () => { ui.hoSkip = eveningOf(); saveUi(); render(); } }
         ] });
+    }
+
+    // Overnight assistant: suggestions a scheduled Claude task left before you woke up. Nothing is added until you approve.
+    const ov = live.overnight;
+    if (ov && ov.date === td && Array.isArray(ov.items) && ov.items.length && meta().overnightSeen !== td) {
+      const items = ov.items.filter(i => i && i.title).slice(0, 12);
+      if (items.length) out.push({ key: 'ov-' + td, w: 88, icon: '🌙', title: `While you slept: ${items.length} suggestion${items.length === 1 ? '' : 's'}`,
+        sub: items.slice(0, 8).map(i => String(i.title).slice(0, 80)).join(' · ') + (items.length > 8 ? ` +${items.length - 8}` : ''),
+        acts: [
+          { label: 'Approve all', primary: true, run: () => { items.forEach(i => put('tasks', makeTask({ title: String(i.title).slice(0, 140), category: CATS[i.category] ? i.category : 'home', date: /^\d{4}-\d{2}-\d{2}$/.test(i.date || '') ? i.date : td, notes: String(i.note || '').slice(0, 500) }))); setMeta({ overnightSeen: td }); toast(`${items.length} added to your list.`); } },
+          { label: 'Not today', run: () => setMeta({ overnightSeen: td }) }
+        ] });
+    }
+
+    // Calm forecast: from 4 PM, a heavy tomorrow offers to move what can wait.
+    if (nowMin >= 16 * 60) {
+      const nx = addDays(td, 1), cf = calmForecast(nx);
+      if (cf.level === 'heavy') {
+        const mv = calmMovable(nx), to = addDays(nx, 1);
+        out.push({ key: 'calm-' + nx, w: 85, icon: '🌤', title: 'Tomorrow looks heavy', sub: capFirst(cf.why.slice(0, 3).join(', ')) + '.',
+          acts: [
+            ...(mv.length ? [{ label: `Move ${mv.length} that can wait`, primary: true, run: () => { const undo = snapTasks(mv.map(t => t.id)); mv.forEach(t => moveTo(t.id, to)); snooze('calm-' + nx); toast(`${mv.length} moved to ${dayName(to)}.`, undo); } }] : []),
+            { label: 'Keep as is', run: () => snooze('calm-' + nx) }
+          ] });
+      }
     }
 
     // Weather against outdoor plans; a lovely free weekend day.
@@ -6136,7 +6261,7 @@ Rules:
 
     const resting = isResting(nowMin), atWork = workNow(nowMin);
     const urgentAtWork = d => /^care-/.test(d.key) && d.key.slice(5) <= addDays(td, 1);
-    return out.filter(d => !decSnoozed(d.key) && (!resting || /^(wrap|ho)-/.test(d.key)) && (!atWork || urgentAtWork(d))).sort((a, b) => b.w - a.w);
+    return out.filter(d => !decSnoozed(d.key) && (!resting || /^(wrap|ho|ov)-/.test(d.key)) && (!atWork || urgentAtWork(d))).sort((a, b) => b.w - a.w).map(decUsual);
   }
   function snooze(key) { decHidden()[key] = today(); Object.keys(ui.dec).forEach(k => { if (ui.dec[k] !== 'never' && ui.dec[k] < today()) delete ui.dec[k]; }); saveUi(); render(); }
   function renderDecide() {
@@ -6145,7 +6270,7 @@ Rules:
     if (!decList.length) { box.innerHTML = ''; return; }
     const all = !!ui.decAll, shown = all ? decList : decList.slice(0, 3);
     box.innerHTML = `<div class="card dec-card" role="region" aria-label="Needs you"><h2><span>Needs you</span><span class="muted">${decList.length}</span></h2>
-      ${shown.map(d => `<div class="dec" data-key="${esc(d.key)}"><div class="dec-h"><span class="dec-i" aria-hidden="true">${esc(d.icon)}</span><div class="dec-t"><b>${esc(d.title)}</b>${d.sub ? `<span>${d.html ? d.sub : esc(d.sub)}</span>` : ''}</div></div>
+      ${shown.map(d => `<div class="dec" data-key="${esc(d.key)}"><div class="dec-h"><span class="dec-i" aria-hidden="true">${esc(d.icon)}</span><div class="dec-t"><b>${esc(d.title)}</b>${d.sub ? `<span>${d.html ? d.sub : esc(d.sub)}</span>` : ''}${d.usual ? '<span class="muted">Your usual choice is first.</span>' : ''}</div></div>
         <div class="dec-acts">${d.acts.map((a, i) => `<button type="button" class="dec-b ${a.primary ? 'primary' : ''}" data-act="dec" data-key="${esc(d.key)}" data-i="${i}">${esc(a.label)}</button>`).join('')}</div></div>`).join('')}
       ${decList.length > 3 ? `<button class="toggle-line" data-act="dec-all">${all ? 'Show fewer' : `Show ${decList.length - 3} more`}</button>` : ''}</div>`;
   }
@@ -6208,6 +6333,7 @@ Rules:
     const tm = dayItems(next, -1).filter(i => !i.done).slice(0, 4);
     parts.push(`<div class="card"><h2><span>Tomorrow</span><span class="muted">${esc(shortDay(next))}${wxDay(next) ? ' · ' + esc(wxShort(wxDay(next)).trim()) : ''}</span></h2>
       ${o ? `<p class="muted">${esc(o.emoji)} Omar: ${esc(o.sleepUntil ? `recovering, up around ${clockShort(o.sleepUntil)}` : o.label)}</p>` : ''}
+      ${(() => { const cf = calmForecast(next); return `<p class="muted">Calm forecast: <b>${cf.level}</b>${cf.why.length ? ' · ' + esc(cf.why.slice(0, 3).join(', ')) : ''}</p>`; })()}
       ${tm.length ? tm.map(i => `<div class="now-row"><span class="when">${esc(clockLabel(i.start))}</span><span class="what">${esc(tidyTitle(i.title))}</span></div>`).join('') : '<div class="empty">Nothing timed yet.</div>'}</div>`);
     return parts.join('');
   }
@@ -6332,6 +6458,7 @@ Rules:
     [/^(email|mail|inbox|gmail)$/, 'Email', 'Unread from the last day', () => openFold('inbox', 'gmailList')],
     [/^(school( radar)?|school email)$/, 'School radar', 'From school emails', () => openFold('school', 'schoolBox')],
     [/^((mom )?mastery road|road|balance|2027( plan)?|game plan|quests?)$/, 'Mom Mastery Road', 'Balance, quests and hours for 2027', () => { ui.tab = 'schedule'; ui.sub = 'plan'; ui.ritual = 'road'; ui.ritualAt = Date.now(); saveUi(); closeCmd(); render(); }],
+    [/^(read (today|the day)( aloud)?|arabic day|teta)$/, 'Read today aloud', 'In Arabic, for the boys', () => { closeCmd(); readDayAloud(); }],
     [/^(life admin|admin|taxes?|deadlines?)$/, 'Life admin', 'Yearly deadlines', () => openFold('admin', 'adminBox')],
     [/^(settings|reminders|notifications|work( day| hours)?)$/, 'Reminders and work day', 'Settings', () => openFold('reminders', 'settingsBody')],
     [/^(energy|survival( mode)?|light( mode)?|low energy)$/, 'Energy today', 'Full, light or survival', () => { ui.tab = 'home'; ui.capOpen = true; saveUi(); closeCmd(); render(); window.scrollTo({ top: 0 }); }],
@@ -6572,7 +6699,7 @@ Rules:
       const el = e.target.closest('[data-act]'); if (!el) return;
       const id = el.dataset.id;
       switch (el.dataset.act) {
-        case 'dec': { const d = decList.find(x => x.key === el.dataset.key); const a = d && d.acts[+el.dataset.i]; if (a) a.run(); break; }
+        case 'dec': { const d = decList.find(x => x.key === el.dataset.key); const a = d && d.acts[+el.dataset.i]; if (a) { learnDec(d.key, a.label); a.run(); } break; }
         case 'dec-all': ui.decAll = !ui.decAll; saveUi(); renderDecide(); break;
         case 'toast-undo': { const u = toastUndo; hideToast(); if (u) u(); break; }
         case 'day-video': copyDayVideoPrompt(); break;
@@ -6632,6 +6759,16 @@ Rules:
       const el = e.target.closest('[data-act]'); if (!el) return;
       switch (el.dataset.act) {
         case 'live-retry': loadLive(); break;
+        case 'read-day': readDayAloud(); break;
+        case 'meal-edit': ui.mealEdit = el.dataset.d; saveUi(); render(); break;
+        case 'meal-cancel': ui.mealEdit = null; saveUi(); render(); break;
+        case 'meal-save': { const d = el.dataset.d, mon = mondayOf(d), k = mealKey((syncWeekOf(mon).meals || {})[d]), ta = $('mi-' + d);
+          if (k && ta) setMeta({ mealItems: Object.assign({}, meta().mealItems, { [k]: ta.value.trim() }) });
+          ui.mealEdit = null; saveUi(); render(); toast('Ingredients saved. Next time it is one tap.'); break; }
+        case 'meal-add': { const d = el.dataset.d, mon = mondayOf(d), wk = syncWeekOf(mon), k = mealKey((wk.meals || {})[d]); let n = 0;
+          mealLines(k).forEach(l => { n += addGrocery(l) || 0; });
+          saveSync(mon, { mealAdded: Object.assign({}, wk.mealAdded, { [d]: k }) }); render();
+          toast(n ? `${n} added to your grocery lists.` : 'Already on your grocery lists.'); break; }
         case 'tl-work': ui.open.tlWork = !ui.open.tlWork; saveUi(); renderTimeline(); break;
         case 'plan-week': openRitual('week'); break;
         case 'week-send': sendWeekToOmar(); break;

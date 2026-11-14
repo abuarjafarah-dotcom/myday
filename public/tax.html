@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tax Tracker</title>
 <style>
-:root{--bg:#faf7f2;--card:#fff;--ink:#2b2622;--muted:#7a6f66;--line:#e6dfd5;--accent:#8a5a3b;--good:#3d7a4f;--warn:#a4572b}
+:root{--bg:#F5EFE4;--card:#FFFAF2;--ink:#2A1F2B;--muted:#6B5B5F;--line:#DDD0BD;--accent:#5D6635;--on-accent:#F7F4E4;--good:#3E7D5A;--warn:#A4572B;--tag:#EFE6D6;--tag-ded:#E3F0E7;--tag-no:#F3E6DF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15101A;--card:#22172A;--ink:#F0E6D3;--muted:#B7A79A;--line:#3F2C44;--accent:#B9BF72;--on-accent:#1D210F;--good:#7CC096;--warn:#E89A78;--tag:#2D1D33;--tag-ded:#1F3328;--tag-no:#3A2820}}
+:root[data-theme="dark"]{--bg:#15101A;--card:#22172A;--ink:#F0E6D3;--muted:#B7A79A;--line:#3F2C44;--accent:#B9BF72;--on-accent:#1D210F;--good:#7CC096;--warn:#E89A78;--tag:#2D1D33;--tag-ded:#1F3328;--tag-no:#3A2820}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
 header{padding:18px 16px 0;max-width:1000px;margin:0 auto}
@@ -21,17 +23,17 @@ section{display:none}section.active{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
 label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px;background:#fff;color:var(--ink);font:inherit}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px;background:var(--card);color:var(--ink);font:inherit}
 select.auto,input.auto{width:auto}
-button.primary{background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;font:inherit}
+button.primary{background:var(--accent);color:var(--on-accent);border:none;padding:9px 16px;border-radius:6px;cursor:pointer;font:inherit}
 button.ghost{background:none;border:1px solid var(--line);padding:8px 14px;border-radius:6px;cursor:pointer;color:var(--ink);font:inherit}
 button.danger{background:none;border:none;color:var(--warn);cursor:pointer;font:inherit}
 table{width:100%;border-collapse:collapse}
 th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{font-size:12px;color:var(--muted);font-weight:600}
 .num{text-align:right;font-variant-numeric:tabular-nums}
-.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#efe8dd}
-.tag.ded{background:#e0efe4;color:var(--good)}.tag.no{background:#f3e6df;color:var(--warn)}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--tag)}
+.tag.ded{background:var(--tag-ded);color:var(--good)}.tag.no{background:var(--tag-no);color:var(--warn)}
 .muted{color:var(--muted);font-size:13px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .wrap{overflow-x:auto}
@@ -175,6 +177,16 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="/tax-pdf.js"></script>
 <script>
+// Follow the dashboard's theme and night layout when shown inside it.
+(function () {
+  function matchTheme() {
+    try {
+      var pd = parent.document.documentElement, t = pd.dataset.night === '1' && pd.dataset.theme !== 'light' ? 'dark' : pd.dataset.theme;
+      if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+    } catch (e) {}
+  }
+  matchTheme(); document.addEventListener('visibilitychange', function () { if (!document.hidden) matchTheme(); });
+})();
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const money = n => (Number(n) || 0).toLocaleString("en-US", {style:"currency", currency:"USD"});
