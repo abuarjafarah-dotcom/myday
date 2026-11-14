@@ -5,7 +5,7 @@ import { viewFor } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips", "rewards"]);
+const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips", "rewards", "road"]);
 const TABLE = "dashboard_docs";
 
 async function owner() {
@@ -32,21 +32,22 @@ export async function GET(request: Request) {
   const db = supabaseAdmin();
   if (!db) return Response.json({ error: "not_configured" }, { status: 503 });
 
+  // ?kind=road returns only that kind, so a small page (the Mom Mastery Road) does not download everything.
+  const only = new URL(request.url).searchParams.get("kind");
+  const wanted = only && KINDS.has(only) ? [only] : [...KINDS];
   const docs: Record<string, Record<string, unknown>> = {};
-  KINDS.forEach((k) => (docs[k] = {}));
+  wanted.forEach((k) => (docs[k] = {}));
   const page = 1000;
   for (let from = 0; ; from += page) {
-    const { data, error } = await db
-      .from(TABLE)
-      .select("kind,id,data")
-      .eq("owner", email)
-      .range(from, from + page - 1);
+    let query = db.from(TABLE).select("kind,id,data").eq("owner", email);
+    if (wanted.length === 1) query = query.eq("kind", wanted[0]);
+    const { data, error } = await query.range(from, from + page - 1);
     if (error) {
       console.error("store read", error);
       return Response.json({ error: "read_failed" }, { status: 500 });
     }
     (data || []).forEach((row) => {
-      if (KINDS.has(row.kind)) docs[row.kind][row.id] = row.data;
+      if (docs[row.kind]) docs[row.kind][row.id] = row.data;
     });
     if (!data || data.length < page) break;
   }

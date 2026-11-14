@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mom Mastery Road</title>
+<style>
+:root {
+  --accent: #5D6635; --on-accent: #F7F4E4; --text: #2A1F2B; --muted: #6B5B5F;
+  --border: #DDD0BD; --bg: #F5EFE4; --card: #FFFAF2; --soft: #EFE6D6; --ok: #3E7D5A; --ok-soft: #E3F0E7; --warn: #8A5A00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent: #B9BF72; --on-accent: #1D210F; --text: #F0E6D3; --muted: #B7A79A;
+    --border: #3F2C44; --bg: #15101A; --card: #22172A; --soft: #2D1D33; --ok: #7CC096; --ok-soft: #1F3328; --warn: #E0BE7C;
+  }
+}
+:root[data-theme="dark"] {
+  --accent: #B9BF72; --on-accent: #1D210F; --text: #F0E6D3; --muted: #B7A79A;
+  --border: #3F2C44; --bg: #15101A; --card: #22172A; --soft: #2D1D33; --ok: #7CC096; --ok-soft: #1F3328; --warn: #E0BE7C;
+}
+* { box-sizing: border-box; }
+html { font: -apple-system-body; }
+body { margin: 0; padding: 0 0 24px; background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; font-size: 0.9375rem; line-height: 1.35; }
+h1 { font-size: 1.25rem; margin: 0; font-weight: 600; letter-spacing: -0.3px; }
+h2 { font-size: 1rem; margin: 0; font-weight: 600; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.cap { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); font-size: 0.8125rem; }
+.row { display: flex; align-items: center; gap: 8px; }
+.between { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+.stat { border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+.stat b { display: block; font-size: 1.375rem; font-weight: 600; }
+svg text { font-family: -apple-system, system-ui, sans-serif; }
+.say { display: flex; gap: 8px; margin: 12px 0 4px; }
+.say input { flex: 1; min-width: 0; min-height: 48px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); font-size: 1rem; }
+.btn { min-height: 48px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); font-weight: 500; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn.sq { width: 48px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.btn.live { background: var(--warn); border-color: var(--warn); color: var(--card); }
+.area { padding: 12px 0 0; margin-top: 12px; border-top: 1px solid var(--border); }
+.area-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.area-h b { font-weight: 600; }
+.badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; background: var(--soft); color: var(--muted); white-space: nowrap; }
+.badge.on { background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.sug { flex: 1; min-width: 0; min-height: 48px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); text-align: left; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.sug svg { flex: none; color: var(--accent); }
+.link { background: none; border: 0; padding: 10px 0 0; min-height: 44px; color: var(--muted); font-size: 0.8125rem; text-decoration: underline; }
+.pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pick .btn { min-height: 44px; padding: 0 10px; font-size: 0.8125rem; }
+.ring { flex: none; }
+.check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 8px 0; border-top: 1px solid var(--border); }
+.check input { width: 22px; height: 22px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+.locked { display: flex; justify-content: space-between; gap: 8px; align-items: center; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted); margin-top: 8px; }
+.bank { background: var(--text); color: var(--bg); border-color: var(--text); }
+.bank .cap, .bank .muted { color: var(--bg); }
+.bar { height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--bg) 30%, var(--text)); margin: 10px 0; overflow: hidden; }
+.bar i { display: block; height: 8px; border-radius: 8px; background: var(--bg); }
+.bank .btn { flex: 1; background: none; border: 1px dashed var(--bg); color: var(--bg); }
+details summary { min-height: 44px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+.vault-item { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
+#toast { position: fixed; left: 12px; right: 12px; bottom: 12px; display: none; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 12px; background: var(--text); color: var(--bg); z-index: 9; }
+#toast button { background: none; border: 0; color: var(--bg); font-weight: 600; text-decoration: underline; min-height: 44px; }
+#note { font-size: 0.8125rem; color: var(--muted); min-height: 18px; margin: 0 2px 8px; }
+</style>
+</head>
+<body>
+<div id="note" role="status"></div>
+<div id="app"></div>
+<div id="toast" role="status"><span id="toastMsg"></span><button type="button" data-act="undo">Undo</button></div>
+<script>
+(function () {
+  'use strict';
+  function matchTheme() {   // follow the dashboard: its per-phone theme and its night layout
+    try {
+      var pd = parent.document.documentElement, t = pd.dataset.night === '1' && pd.dataset.theme !== 'light' ? 'dark' : pd.dataset.theme;
+      if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+    } catch (e) {}
+  }
+  matchTheme();
+
+  var YEAR = 2027, LS = 'mmr-' + YEAR, DOC = 'y' + YEAR, GOAL_H = 180;
+  var AREAS = [
+    { id: 'soul', name: 'Soul / Islam', sug: [["Qur'an with Hamad, 10 min", 'family'], 'Recitation on the school run', '5 quiet minutes of dua'],
+      kw: ['quran', "qur'an", 'pray', 'prayer', 'prayed', 'salah', 'salat', 'dua', 'duaa', 'dhikr', 'fajr', 'mosque', 'masjid', 'ramadan', 'fasted', 'fasting', 'recitation', 'sadaqah', 'charity'] },
+    { id: 'social', name: 'Social', sug: ['Voice note to a friend', 'Call family in Amman', 'Coffee with a Montessori mom'],
+      kw: ['friend', 'friends', 'called', 'call', 'coffee', 'mama', 'sister', 'brother', 'cousin', 'voice note', 'texted', 'playdate', 'neighbor', 'visited', 'lunch with'] },
+    { id: 'active', name: 'Active / Hobby', sug: ['10-min home workout', 'Thursday class', '15 minutes on the garden plan'],
+      kw: ['workout', 'gym', 'pilates', 'walk', 'walked', 'run', 'ran', 'treadmill', 'rower', 'rowed', 'yoga', 'garden', 'gardening', 'stretch', 'stretched', 'swim', 'swam', 'exercise'] },
+    { id: 'family', name: 'Family', sug: ['One-on-one with Hamad, 15 min', 'Climb-and-jump play with Talal', 'Tea with Omar, phones away', 'Arabic bedtime story'],
+      kw: ['hamad', 'talal', 'yousef', 'omar', 'kids', 'boys', 'bedtime', 'story', 'date night', 'one-on-one', 'played with'] },
+    { id: 'work', name: 'Work', sug: ['Logged one win', 'Shared a design', 'Laptop closed by pickup'],
+      kw: ['work', 'workwave', 'design', 'designed', 'shipped', 'meeting', 'win', 'presented', 'laptop'] },
+    { id: 'learn', name: 'Learn', sug: ['AI course, 15 min', 'Tried one AI tool on real work', 'Read one strategy article'],
+      kw: ['course', 'learn', 'learned', 'read', 'article', 'book', 'tutorial', 'podcast', 'studied', 'lesson'] },
+    { id: 'fun', name: 'Fun / Travel', sug: ['Cooked a family cookbook recipe', 'Planned one piece of the next trip', 'Family outing'],
+      kw: ['fun', 'trip', 'travel', 'movie', 'cooked', 'baked', 'recipe', 'outing', 'restaurant', 'shopping', 'show', 'park', 'booked'] }
+  ];
+  var QUESTS = [
+    { id: 'q1', name: 'Family dashboard', line: 'One dashboard, one link, used every morning. Finish before Feb 22.',
+      cp: ['Pick the live version as the only one', 'Retire the old versions', 'Version 1 in place: calendar, tasks, grocery, Omar\'s view', 'Opened 5 of 7 mornings, 4 weeks in a row'] },
+    { id: 'q2', name: "Kids' learning platform", line: 'Every game as a level under Mobile Magic. All four in before Sep 21.',
+      cp: ['Code on GitHub and live on Vercel', 'Saved progress for each child', 'Arabic letters level', 'Math Adventure level', "Teta's Kitchen level", 'Islamic Explorer level', 'Hamad and Talal each play weekly'] },
+    { id: 'q3', name: 'Money systems', line: 'Small monthly routines, then the expense and recipe pipeline in Q4.',
+      cp: ['Tax tracker logged every month', 'Monthly SPUS and HLAL review reminder set', 'Monthly spending check in place', 'Expense and recipe pipeline feeds the grocery lists'] }
+  ];
+  var PARKED = ['Portfolio redesign and weekly posts', 'Strategy and AI courses beyond what work needs', 'Mastery World as a separate build', 'Grade 1 curriculum platform and daily storybook', 'Bowling game refinements', 'New family apps: the dashboard covers this'];
+  var STOPS = [
+    { f: 0, t: 'Q1', q: 1 }, { d: '02-22', t: 'Kuwait, Egypt' }, { d: '04-01', t: 'Q2', q: 1 }, { d: '05-09', t: 'Kyoto' },
+    { d: '07-01', t: 'Q3', q: 1 }, { d: '09-21', t: 'Amman' }, { d: '10-01', t: 'Q4', q: 1 }
+  ];
+
+  var anchorY = 0;
+  var st = blank(), sugIdx = {}, adding = null, pending = null, lastUndo = null, saveT = null, cloud = 'off';
+  function blank() { return { v: 1, logs: [], blocks: [], checks: {}, vault: [], custom: {}, gone: [], at: 0 }; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function today() { return ymd(new Date()); }
+  function weekOf(s) { var d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- storage: this device first, then the dashboard database ----------
+  function clean(o) {
+    var b = blank(); if (!o || typeof o !== 'object') return b;
+    ['logs', 'blocks', 'vault', 'gone'].forEach(function (k) { if (Array.isArray(o[k])) b[k] = o[k]; });
+    if (o.checks && typeof o.checks === 'object') b.checks = o.checks;
+    if (o.custom && typeof o.custom === 'object') b.custom = o.custom;
+    b.at = +o.at || 0; return b;
+  }
+  function merge(a, b) {
+    var out = blank(), gone = {};
+    a.gone.concat(b.gone).forEach(function (id) { gone[id] = 1; });
+    out.gone = Object.keys(gone).slice(-500);
+    ['logs', 'blocks', 'vault'].forEach(function (k) {
+      var seen = {};
+      a[k].concat(b[k]).forEach(function (x) { if (x && x.id && !seen[x.id] && !gone[x.id]) { seen[x.id] = 1; out[k].push(x); } });
+    });
+    [a.checks, b.checks].forEach(function (c) { Object.keys(c).forEach(function (k) { if (!out.checks[k] || (c[k].at || 0) > (out.checks[k].at || 0)) out.checks[k] = c[k]; }); });
+    [a.custom, b.custom].forEach(function (c) { Object.keys(c).forEach(function (k) { if (!out.custom[k] || (c[k].at || 0) > (out.custom[k].at || 0)) out.custom[k] = c[k]; }); });
+    out.at = Math.max(a.at, b.at); return out;
+  }
+  function loadLocal() { try { st = clean(JSON.parse(localStorage.getItem(LS) || 'null')); } catch (e) { st = blank(); } }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {} }
+  function note(t) { $('note').textContent = t || ''; }
+  function loadCloud() {
+    return fetch('/api/store?kind=road', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) {
+      if (r.status === 401) { cloud = 'off'; note('Signed out: saving on this device. Sign in on the dashboard to sync.'); return; }
+      if (!r.ok) { cloud = 'off'; note('Offline: saving on this device.'); return; }
+      return r.json().then(function (j) {
+        var remote = j && j.docs && j.docs.road && j.docs.road[DOC];
+        cloud = 'on'; note('');
+        if (remote) { var before = JSON.stringify(st); st = merge(st, clean(remote)); saveLocal(); if (JSON.stringify(st) !== before) render(); }
+        if (!remote || st.at > (+remote.at || 0)) pushCloud();
+      });
+    }).catch(function () { cloud = 'off'; note('Offline: saving on this device.'); });
+  }
+  function pushCloud() {
+    if (cloud !== 'on') return;
+    fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [{ kind: 'road', id: DOC, data: st }] }) })
+      .then(function (r) { if (!r.ok) note('Could not sync just now. Saved on this device.'); else note(''); })
+      .catch(function () { note('Offline: saved on this device.'); });
+  }
+  function save() { st.at = Date.now(); saveLocal(); clearTimeout(saveT); saveT = setTimeout(pushCloud, 600); }
+
+  // ---------- numbers ----------
+  function weeks() {
+    var w = {};
+    st.logs.forEach(function (l) { var k = weekOf(l.d); (w[k] = w[k] || {})[l.a] = 1; });
+    return w;
+  }
+  function stats() {
+    var w = weeks(), bal = 0, calm = 0;
+    Object.keys(w).forEach(function (k) { var n = Object.keys(w[k]).length; if (n >= 7) bal++; if (n >= 4) calm++; });
+    var cur = w[weekOf(today())] || {};
+    return { bal: bal, calm: calm, now: Object.keys(cur).length, cur: cur };
+  }
+  function countThisWeek(a) { var wk = weekOf(today()); return st.logs.filter(function (l) { return l.a === a && weekOf(l.d) === wk; }).length; }
+  function sugList(a) { var c = st.custom[a.id]; return ((c && c.list) || []).concat(a.sug); }
+  function sugText(s) { return Array.isArray(s) ? s[0] : s; }
+  function isOn(q, i) { var c = st.checks[q + '.' + i]; return !!(c && c.on); }
+  function questDone(q) { return q.cp.every(function (_, i) { return isOn(q.id, i); }); }
+  function activeQuest() { for (var i = 0; i < QUESTS.length; i++) if (!questDone(QUESTS[i])) return i; return -1; }
+  function yearFrac() {
+    var a = new Date(YEAR, 0, 1), b = new Date(YEAR + 1, 0, 1), n = new Date();
+    return Math.max(0, Math.min(1, (n - a) / (b - a)));
+  }
+  function fracOf(md) { var a = new Date(YEAR, 0, 1), b = new Date(YEAR + 1, 0, 1); return (new Date(YEAR + '-' + md + 'T12:00:00') - a) / (b - a); }
+
+  // ---------- drawing ----------
+  var PATH = 'M16 190 H256 a30 30 0 0 0 0 -60 H70 a30 30 0 0 1 0 -60 H310';
+  function roadSvg() {
+    var f = yearFrac();
+    var s = '<svg id="road" role="img" aria-label="Road through the four quarters of ' + YEAR + ' with three trip stamps" viewBox="0 0 326 244" width="100%" style="max-width:420px;display:block;margin:6px auto 0">' +
+      '<path id="roadPath" d="' + PATH + '" fill="none" stroke="var(--soft)" stroke-width="16" stroke-linecap="round"/>' +
+      '<path id="roadDone" d="' + PATH + '" fill="none" stroke="var(--accent)" stroke-width="16" stroke-linecap="round" stroke-dasharray="0 9999"/>' +
+      '<path d="' + PATH + '" fill="none" stroke="var(--card)" stroke-width="2" stroke-dasharray="6 8"/>' +
+      '<g id="roadStops"></g></svg>';
+    return { html: s, f: f };
+  }
+  function placeStops(f) {
+    var p = $('roadPath'); if (!p || !p.getTotalLength) return;
+    var L = p.getTotalLength(), g = '';
+    $('roadDone').setAttribute('stroke-dasharray', Math.max(0.01, L * f) + ' 9999');
+    STOPS.forEach(function (s) {
+      var sf = s.d ? fracOf(s.d) : s.f, pt = p.getPointAtLength(L * sf), past = f >= sf && f > 0;
+      if (s.q) {
+        g += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="11" fill="var(--card)" stroke="var(--text)" stroke-width="1.5"/>' +
+          '<text x="' + pt.x + '" y="' + (pt.y + 3.5) + '" text-anchor="middle" font-size="10" font-weight="600" fill="var(--text)">' + s.t + '</text>';
+      } else {
+        var dn = pt.y > 180, y = dn ? pt.y + 26 : pt.y - 26;
+        g += '<path d="M' + pt.x + ' ' + (dn ? pt.y + 8 : pt.y - 8) + ' V' + (dn ? y - 10 : y + 10) + '" stroke="var(--muted)" stroke-width="1"/>' +
+          '<rect x="' + (pt.x - 10) + '" y="' + (y - 10) + '" width="20" height="20" rx="4" fill="' + (past ? 'var(--accent)' : 'var(--card)') + '" stroke="var(--accent)" stroke-width="1.5"' + (past ? '' : ' stroke-dasharray="3 2"') + '/>' +
+          '<path d="M' + (pt.x - 5) + ' ' + (y + 4) + ' l10 -8 M' + (pt.x + 5) + ' ' + (y - 4) + ' h-5 M' + (pt.x + 5) + ' ' + (y - 4) + ' v5" stroke="' + (past ? 'var(--on-accent)' : 'var(--accent)') + '" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+          '<text x="' + pt.x + '" y="' + (dn ? y + 22 : y - 15) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + s.t + '</text>';
+      }
+    });
+    var end = p.getPointAtLength(L), me = p.getPointAtLength(L * f);
+    g += '<path d="M' + (end.x - 4) + ' ' + (end.y - 8) + ' V' + (end.y - 32) + ' h14 l-3 5 l3 5 h-14" fill="var(--text)" stroke="var(--text)" stroke-width="1.5" stroke-linejoin="round"/>' +
+      '<text x="' + (end.x + 12) + '" y="' + (end.y + 24) + '" text-anchor="end" font-size="10" font-weight="600" fill="var(--text)">Calm</text>' +
+      '<circle cx="' + me.x + '" cy="' + me.y + '" r="9" fill="var(--text)"/><circle cx="' + me.x + '" cy="' + me.y + '" r="3.5" fill="var(--card)"/>';
+    $('roadStops').innerHTML = g;
+  }
+  function ring(pct) {
+    var c = 2 * Math.PI * 30, on = Math.max(pct ? c * pct / 100 : 0.01, 0.01);
+    return '<svg class="ring" role="img" aria-label="' + pct + ' percent" width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="30" fill="none" stroke="var(--soft)" stroke-width="8"/>' +
+      '<circle cx="36" cy="36" r="30" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + on + ' ' + c + '" transform="rotate(-90 36 36)"/>' +
+      '<text x="36" y="41" text-anchor="middle" font-size="14" font-weight="600" fill="var(--text)">' + pct + '%</text></svg>';
+  }
+  var TICK = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>';
+  var SWAP = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>';
+  var MIC = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg>';
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, listening = false;
+
+  function render() {
+    var s = stats(), r = roadSvg(), n = new Date(), h = '';
+    var before = n < new Date(YEAR, 0, 1), days = Math.ceil((new Date(YEAR, 0, 1) - n) / 864e5);
+    var wkNo = Math.min(52, Math.floor(yearFrac() * 52) + 1);
+    h += '<div class="card"><div class="between"><h1>Mom Mastery Road</h1><span class="muted">' + (before ? days + ' days to start' : 'Week ' + wkNo + ' of 52') + '</span></div>' +
+      '<div class="cap" style="margin-top:4px">' + YEAR + ' road to calm</div>' + r.html +
+      (before ? '<div class="muted" style="margin-top:6px">The road opens January 1. Anything you log now already counts.</div>' : '') +
+      '<div class="stats"><div class="stat"><span class="cap">This week</span><b>' + s.now + ' of 7</b></div>' +
+      '<div class="stat"><span class="cap">Balanced</span><b>' + s.bal + '</b><span class="muted">all 7 areas</span></div>' +
+      '<div class="stat"><span class="cap">Calm</span><b>' + s.calm + '</b><span class="muted">4 or more</span></div></div></div>';
+
+    h += '<div class="card"><div class="between"><h2>This week\'s balance</h2><span class="muted">One tap logs it</span></div>' +
+      '<form class="say" data-form="say"><input id="sayInput" name="t" autocomplete="off" enterkeyhint="done" placeholder="Say or type it: I called Mama" aria-label="Say or type what you did">' +
+      (SR ? '<button type="button" class="btn sq' + (listening ? ' live' : '') + '" data-act="mic" aria-label="' + (listening ? 'Stop listening' : 'Speak') + '">' + MIC + '</button>' : '') +
+      '<button type="submit" class="btn primary">Log</button></form>';
+    if (pending) {
+      h += '<div class="muted">Where does "' + esc(pending) + '" belong?</div><div class="pick">' +
+        AREAS.map(function (a) { return '<button type="button" class="btn" data-act="pick" data-a="' + a.id + '">' + esc(a.name) + '</button>'; }).join('') +
+        '<button type="button" class="btn" data-act="pick-cancel">Cancel</button></div>';
+    }
+    AREAS.forEach(function (a) {
+      var list = sugList(a), i = (sugIdx[a.id] || 0) % list.length, c = countThisWeek(a.id);
+      h += '<div class="area"><div class="area-h"><b>' + esc(a.name) + '</b><span class="badge' + (c ? ' on' : '') + '">' + (c ? 'Done' + (c > 1 ? ' x' + c : '') : 'Not yet') + '</span></div>' +
+        '<div class="row"><button type="button" class="sug" data-act="log" data-a="' + a.id + '" data-i="' + i + '">' + TICK + '<span>' + esc(sugText(list[i])) + '</span></button>' +
+        '<button type="button" class="btn sq" data-act="swap" data-a="' + a.id + '" aria-label="Next suggestion for ' + esc(a.name) + '">' + SWAP + '</button></div>';
+      if (adding === a.id) h += '<form class="say" data-form="own" data-a="' + a.id + '"><input name="t" autocomplete="off" placeholder="Your own, e.g. Walk with a friend" aria-label="Your own suggestion for ' + esc(a.name) + '"><button type="submit" class="btn primary">Save</button></form>';
+      else h += '<button type="button" class="link" data-act="own" data-a="' + a.id + '">Add your own</button>';
+      h += '</div>';
+    });
+    h += '</div>';
+
+    var ai = activeQuest();
+    h += '<div class="card"><div class="cap">' + (ai < 0 ? 'All quests finished' : 'Active quest') + '</div>';
+    QUESTS.forEach(function (q, qi) {
+      var done = q.cp.filter(function (_, i) { return isOn(q.id, i); }).length, pct = Math.round(100 * done / q.cp.length);
+      if (qi === ai) {
+        h += '<div class="row" style="gap:14px;margin:10px 0">' + ring(pct) + '<div><h2>Quest ' + (qi + 1) + ': ' + esc(q.name) + '</h2><div class="muted">' + esc(q.line) + '</div></div></div>' +
+          q.cp.map(function (t, i) { return '<label class="check"><input type="checkbox" data-chk="' + q.id + '.' + i + '"' + (isOn(q.id, i) ? ' checked' : '') + '><span>' + esc(t) + '</span></label>'; }).join('');
+      } else {
+        h += '<div class="locked"><span>Quest ' + (qi + 1) + ': ' + esc(q.name) + '</span><span class="badge' + (qi < ai || ai < 0 ? ' on' : '') + '">' + (qi < ai || ai < 0 ? 'Finished' : 'Locked') + '</span></div>';
+      }
+    });
+    h += '</div>';
+
+    var mins = st.blocks.reduce(function (t, b) { return t + (+b.m || 0); }, 0), hrs = Math.round(mins / 6) / 10, wk = weekOf(today());
+    var wb = st.blocks.filter(function (b) { return weekOf(b.d) === wk; }).length;
+    h += '<div class="card bank"><div class="between"><span class="cap">Hours bank</span><span class="muted">' + hrs + ' of ' + GOAL_H + ' h</span></div>' +
+      '<div class="bar"><i style="width:' + Math.min(100, Math.max(1, 100 * hrs / GOAL_H)) + '%"></i></div>' +
+      '<div class="muted" style="margin-bottom:8px">' + wb + ' of 2 project blocks this week</div>' +
+      '<div class="row"><button type="button" class="btn" data-act="block" data-m="90">Log 90 min</button><button type="button" class="btn" data-act="block" data-m="120">Log 2 hours</button></div></div>';
+
+    var vault = PARKED.map(function (t, i) { return { id: 'seed-' + i, t: t }; }).filter(function (v) { return st.gone.indexOf(v.id) < 0; }).concat(st.vault);
+    h += '<div class="card"><details' + (vaultOpen ? ' open' : '') + ' data-vault><summary><span><h2 style="display:inline">The vault</h2> <span class="muted">' + vault.length + ' parked. Opens December ' + YEAR + '.</span></span><span class="muted">Show</span></summary>' +
+      vault.map(function (v) { return '<div class="vault-item"><span>' + esc(v.t) + '</span><button type="button" class="link" style="padding:0" data-act="unpark" data-id="' + esc(v.id) + '">Remove</button></div>'; }).join('') +
+      '</details><form class="say" data-form="park"><input name="t" autocomplete="off" placeholder="New idea? Park it here" aria-label="Park a new idea"><button type="submit" class="btn">Park idea</button></form></div>';
+
+    $('app').innerHTML = h;
+    placeStops(r.f);
+    fit();
+  }
+  var vaultOpen = false;
+  function fit() { try { if (window.frameElement && document.body.scrollHeight > 0) window.frameElement.style.height = (document.body.scrollHeight + 8) + 'px'; } catch (e) {} }
+
+  // ---------- actions ----------
+  function toast(msg, undo) {
+    lastUndo = undo || null; $('toastMsg').textContent = msg; $('toast').style.display = 'flex';
+    try {   // inside the dashboard the frame is as tall as the page, so show the toast right under what was tapped
+      if (window.frameElement) {
+        $('toast').style.position = 'absolute'; $('toast').style.bottom = 'auto';
+        $('toast').style.top = Math.max(8, Math.min(anchorY + 8, document.body.scrollHeight - 72)) + 'px';
+      }
+    } catch (e) {}
+    $('toast').lastElementChild.style.display = undo ? '' : 'none';
+    clearTimeout(toast.t); toast.t = setTimeout(function () { $('toast').style.display = 'none'; }, 5000);
+  }
+  function remove(ids) { st.gone = st.gone.concat(ids); ['logs', 'blocks', 'vault'].forEach(function (k) { st[k] = st[k].filter(function (x) { return ids.indexOf(x.id) < 0; }); }); save(); render(); }
+  function logTo(areas, text) {
+    var was = stats().now, ids = [];
+    areas.forEach(function (a) { var id = uid(); ids.push(id); st.logs.push({ id: id, d: today(), a: a, t: String(text).slice(0, 140) }); });
+    save(); render();
+    var now = stats().now, names = areas.map(function (a) { return AREAS.filter(function (x) { return x.id === a; })[0].name; }).join(' and ');
+    toast(now >= 7 && was < 7 ? 'Balanced week. All 7 areas touched.' : 'Logged to ' + names + '.', function () { remove(ids); });
+  }
+  function classify(text) {
+    var t = ' ' + text.toLowerCase() + ' ', best = 0, hit = [];
+    AREAS.forEach(function (a) {
+      var n = a.kw.filter(function (k) { return new RegExp('[^a-z]' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^a-z]').test(t); }).length;
+      if (n > best) { best = n; hit = [a.id]; } else if (n && n === best) hit.push(a.id);
+    });
+    return hit.slice(0, 2);
+  }
+  function say(text) {
+    text = (text || '').trim(); if (!text) return;
+    var a = classify(text);
+    if (a.length) { pending = null; logTo(a, text); } else { pending = text; render(); }
+  }
+  function mic() {
+    if (!SR) return;
+    if (listening && mic.r) { mic.r.stop(); return; }
+    var r = mic.r = new SR(); r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 1;
+    r.onresult = function (e) { var t = e.results[0] && e.results[0][0] && e.results[0][0].transcript; if (t) say(t); };
+    r.onerror = function () { toast('Could not hear that. Type it, or use the keyboard microphone.'); };
+    r.onend = function () { listening = false; render(); };
+    try { r.start(); listening = true; render(); } catch (e) { toast('Voice is not available here. Type it instead.'); }
+  }
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]'); if (!el) return;
+    if (el.dataset.act !== 'undo') anchorY = el.getBoundingClientRect().bottom + (window.scrollY || 0);
+    var a = el.dataset.a, area = AREAS.filter(function (x) { return x.id === a; })[0];
+    switch (el.dataset.act) {
+      case 'log': { var s = sugList(area)[+el.dataset.i]; logTo([a].concat(Array.isArray(s) ? [s[1]] : []), sugText(s)); break; }
+      case 'swap': sugIdx[a] = ((sugIdx[a] || 0) + 1) % sugList(area).length; render(); break;
+      case 'own': adding = a; render(); var f = document.querySelector('form[data-form="own"] input'); if (f) f.focus(); break;
+      case 'pick': { var t = pending; pending = null; logTo([a], t); break; }
+      case 'pick-cancel': pending = null; render(); break;
+      case 'mic': mic(); break;
+      case 'block': { var id = uid(); st.blocks.push({ id: id, d: today(), m: +el.dataset.m }); save(); render(); toast('Block logged. ' + el.dataset.m + ' minutes in the bank.', function () { remove([id]); }); break; }
+      case 'unpark': st.gone.push(el.dataset.id); st.vault = st.vault.filter(function (v) { return v.id !== el.dataset.id; }); vaultOpen = true; save(); render(); break;
+      case 'undo': if (lastUndo) { lastUndo(); lastUndo = null; } $('toast').style.display = 'none'; break;
+    }
+  });
+  document.addEventListener('submit', function (e) {
+    var f = e.target.closest('form[data-form]'); if (!f) return; e.preventDefault();
+    anchorY = f.getBoundingClientRect().bottom + (window.scrollY || 0);
+    var t = (f.elements.t.value || '').trim(); if (!t) return;
+    if (f.dataset.form === 'say') say(t);
+    else if (f.dataset.form === 'own') {
+      var a = f.dataset.a, cur = (st.custom[a] && st.custom[a].list) || [];
+      st.custom[a] = { list: [t.slice(0, 80)].concat(cur).slice(0, 12), at: Date.now() }; sugIdx[a] = 0; adding = null; save(); render(); toast('Added. It is now the first suggestion.');
+    } else if (f.dataset.form === 'park') { st.vault.push({ id: uid(), t: t.slice(0, 140), d: today() }); vaultOpen = true; save(); render(); toast('Parked. Focus protected.'); }
+  });
+  document.addEventListener('change', function (e) {
+    var k = e.target.dataset && e.target.dataset.chk; if (!k) return;
+    anchorY = e.target.getBoundingClientRect().bottom + (window.scrollY || 0);
+    var was = activeQuest(); st.checks[k] = { on: e.target.checked, at: Date.now() }; save(); render();
+    var now = activeQuest(); if (now !== was && e.target.checked) toast(now < 0 ? 'All three quests finished.' : 'Quest finished. Quest ' + (now + 1) + ' is unlocked.');
+  });
+  document.addEventListener('toggle', function (e) { if (e.target.matches && e.target.matches('details[data-vault]')) { vaultOpen = e.target.open; fit(); } }, true);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { matchTheme(); loadCloud(); } });
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(document.body);
+
+  loadLocal(); render(); loadCloud();
+})();
+</script>
+</body>
+</html>
