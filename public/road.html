@@ -128,6 +128,12 @@ body.print-year .card:not(#yearCard), body.print-year #note, body.print-year #to
     ['Talal', ['Outfits, light layers', 'Pajamas', 'Comfort toy', 'Headphones and tablet', 'His safe foods and snacks']],
     ['Yousef', ['Outfits and warm layers', 'Diapers and wipes', 'Bottles and food', 'Sleep sack', 'Stroller']]
   ];
+  // Estimated from astronomical calculations; the official day depends on moon sighting.
+  var HOLY = [
+    { id: 'ram', name: 'Ramadan', from: '2027-02-08', to: '2027-03-08', note: 'Fasting month. Iftar and suhoor times shift daily.' },
+    { id: 'eidf', name: 'Eid al-Fitr', from: '2027-03-09', to: '2027-03-11', note: 'Three days of celebration.' },
+    { id: 'eida', name: 'Eid al-Adha', from: '2027-05-15', to: '2027-05-17', note: 'Day of Arafah, then Eid.' }
+  ];
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   var STOPS = [
     { f: 0, t: 'Q1', q: 1 }, { d: '02-22', t: 'Kuwait, Egypt' }, { d: '04-01', t: 'Q2', q: 1 }, { d: '05-09', t: 'Kyoto' },
@@ -267,9 +273,67 @@ body.print-year .card:not(#yearCard), body.print-year #note, body.print-year #to
       var keys = Object.keys(taskMonths).sort().slice(-12), tm = Math.max.apply(null, keys.map(function (k) { return taskMonths[k]; }).concat([1]));
       if (keys.length) h += '<div class="cap" style="margin:12px 0 4px">Tasks finished by month</div>' + keys.map(function (k) { return '<div class="ybar"><span>' + MONTHS[+k.slice(5) - 1] + ' ' + k.slice(0, 4) + '</span><i><b style="width:' + Math.round(100 * taskMonths[k] / tm) + '%"></b></i><em>' + taskMonths[k] + '</em></div>'; }).join('');
     }
-    h += '<div class="row noprint" style="margin-top:12px"><button type="button" class="btn" style="flex:1" data-act="print">Print or save as PDF</button><button type="button" class="btn" style="flex:1" data-act="backup">Download a backup</button></div></details></div>';
+    h += photoHtml() + '<div class="row noprint" style="margin-top:12px"><button type="button" class="btn" style="flex:1" data-act="print">Print or save as PDF</button><button type="button" class="btn" style="flex:1" data-act="backup">Download a backup</button></div></details></div>';
     return h;
   }
+  // ---------- yearbook photos: one row each in kind "yearbook", downscaled in the browser ----------
+  var photos = [];
+  function photoHtml() {
+    var list = photos.slice().sort(function (a, b) { return a.at - b.at; });
+    return '<div class="cap" style="margin:12px 0 4px">Yearbook photos</div>' +
+      '<label class="btn" style="display:block;text-align:center;margin-bottom:8px;position:relative">Add a photo<input type="file" accept="image/*" data-photo aria-label="Add a photo for the yearbook" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer"></label>' +
+      (list.length ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' + list.map(function (p) {
+        return '<figure style="margin:0"><img src="' + p.img + '" alt="Yearbook photo, ' + esc(MONTHS[+p.month.slice(5) - 1] + ' ' + p.month.slice(0, 4)) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block">' +
+          '<figcaption class="muted" style="display:flex;justify-content:space-between;align-items:center;font-size:12px"><span>' + esc(MONTHS[+p.month.slice(5) - 1] + ' ' + p.month.slice(0, 4)) + '</span><button type="button" class="btn" data-photo-del="' + esc(p.id) + '" aria-label="Delete this photo">Remove</button></figcaption></figure>';
+      }).join('') + '</div>' : '<div class="muted">No photos yet. Each one is saved to your account.</div>');
+  }
+  function shrink(file) {
+    return new Promise(function (ok, bad) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var sc = Math.min(1, 1000 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', 0.75));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); bad(new Error('not an image')); };
+      img.src = url;
+    });
+  }
+  function postPhotos(writes) {
+    return fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: writes }) })
+      .then(function (r) { if (!r.ok) throw new Error('save'); });
+  }
+  function addPhoto(file) {
+    if (cloud !== 'on') { toast('Sign in on the dashboard to save photos.'); return; }
+    var id = 'ph-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    shrink(file).then(function (img) {
+      var d = { month: today().slice(0, 7), img: img, at: Date.now() };
+      photos.push(Object.assign({ id: id }, d)); render();
+      return postPhotos([{ kind: 'yearbook', id: id, data: d }]).then(function () { toast('Photo saved to the yearbook.'); });
+    }).catch(function () {
+      photos = photos.filter(function (p) { return p.id !== id; }); render();
+      toast('Could not save that photo.');
+    });
+  }
+  function delPhoto(id) {
+    photos = photos.filter(function (p) { return p.id !== id; }); render();
+    postPhotos([{ kind: 'yearbook', id: id, data: null }]).catch(function () { toast('Could not remove that photo. Try again.'); });
+  }
+  function loadPhotos() {
+    return fetch('/api/store?kind=yearbook', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var m = j && j.docs && j.docs.yearbook; if (!m) return;
+      photos = Object.keys(m).map(function (id) { return Object.assign({ id: id }, m[id]); }); render();
+    }).catch(function () {});
+  }
+  document.addEventListener('change', function (e) {
+    if (!e.target.matches || !e.target.matches('input[data-photo]')) return;
+    var f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) addPhoto(f);
+  });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-photo-del]'); if (b) delPhoto(b.dataset.photoDel);
+  });
+
   function sugText(s) { return Array.isArray(s) ? s[0] : s; }
   function isOn(q, i) { var c = st.checks[q + '.' + i]; return !!(c && c.on); }
   function questDone(q) { return q.cp.every(function (_, i) { return isOn(q.id, i); }); }
@@ -384,6 +448,17 @@ body.print-year .card:not(#yearCard), body.print-year #note, body.print-year #to
         '<div class="muted" style="margin:2px 0 6px">First Sunday, about 30 minutes. ' + rs.stamps + ' monthly stamp' + (rs.stamps === 1 ? '' : 's') + ' so far.</div>' +
         RITUAL.map(function (t, i) { return chk('rit.' + rs.ym + '.' + i, t); }).join('') + '</div>';
     }
+    var holyLeft = HOLY.filter(function (x) { return daysTo(x.to) >= 0; });
+    if (holyLeft.length) {
+      h += '<div class="card"><div class="between"><h2>Holy days 2027</h2><span class="muted">estimated</span></div>';
+      holyLeft.forEach(function (x) {
+        var during = TRIPS.filter(function (t) { return t.from <= x.to && t.to >= x.from; }).map(function (t) { return t.name; });
+        var d = daysTo(x.from);
+        h += '<div class="between" style="border-top:1px solid var(--border);padding:8px 0"><span><b>' + esc(x.name) + '</b><br><span class="muted">' + niceDate(x.from) + ' to ' + niceDate(x.to) + ' · ' + esc(x.note) + (during.length ? ' <br><span class="badge">Overlaps ' + esc(during.join(', ')) + '</span>' : '') + '</span></span><span class="muted">' + (d > 0 ? 'in ' + d + ' days' : 'now') + '</span></div>';
+      });
+      h += '</div>';
+    }
+
     var trips = TRIPS.filter(function (t) { return daysTo(t.to) >= 0; });
     if (trips.length) {
       h += '<div class="card"><h2>Trips</h2>';
@@ -507,7 +582,7 @@ body.print-year .card:not(#yearCard), body.print-year #note, body.print-year #to
     return false;
   }
   loadLocal(); var changed = pullOpens() > 0; if (autoQuest()) changed = true; if (changed) save();
-  render(); loadCloud().then(function () { if (autoQuest()) { save(); render(); } }); loadTasks();
+  render(); loadCloud().then(function () { if (autoQuest()) { save(); render(); } }); loadTasks(); loadPhotos();
 })();
 </script>
 </body>

@@ -5,7 +5,9 @@ import { viewFor } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
-const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips", "rewards", "road", "overnight"]);
+const KINDS = new Set(["tasks", "projects", "grocery", "notes", "dumps", "meta", "trips", "rewards", "road", "overnight", "yearbook"]);
+// Photos are large, so the dashboard's full load skips them; the Road asks for them with ?kind=yearbook.
+const DEFAULT_KINDS = [...KINDS].filter((k) => k !== "yearbook");
 const TABLE = "dashboard_docs";
 
 async function owner() {
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
 
   // ?kind=road returns only that kind, so a small page (the Mom Mastery Road) does not download everything.
   const only = new URL(request.url).searchParams.get("kind");
-  const wanted = only && KINDS.has(only) ? [only] : [...KINDS];
+  const wanted = only && KINDS.has(only) ? [only] : DEFAULT_KINDS;
   const docs: Record<string, Record<string, unknown>> = {};
   wanted.forEach((k) => (docs[k] = {}));
   const page = 1000;
