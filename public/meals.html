@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dinner log</title>
+<style>
+:root {
+  --accent: #5D6635; --on-accent: #F7F4E4; --text: #2A1F2B; --muted: #6B5B5F;
+  --border: #DDD0BD; --bg: #F5EFE4; --card: #FFFAF2; --soft: #EFE6D6; --ok: #3E7D5A; --ok-soft: #E3F0E7; --warn: #8A5A00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --accent: #B9BF72; --on-accent: #1D210F; --text: #F0E6D3; --muted: #B7A79A;
+    --border: #3F2C44; --bg: #15101A; --card: #22172A; --soft: #2D1D33; --ok: #7CC096; --ok-soft: #1F3328; --warn: #E0BE7C;
+  }
+}
+* { box-sizing: border-box; }
+html { font: -apple-system-body; }
+body { margin: 0; padding: 0 0 32px; background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; font-size: 1rem; line-height: 1.35; }
+main { max-width: 480px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.25rem; margin: 4px 0 12px; font-weight: 600; }
+h2 { font-size: 1rem; margin: 0 0 10px; font-weight: 600; }
+a { color: var(--accent); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.muted { color: var(--muted); font-size: 0.875rem; }
+label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 10px; }
+input, select { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; font-size: 16px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row > * { flex: 1; }
+button { min-height: 44px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--soft); color: var(--text); font: inherit; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+button.small { min-height: 36px; padding: 4px 10px; font-size: 0.875rem; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.metric { background: var(--soft); border-radius: 10px; padding: 10px; }
+.metric b { display: block; font-size: 1.5rem; font-weight: 600; }
+.metric span { font-size: 0.8125rem; color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.list li:last-child { border-bottom: none; }
+.list .grow { flex: 1; min-width: 0; }
+.tag { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); white-space: nowrap; }
+.tag.takeout { background: var(--soft); color: var(--warn); }
+.err { color: var(--warn); font-size: 0.875rem; min-height: 1.2em; margin: 6px 0 0; }
+.note { color: var(--muted); font-size: 0.875rem; min-height: 1.2em; margin: 8px 0 0; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <a href="/dashboard">&larr; Dashboard</a>
+  <h1>Dinner log</h1>
+
+  <section class="card" aria-labelledby="logTitle">
+    <h2 id="logTitle">Log a dinner</h2>
+    <label>Date <input type="date" id="date"></label>
+    <label>Dish <select id="dish"></select></label>
+    <div class="row">
+      <button class="primary" id="logBtn" type="button">Log dinner</button>
+      <button id="newBtn" type="button">+ New dish</button>
+    </div>
+    <div id="newBox" hidden style="margin-top: 12px;">
+      <label>New dish name <input type="text" id="newName" maxlength="80" placeholder="e.g. Chicken tawok"></label>
+      <label class="row" style="color: var(--text); align-items: center;"><input type="checkbox" id="newTakeout" style="width: auto; min-height: 0;"> Take-out</label>
+      <div class="row">
+        <button class="primary" id="saveDish" type="button">Save dish</button>
+        <button id="cancelDish" type="button">Cancel</button>
+      </div>
+      <p class="err" id="newErr"></p>
+    </div>
+    <p class="note" id="logNote"></p>
+  </section>
+
+  <section class="card" aria-labelledby="monthTitle">
+    <div class="row" style="margin-bottom: 10px;">
+      <h2 id="monthTitle" style="margin: 0;">This month</h2>
+      <input type="month" id="month" style="max-width: 170px;">
+    </div>
+    <div class="grid2">
+      <div class="metric"><b id="mNights">0</b><span>Nights logged</span></div>
+      <div class="metric"><b id="mTakeout">0</b><span id="mTakeoutShare">Take-out</span></div>
+      <div class="metric"><b id="mRepeat">0</b><span id="mRepeatShare">Repeat</span></div>
+      <div class="metric"><b id="mNew">0</b><span id="mNewShare">New</span></div>
+    </div>
+    <h2>Most repeated</h2>
+    <ul class="list" id="top"></ul>
+    <h2 style="margin-top: 14px;">New dishes tried</h2>
+    <ul class="list" id="newList"></ul>
+  </section>
+
+  <section class="card" aria-labelledby="recentTitle">
+    <h2 id="recentTitle">Recent</h2>
+    <ul class="list" id="recent"></ul>
+  </section>
+
+  <section class="card" aria-labelledby="dishTitle">
+    <h2 id="dishTitle">Dishes</h2>
+    <p class="muted" style="margin: 0 0 6px;">Renaming a dish updates every past entry.</p>
+    <ul class="list" id="dishes"></ul>
+    <p class="err" id="dishErr"></p>
+  </section>
+
+  <p class="note" id="note"></p>
+</main>
+<script>
+(function () {
+  var LS = 'meals-log', DOC = 'log';
+  var SEED_DISHES = ['Eggplant stew', 'Makloube', 'Uzi', 'Machbous', 'Mloukhye', 'Cauliflower stew', 'Chicken tawok', 'Chicken fatte', 'Maftoul', 'Bamye', 'Spinach stew'];
+  var SEED_LOG = [['2026-11-20', 'Spinach stew'], ['2026-11-21', 'Chicken tawok']];
+  var st = blank(), cloud = 'unknown', saveT = null;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function blank() { return { dishes: [], log: [], at: 0 }; }
+  function clean(x) {
+    if (!x || typeof x !== 'object') return blank();
+    return { dishes: Array.isArray(x.dishes) ? x.dishes : [], log: Array.isArray(x.log) ? x.log : [], at: +x.at || 0 };
+  }
+  function seeded() {
+    var s = blank();
+    SEED_DISHES.forEach(function (n) { s.dishes.push({ id: uid('d'), name: n, takeout: false }); });
+    SEED_LOG.forEach(function (e) {
+      var d = s.dishes.filter(function (x) { return x.name === e[1]; })[0];
+      s.log.push({ id: uid('e'), date: e[0], dishId: d.id });
+    });
+    s.at = Date.now();
+    return s;
+  }
+
+  // ---------- storage: this device first, then the server (same pattern as the Mom Mastery Road) ----------
+  function loadLocal() {
+    var raw = null;
+    try { raw = localStorage.getItem(LS); } catch (e) {}
+    if (raw) { try { st = clean(JSON.parse(raw)); } catch (e) { st = seeded(); } }
+    else { st = seeded(); saveLocal(); }
+  }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {} }
+  function note(t) { $('note').textContent = t || ''; }
+  function loadCloud() {
+    return fetch('/api/store?kind=meals', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) {
+      if (r.status === 401) { cloud = 'off'; note('Signed out: saving on this device. Sign in on the dashboard to sync.'); return; }
+      if (!r.ok) { cloud = 'off'; note('Offline: saving on this device.'); return; }
+      return r.json().then(function (j) {
+        var remote = j && j.docs && j.docs.meals && j.docs.meals[DOC];
+        cloud = 'on'; note('');
+        if (remote && (+remote.at || 0) > st.at) { st = clean(remote); saveLocal(); render(); }
+        else pushCloud();
+      });
+    }).catch(function () { cloud = 'off'; note('Offline: saving on this device.'); });
+  }
+  function pushCloud() {
+    if (cloud !== 'on') return;
+    fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [{ kind: 'meals', id: DOC, data: st }] }) })
+      .then(function (r) { note(r.ok ? '' : 'Could not sync just now. Saved on this device.'); })
+      .catch(function () { note('Offline: saved on this device.'); });
+  }
+  function save() {
+    st.at = Date.now(); saveLocal(); render();
+    clearTimeout(saveT); saveT = setTimeout(pushCloud, 600);
+  }
+
+  // ---------- dishes and entries ----------
+  function dishById(id) { return st.dishes.filter(function (d) { return d.id === id; })[0] || null; }
+  function dishByName(name) {
+    var n = name.trim().toLowerCase();
+    return st.dishes.filter(function (d) { return d.name.trim().toLowerCase() === n; })[0] || null;
+  }
+  // Entries are sorted by date, then by id, so "first time ever" is stable.
+  function sortedLog() {
+    return st.log.slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1); });
+  }
+  // Derived category for each entry: first time ever for that dish, or a repeat.
+  function categorise() {
+    var seen = {}, out = [];
+    sortedLog().forEach(function (e) {
+      var dish = dishById(e.dishId);
+      if (!dish) return;
+      var isNew = !seen[e.dishId];
+      seen[e.dishId] = true;
+      out.push({ entry: e, dish: dish, isNew: isNew, takeout: !!dish.takeout });
+    });
+    return out;
+  }
+
+  // ---------- rendering ----------
+  function renderDishSelect() {
+    var sel = $('dish'), keep = sel.value;
+    var list = st.dishes.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+    sel.innerHTML = list.map(function (d) { return '<option value="' + esc(d.id) + '">' + esc(d.name) + '</option>'; }).join('');
+    if (keep && dishById(keep)) sel.value = keep;
+  }
+  function renderMonth() {
+    var m = $('month').value || ymd(new Date()).slice(0, 7);
+    var cats = categorise().filter(function (c) { return c.entry.date.slice(0, 7) === m; });
+    var n = cats.length, repeat = 0, fresh = 0, takeout = 0, counts = {}, newDishes = [];
+    cats.forEach(function (c) {
+      if (c.isNew) { fresh++; newDishes.push(c.dish.name); } else repeat++;
+      if (c.takeout) takeout++;
+      counts[c.dish.id] = counts[c.dish.id] || { name: c.dish.name, n: 0 };
+      counts[c.dish.id].n++;
+    });
+    function share(x) { return n ? Math.round((x / n) * 100) + '%' : '0%'; }
+    $('mNights').textContent = n;
+    $('mTakeout').textContent = takeout;
+    $('mTakeoutShare').textContent = 'Take-out · ' + share(takeout);
+    $('mRepeat').textContent = repeat;
+    $('mRepeatShare').textContent = 'Repeat · ' + share(repeat);
+    $('mNew').textContent = fresh;
+    $('mNewShare').textContent = 'New · ' + share(fresh);
+    var top = Object.keys(counts).map(function (k) { return counts[k]; })
+      .sort(function (a, b) { return b.n - a.n || a.name.localeCompare(b.name); }).slice(0, 5);
+    $('top').innerHTML = top.length ? top.map(function (t) {
+      return '<li><span class="grow">' + esc(t.name) + '</span><span class="muted">' + t.n + '×</span></li>';
+    }).join('') : '<li class="muted">Nothing logged this month yet.</li>';
+    $('newList').innerHTML = newDishes.length ? newDishes.map(function (name) {
+      return '<li><span class="grow">' + esc(name) + '</span></li>';
+    }).join('') : '<li class="muted">No new dishes this month.</li>';
+  }
+  function renderRecent() {
+    var cats = categorise().slice().reverse().slice(0, 14);
+    $('recent').innerHTML = cats.length ? cats.map(function (c) {
+      var tag = c.takeout ? '<span class="tag takeout">Take-out</span>' : (c.isNew ? '<span class="tag">New</span>' : '<span class="tag">Repeat</span>');
+      return '<li><span class="muted" style="min-width: 88px;">' + esc(c.entry.date) + '</span>' +
+        '<span class="grow">' + esc(c.dish.name) + '</span>' + tag +
+        '<button class="small" type="button" data-remove="' + esc(c.entry.id) + '" aria-label="Remove ' + esc(c.dish.name) + ' on ' + esc(c.entry.date) + '">Remove</button></li>';
+    }).join('') : '<li class="muted">No dinners logged yet.</li>';
+  }
+  function renderDishes() {
+    var list = st.dishes.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+    $('dishes').innerHTML = list.map(function (d) {
+      return '<li><input type="text" class="grow" style="min-height: 40px; margin: 0;" value="' + esc(d.name) + '" data-rename="' + esc(d.id) + '" aria-label="Dish name">' +
+        '<label style="margin: 0; white-space: nowrap; display: flex; gap: 4px; align-items: center; color: var(--text);"><input type="checkbox" data-takeout="' + esc(d.id) + '"' + (d.takeout ? ' checked' : '') + ' style="width: auto; min-height: 0; margin: 0;">Take-out</label></li>';
+    }).join('');
+  }
+  function render() {
+    renderDishSelect();
+    renderMonth();
+    renderRecent();
+    renderDishes();
+  }
+
+  // ---------- actions ----------
+  function logDinner() {
+    var date = $('date').value, id = $('dish').value;
+    if (!date) { $('logNote').textContent = 'Pick a date first.'; return; }
+    if (!dishById(id)) { $('logNote').textContent = 'Pick a dish, or add a new one.'; return; }
+    var existing = st.log.filter(function (e) { return e.date === date; })[0];
+    if (existing) { existing.dishId = id; $('logNote').textContent = 'Updated ' + date + '.'; }
+    else { st.log.push({ id: uid('e'), date: date, dishId: id }); $('logNote').textContent = 'Logged for ' + date + '.'; }
+    save();
+  }
+  function saveNewDish() {
+    var name = $('newName').value.trim();
+    if (!name) { $('newErr').textContent = 'Enter a dish name.'; return; }
+    if (dishByName(name)) { $('newErr').textContent = 'That dish is already saved. Pick it from the list.'; return; }
+    var dish = { id: uid('d'), name: name, takeout: $('newTakeout').checked };
+    st.dishes.push(dish);
+    $('newName').value = ''; $('newTakeout').checked = false; $('newErr').textContent = '';
+    $('newBox').hidden = true;
+    renderDishSelect(); $('dish').value = dish.id;
+    save();
+  }
+  function renameDish(id, value) {
+    var dish = dishById(id), name = value.trim();
+    if (!dish) return;
+    if (!name) { $('dishErr').textContent = 'A dish needs a name.'; renderDishes(); return; }
+    var other = dishByName(name);
+    if (other && other.id !== id) { $('dishErr').textContent = 'Another dish already has that name.'; renderDishes(); return; }
+    $('dishErr').textContent = '';
+    dish.name = name;
+    save();
+  }
+
+  function init() {
+    loadLocal();
+    var now = new Date();
+    $('date').value = ymd(now);
+    $('month').value = ymd(now).slice(0, 7);
+    $('newBtn').addEventListener('click', function () { $('newBox').hidden = false; $('newName').focus(); });
+    $('cancelDish').addEventListener('click', function () { $('newBox').hidden = true; $('newErr').textContent = ''; });
+    $('saveDish').addEventListener('click', saveNewDish);
+    $('logBtn').addEventListener('click', logDinner);
+    $('month').addEventListener('change', renderMonth);
+    $('recent').addEventListener('click', function (ev) {
+      var id = ev.target && ev.target.getAttribute('data-remove');
+      if (!id) return;
+      st.log = st.log.filter(function (e) { return e.id !== id; });
+      save();
+    });
+    $('dishes').addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (t.getAttribute('data-takeout')) {
+        var d = dishById(t.getAttribute('data-takeout'));
+        if (d) { d.takeout = t.checked; save(); }
+      }
+    });
+    $('dishes').addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (t.getAttribute('data-rename')) renameDish(t.getAttribute('data-rename'), t.value);
+    });
+    render();
+    loadCloud();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
