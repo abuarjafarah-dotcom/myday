@@ -4019,8 +4019,17 @@ Rules:
   // School-day routines (pickup, drop-off) skip days the calendar marks as no school.
   const SCHOOL_ROUTINE = /school|pick ?-?up|drop ?-?off|carpool/i;
   const NO_SCHOOL_DAY = /\b(no school|schools? (?:is |are )?closed|no classes|teacher (?:work|in-?service|planning|prep)|in-?service|staff development|professional development|non-?student day|(?:fall|winter|spring|thanksgiving|mid-?winter|holiday) break|snow day|e-?learning day)\b/i;
+  // Tierra Encantada (childcare) center closures, inclusive ranges. Built in so these days show even if the calendar event is removed.
+  const CENTER_CLOSURES = [
+    ['2026-12-24', '2026-12-25'], ['2026-12-28', '2027-01-01'],
+    ['2027-01-01', '2027-01-01'], ['2027-01-18', '2027-01-18'], ['2027-03-26', '2027-03-26'],
+    ['2027-04-16', '2027-04-16'], ['2027-05-31', '2027-05-31'], ['2027-06-18', '2027-06-18'],
+    ['2027-07-05', '2027-07-05'], ['2027-08-27', '2027-08-27'], ['2027-09-06', '2027-09-06'],
+    ['2027-10-21', '2027-10-22'], ['2027-11-25', '2027-11-26'], ['2027-12-24', '2027-12-31'],
+  ];
   function noSchoolOn(d) {
     if (schoolNoSchool(d)) return true;
+    if (CENTER_CLOSURES.some(([st, en]) => d >= st && d <= en)) return true;
     return (live.cal || []).some(ev => {
       if (!NO_SCHOOL_DAY.test(`${ev.title || ''} ${ev.description || ''}`)) return false;
       if (!ev.allDay) return evDate(ev) === d;
