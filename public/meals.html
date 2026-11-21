@@ -152,9 +152,13 @@ button.small { min-height: 36px; padding: 4px 10px; font-size: 0.875rem; }
   }
   function pushCloud() {
     if (cloud !== 'on') return;
-    fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [{ kind: 'meals', id: DOC, data: st }] }) })
-      .then(function (r) { note(r.ok ? '' : 'Could not sync just now. Saved on this device.'); })
-      .catch(function () { note('Offline: saved on this device.'); });
+    // The Plan tab can write to the same log, so check the server copy first and keep the newer one.
+    fetch('/api/store?kind=meals', { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var remote = j && j.docs && j.docs.meals && j.docs.meals[DOC];
+      if (remote && (+remote.at || 0) > st.at) { st = clean(remote); saveLocal(); render(); note(''); return; }
+      return fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [{ kind: 'meals', id: DOC, data: st }] }) })
+        .then(function (r) { note(r.ok ? '' : 'Could not sync just now. Saved on this device.'); });
+    }).catch(function () { note('Offline: saved on this device.'); });
   }
   function save() {
     st.at = Date.now(); saveLocal(); render();
