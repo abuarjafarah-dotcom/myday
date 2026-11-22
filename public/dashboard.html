@@ -890,8 +890,9 @@ body.cmd-open { overflow: hidden; }
 .tgl[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 /* Plan ritual */
-.rit-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 4px; margin-bottom: 14px; border-radius: 14px; background: var(--soft); border: 1px solid var(--border); }
-.rit-mode { min-height: 56px; border: 0; border-radius: 10px; background: none; color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 4px; }
+.rit-modes { display: flex; gap: 6px; padding: 4px; margin-bottom: 14px; border-radius: 14px; background: var(--soft); border: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+.rit-modes::-webkit-scrollbar { display: none; }
+.rit-mode { flex: 0 0 auto; min-width: 88px; scroll-snap-align: start; min-height: 56px; border: 0; border-radius: 10px; background: none; color: var(--muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 6px 12px; white-space: nowrap; }
 .rit-mode b { font-size: 0.9375rem; color: inherit; }
 .rit-mode span { font-size: 0.6875rem; }
 .rit-mode.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
@@ -1283,6 +1284,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b></button>
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="tax"><b>Tax</b></button>
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="road" aria-label="Mom Mastery Road"><b>Mastery Road</b></button>
+      <button class="rit-mode" role="tab" data-act="ritual" data-mode="meals" aria-label="Dinner log"><b>Meals</b></button>
     </div>
     <div id="ritualDay" class="rit-panel">
       <div id="ritualDayBrief"></div><div id="planBox"></div>
@@ -1330,6 +1332,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     </div>
     <div id="ritualTax" class="rit-panel"><iframe src="/tax.html" title="Tax tracker" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
     <div id="ritualRoad" class="rit-panel"><iframe src="/road.html" title="Mom Mastery Road" loading="lazy" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
+    <div id="ritualMeals" class="rit-panel"><iframe src="/meals.html" title="Dinner log" loading="lazy" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
   </div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
@@ -5748,6 +5751,30 @@ Rules:
     Object.keys(all).sort().slice(0, -10).forEach(k => delete all[k]);          // keep the last 10 weeks
     setMeta({ sync: all });
   }
+  // Dinner typed in the Plan tab also goes to the dinner log (kind meals, id log), so the log and the Plan agree.
+  // The log is read fresh, the one day is set or cleared, and the whole document is written back.
+  async function mealLogSet(date, name) {
+    if (!date) return;
+    try {
+      const r = await fetch('/api/store?kind=meals', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) return;
+      const j = await r.json();
+      const doc = (j.docs && j.docs.meals && j.docs.meals.log) || { dishes: [], log: [], at: 0 };
+      const dishes = Array.isArray(doc.dishes) ? doc.dishes : [];
+      let log = Array.isArray(doc.log) ? doc.log : [];
+      const text = (name || '').trim();
+      if (!text) log = log.filter(e => e.date !== date);
+      else {
+        let dish = dishes.find(x => (x.name || '').trim().toLowerCase() === text.toLowerCase());
+        if (!dish) { dish = { id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: text, takeout: false }; dishes.push(dish); }
+        const cur = log.find(e => e.date === date);
+        if (cur) cur.dishId = dish.id;
+        else log.push({ id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, dishId: dish.id });
+      }
+      doc.dishes = dishes; doc.log = log; doc.at = Date.now();
+      await fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [{ kind: 'meals', id: 'log', data: doc }] }) });
+    } catch (e) { /* the Plan tab still saves its own copy */ }
+  }
   function syncWeekStart() {
     const td = today();
     if (ui.syncWeek && ui.syncAt === td) return ui.syncWeek;
@@ -5877,7 +5904,7 @@ Rules:
     document.addEventListener('change', e => {
       const el = e.target; if (!el.dataset || !el.dataset.sy) return;
       const mon = el.dataset.sy === 'meal' ? mondayOf(el.dataset.d) : syncWeekStart(), wk = syncWeekOf(mon);
-      if (el.dataset.sy === 'meal') saveSync(mon, { meals: Object.assign({}, wk.meals, { [el.dataset.d]: el.value.trim() }) });
+      if (el.dataset.sy === 'meal') { saveSync(mon, { meals: Object.assign({}, wk.meals, { [el.dataset.d]: el.value.trim() }) }); mealLogSet(el.dataset.d, el.value); }
       else if (el.dataset.sy === 'top') { const f = focusOf(mon), k = +el.dataset.i, text = el.value.trim(); f[k] = { text, id: f[k].id && S.tasks[f[k].id] && S.tasks[f[k].id].title === text ? f[k].id : null }; weekPlan = null; saveFocus(mon, f); }
       else if (el.dataset.sy === 'note') saveSync(mon, { note: el.value });
     });
@@ -6350,7 +6377,7 @@ Rules:
     const wrap = $('sub-plan'); if (!wrap) return;
     const mode = ritualMode(), tab = mode === 'evening' ? 'day' : mode === 'month' ? 'tax' : mode;   // wrap-up lives inside Today; a saved 'month' is now Tax
     document.querySelectorAll('.rit-mode').forEach(b => { const on = b.dataset.mode === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualTax').hidden = tab !== 'tax'; $('ritualRoad').hidden = tab !== 'road';
+    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualTax').hidden = tab !== 'tax'; $('ritualRoad').hidden = tab !== 'road'; $('ritualMeals').hidden = tab !== 'meals';
     if (!(ui.tab === 'schedule' && ui.sub === 'plan')) { $('ritualEve').innerHTML = ''; return; }   // keeps ids unique while hidden
     // Wrap-up opens itself in the evening, and the check-in opens when you pick Week; otherwise the user's own toggle sticks.
     const ev = $('evePanel'); if (ev.dataset.m !== mode) { ev.dataset.m = mode; ev.open = mode === 'evening'; }
