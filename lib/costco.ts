@@ -81,42 +81,105 @@ export async function addCostco(db: Db, me: Who, rawItem: unknown): Promise<Cost
   return { ...c, source: "shared" };
 }
 
-async function updateGroceryRow(db: Db, id: string, patch: Record<string, unknown>): Promise<boolean> {
+// The same item can sit on both lists (added on the shared list and also on Farah's grocery list). The view
+// shows one line for it, so checking or removing only one copy brings the other back on the next refresh.
+// So a check or remove applies to every copy of that item name, on both lists.
+
+const sameItem = (a: unknown, b: string) => norm(String(a ?? "")) === norm(b);
+
+// Farah's Costco grocery rows with this name, not archived.
+async function groceryCopies(db: Db, name: string): Promise<{ id: string; cur: Record<string, unknown> }[]> {
   const owner = farahEmail();
-  if (!owner) return false;
-  const { data } = await db.from(TABLE).select("data").eq("owner", owner).eq("kind", "grocery").eq("id", id).maybeSingle();
-  const cur = data?.data as Record<string, unknown> | undefined;
-  if (!cur) return false;
-  const next = { ...cur, ...patch, updatedAt: Date.now() };
+  if (!owner) return [];
+  const { data } = await db.from(TABLE).select("id,data").eq("owner", owner).eq("kind", "grocery");
+  return ((data || []) as { id: string; data: Record<string, unknown> }[])
+    .filter((r) => {
+      const g = r.data as { item?: string; store?: string; archived?: boolean } | null;
+      return !!g && !g.archived && !!g.item && !!g.store && norm(g.store) === "costco" && sameItem(g.item, name);
+    })
+    .map((r) => ({ id: r.id, cur: r.data }));
+}
+
+async function patchGroceryRows(db: Db, rows: { id: string; cur: Record<string, unknown> }[], patch: Record<string, unknown>): Promise<void> {
+  const owner = farahEmail();
+  if (!owner || !rows.length) return;
+  const now = Date.now();
   const { error } = await db
     .from(TABLE)
-    .upsert([{ owner, kind: "grocery", id, data: next, updated_at: new Date().toISOString() }], { onConflict: "owner,kind,id" });
+    .upsert(
+      rows.map((r) => ({ owner, kind: "grocery", id: r.id, data: { ...r.cur, ...patch, updatedAt: now }, updated_at: new Date(now).toISOString() })),
+      { onConflict: "owner,kind,id" }
+    );
   if (error) throw new Error(error.message);
-  return true;
+}
+
+// Shared Costco rows with this name.
+async function sharedCopies(db: Db, name: string): Promise<Omit<CostcoItem, "source">[]> {
+  const { data } = await db.from(TABLE).select("data").eq("owner", HOUSEHOLD).eq("kind", KIND);
+  return ((data || []) as { data: Omit<CostcoItem, "source"> }[])
+    .map((r) => r.data)
+    .filter((c) => !!c && !!c.id && !!c.item && sameItem(c.item, name));
+}
+
+async function saveSharedRows(db: Db, rows: Omit<CostcoItem, "source">[]): Promise<void> {
+  if (!rows.length) return;
+  const { error } = await db
+    .from(TABLE)
+    .upsert(rows.map((c) => ({ owner: HOUSEHOLD, kind: KIND, id: c.id, data: c, updated_at: new Date().toISOString() })), { onConflict: "owner,kind,id" });
+  if (error) throw new Error(error.message);
+}
+
+// The item text behind a row id, from whichever list holds it.
+async function itemNameOf(db: Db, id: string): Promise<string | null> {
+  if (id.startsWith("g-")) {
+    const owner = farahEmail();
+    if (!owner) return null;
+    const { data } = await db.from(TABLE).select("data").eq("owner", owner).eq("kind", "grocery").eq("id", id).maybeSingle();
+    return (data?.data as { item?: string } | null)?.item || null;
+  }
+  const { data } = await db.from(TABLE).select("data").eq("owner", HOUSEHOLD).eq("kind", KIND).eq("id", id).maybeSingle();
+  return (data?.data as { item?: string } | null)?.item || null;
 }
 
 export async function setCostcoChecked(db: Db, me: Who, id: string, checked: boolean): Promise<CostcoItem | null> {
-  if (id.startsWith("g-")) {
-    const at = checked ? Date.now() : null;
-    const ok = await updateGroceryRow(db, id, { checked, checkedAt: at });
-    if (!ok) return null;
-    const g = (await openGroceryCostco(db)).find((x) => x.id === id);
-    return g || { id, item: "", by: "farah", checked, checkedBy: checked ? me : null, checkedAt: at, createdAt: 0, source: "grocery" };
+  const name = await itemNameOf(db, id);
+  if (!name) return null;
+  const at = checked ? Date.now() : null;
+  const by = checked ? me : null;
+
+  if (checked) {
+    // Checking marks every open copy of the item, on both lists.
+    const groceryOpen = (await groceryCopies(db, name)).filter((r) => !r.cur.checked);
+    await patchGroceryRows(db, groceryOpen, { checked: true, checkedAt: at });
+    const sharedOpen = (await sharedCopies(db, name))
+      .filter((c) => !c.checked)
+      .map((c) => ({ ...c, checked: true, checkedBy: by, checkedAt: at }));
+    await saveSharedRows(db, sharedOpen);
+  } else {
+    // Unchecking only reopens the line that was tapped.
+    if (id.startsWith("g-")) {
+      const rows = (await groceryCopies(db, name)).filter((r) => r.id === id);
+      await patchGroceryRows(db, rows, { checked: false, checkedAt: null });
+    } else {
+      const cur = (await sharedCopies(db, name)).find((c) => c.id === id);
+      if (cur) await saveSharedRows(db, [{ ...cur, checked: false, checkedBy: null, checkedAt: null }]);
+    }
   }
-  const { data } = await db.from(TABLE).select("data").eq("owner", HOUSEHOLD).eq("kind", KIND).eq("id", id).maybeSingle();
-  const cur = (data?.data as Omit<CostcoItem, "source">) || null;
-  if (!cur) return null;
-  const next = { ...cur, checked, checkedBy: checked ? me : null, checkedAt: checked ? Date.now() : null };
-  await save(db, next);
-  return { ...next, source: "shared" };
+
+  return { id, item: name, by: "farah", checked, checkedBy: by, checkedAt: at, createdAt: 0, source: id.startsWith("g-") ? "grocery" : "shared" };
 }
 
 export async function removeCostco(db: Db, id: string): Promise<void> {
-  if (id.startsWith("g-")) {
-    await updateGroceryRow(db, id, { archived: true, archivedAt: Date.now() });
-    return;
+  const name = await itemNameOf(db, id);
+  if (!name) return;
+  // Removing a line removes its open copies on both lists (checked history is left as it is).
+  const groceryOpen = (await groceryCopies(db, name)).filter((r) => !r.cur.checked || r.id === id);
+  await patchGroceryRows(db, groceryOpen, { archived: true, archivedAt: Date.now() });
+  const sharedGone = (await sharedCopies(db, name)).filter((c) => !c.checked || c.id === id).map((c) => c.id);
+  if (sharedGone.length) {
+    const { error } = await db.from(TABLE).delete().eq("owner", HOUSEHOLD).eq("kind", KIND).in("id", sharedGone);
+    if (error) throw new Error(error.message);
   }
-  await db.from(TABLE).delete().eq("owner", HOUSEHOLD).eq("kind", KIND).eq("id", id);
 }
 
 export async function clearCheckedCostco(db: Db): Promise<void> {
