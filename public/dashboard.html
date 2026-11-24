@@ -1284,7 +1284,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="week"><b>Week</b></button>
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="tax"><b>Tax</b></button>
       <button class="rit-mode" role="tab" data-act="ritual" data-mode="road" aria-label="Mom Mastery Road"><b>Mastery Road</b></button>
-      <button class="rit-mode" role="tab" data-act="ritual" data-mode="meals" aria-label="Dinner log"><b>Meals</b></button>
     </div>
     <div id="ritualDay" class="rit-panel">
       <div id="ritualDayBrief"></div><div id="planBox"></div>
@@ -1332,7 +1331,6 @@ input, select, textarea { font-size: max(16px, 1rem); }
     </div>
     <div id="ritualTax" class="rit-panel"><iframe src="/tax.html" title="Tax tracker" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
     <div id="ritualRoad" class="rit-panel"><iframe src="/road.html" title="Mom Mastery Road" loading="lazy" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
-    <div id="ritualMeals" class="rit-panel"><iframe src="/meals.html" title="Dinner log" loading="lazy" style="display:block;width:100%;height:78vh;min-height:560px;border:0;border-radius:12px;background:var(--bg)"></iframe></div>
   </div>
   <div id="sub-recap" class="hidden"><div id="recapView"></div></div>
 </section>
@@ -1681,7 +1679,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
     goLocal();
     await loadCloud();
     loadCostco();
-    setInterval(() => { if (!document.hidden) { loadCloud(); loadCostco(); } }, 30000);
+    loadMealLog();
+    setInterval(() => { if (!document.hidden) { loadCloud(); loadCostco(); loadMealLog(); } }, 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) loadCloud(); });
   }
 
@@ -2883,9 +2882,12 @@ Rules:
   }
   async function costcoPost(body) {
     try {
-      await fetch('/api/household', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    } catch (e) { /* offline: the line stays on your list */ }
+      const r = await fetch('/api/household', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) toast('Couldn’t update Costco. Try again.');
+    } catch (e) { toast('Offline: Costco change not saved. Try again.'); }
+    // Checking or removing also changes Farah's grocery rows on the server, so refresh both views.
     loadCostco();
+    loadCloud();
   }
   function renderGrocery() {
     const list = stores();
@@ -5453,10 +5455,45 @@ Rules:
   const ymOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
   const curYm = () => ymOf(new Date());
   const shiftYm = (ym, n) => { const [y, m] = ym.split('-').map(Number); return ymOf(new Date(y, m - 1 + n, 1)); };
+  // Dinner log (kind meals, id log): the document the Plan's dinners and the Meals page write to. The recap reads it.
+  let dinnerDoc = null;
+  async function loadMealLog() {
+    try {
+      const r = await fetch('/api/store?kind=meals', { credentials: 'same-origin', cache: 'no-store' });
+      if (!r.ok) return;
+      const j = await r.json();
+      const doc = j.docs && j.docs.meals && j.docs.meals.log;
+      if (!doc || (dinnerDoc && (doc.at || 0) === (dinnerDoc.at || 0))) return;
+      dinnerDoc = doc;
+      if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap('rc', 'recapView');
+    } catch (e) { /* offline: keep the last log */ }
+  }
+  // One month's dinners, counted up to today. A dish's first time ever is "new", the same rule as the Meals page.
+  function dinnersOf(ym) {
+    const doc = dinnerDoc || {}, td = today();
+    const byId = {};
+    (Array.isArray(doc.dishes) ? doc.dishes : []).forEach(x => { if (x && x.id) byId[x.id] = x; });
+    const log = (Array.isArray(doc.log) ? doc.log : []).filter(e => e && e.date && byId[e.dishId])
+      .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.id < b.id ? -1 : 1));
+    const seen = new Set(), counts = {}, out = { nights: 0, takeout: 0, fresh: 0, dishes: [], newNames: [] };
+    log.forEach(e => {
+      const dish = byId[e.dishId], isNew = !seen.has(e.dishId);
+      seen.add(e.dishId);
+      if (e.date.slice(0, 7) !== ym || e.date > td) return;
+      out.nights++;
+      if (dish.takeout) out.takeout++;
+      if (isNew) { out.fresh++; out.newNames.push(dish.name); }
+      counts[e.dishId] = counts[e.dishId] || { name: dish.name, n: 0, takeout: !!dish.takeout };
+      counts[e.dishId].n++;
+    });
+    out.dishes = Object.values(counts).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+    return out;
+  }
   function recapMonths() {
     const set = new Set([curYm()]);
     Object.values(S.tasks).forEach(t => { if (t.completedAt) set.add(ymOf(new Date(t.completedAt))); });
     Object.values(S.projects).forEach(p => { if (p.status === 'done' && p.completedAt) set.add(ymOf(new Date(p.completedAt))); });
+    ((dinnerDoc && dinnerDoc.log) || []).forEach(e => { if (e && e.date && e.date <= today()) set.add(e.date.slice(0, 7)); });
     return [...set].sort();
   }
   function recapData(ym) {
@@ -5489,7 +5526,8 @@ Rules:
       email: done.filter(t => t.source === 'gmail').length,
       groceries: Object.values(S.grocery).filter(g => inMonth(g.checkedAt)).length,
       ideas: Object.values(S.notes).filter(n => inMonth(n.createdAt)).length + Object.values(S.dumps).filter(x => inMonth(x.createdAt)).length,
-      projects: Object.values(S.projects).filter(p => p.status === 'done' && inMonth(p.completedAt)).sort((a, b) => a.completedAt - b.completedAt)
+      projects: Object.values(S.projects).filter(p => p.status === 'done' && inMonth(p.completedAt)).sort((a, b) => a.completedAt - b.completedAt),
+      dinners: dinnersOf(ym)
     };
   }
   // the month split into Sunday-start weeks: per week its day range, done count and category counts
@@ -5604,6 +5642,39 @@ Rules:
     text(X, y, d.done ? `Most done around ${hLabel(d.peakHour.h)}. Best weekday: ${d.peakDow.i >= 0 ? DAY_NAMES[d.peakDow.i] : '–'}.` : 'Your rhythm shows up once you finish a few things.', { size: 26, fill: MUTED });
     y += 44; rule(y); y += 40;
 
+    // dinners: the month's dinner log, the same numbers as the Meals page
+    label(y, 'Dinners'); y += 30;
+    const dn = d.dinners, wrapText = (str, n) => {
+      const out = []; let cur = '';
+      String(str).split(' ').forEach(w => { if (cur && (cur + ' ' + w).length > n) { out.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w; });
+      if (cur) out.push(cur);
+      return out.slice(0, 3);
+    };
+    if (dn.nights) {
+      const q = IW / 4;
+      [[dn.nights, 'nights'], [dn.nights - dn.takeout, 'at home'], [dn.takeout, 'take-out'], [dn.fresh, 'new dishes']].forEach(([n, lab], i) => {
+        text(X + i * q, y + 52, String(n), { serif: true, bold: true, size: 56 });
+        text(X + i * q, y + 88, lab, { size: 22, fill: MUTED });
+      });
+      y += 124;
+      // one bar per dish eaten this month: how many times, take-out in terracotta
+      if (dn.dishes.length) {
+        const shown = dn.dishes.slice(0, 10), maxN = Math.max(...shown.map(t => t.n)), BX = X + 200, BW = IW - 200 - 70;
+        text(X, y, 'Dishes this month', { size: 24, fill: MUTED }); y += 40;
+        shown.forEach(t => {
+          const bw = Math.max(12, BW * t.n / maxN);
+          text(X, y + 22, cut(t.name, 16), { size: 24 });
+          o.push(`<rect x="${BX}" y="${y + 2}" width="${bw.toFixed(1)}" height="26" rx="8" fill="${t.takeout ? '#C4714A' : INK}"/>`);
+          text(BX + bw + 14, y + 24, `${t.n}×`, { size: 24, bold: true });
+          y += 44;
+        });
+        if (dn.dishes.length > shown.length) { text(X, y + 22, `+ ${dn.dishes.length - shown.length} more`, { size: 24, fill: MUTED }); y += 44; }
+        y += 6;
+      }
+      if (dn.newNames.length) wrapText(`New this month: ${dn.newNames.join(', ')}`, 46).forEach(l => { text(X, y, l, { size: 26, fill: MUTED }); y += 38; });
+    } else { text(X, y + 30, 'No dinners logged this month yet.', { size: 26, fill: MUTED }); y += 60; }
+    y += 20; rule(y); y += 56;
+
     // three tiles
     const tw = (IW - 40) / 3, th = 176;
     const tile = (i, big, lab, sub) => {
@@ -5680,7 +5751,7 @@ Rules:
         <button class="mini" data-act="recap-next" ${i >= months.length - 1 ? 'disabled' : ''} aria-label="Next month">›</button></div>
       <div class="rc-card" id="${p}SvgWrap">${recapSvg(d)}</div>
       ${det ? `<p class="muted rc-detail">${det}</p>` : '<p class="muted rc-detail">Tap a week or a color to focus it.</p>'}
-      <div class="rc-acts"><button class="btn-add" data-act="recap-save">Save or share image</button></div>
+      <div class="rc-acts"><button class="btn-add" data-act="recap-save">Save or share image</button> <a class="mini" href="/meals.html">Dishes &amp; take-out</a></div>
       <p class="muted" id="${p}Msg">${esc(keepMsg)}</p>`;
   }
   async function recapImage() {
@@ -5772,6 +5843,8 @@ Rules:
         else log.push({ id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, dishId: dish.id });
       }
       doc.dishes = dishes; doc.log = log; doc.at = Date.now();
+      dinnerDoc = doc;
+      if (ui.tab === 'schedule' && ui.sub === 'recap') renderRecap('rc', 'recapView');
       await fetch('/api/store', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ writes: [{ kind: 'meals', id: 'log', data: doc }] }) });
     } catch (e) { /* the Plan tab still saves its own copy */ }
   }
@@ -6375,9 +6448,9 @@ Rules:
   }
   function renderRitual() {
     const wrap = $('sub-plan'); if (!wrap) return;
-    const mode = ritualMode(), tab = mode === 'evening' ? 'day' : mode === 'month' ? 'tax' : mode;   // wrap-up lives inside Today; a saved 'month' is now Tax
+    const mode = ritualMode(), tab = mode === 'evening' || mode === 'meals' ? 'day' : mode === 'month' ? 'tax' : mode;   // wrap-up lives inside Today; a saved 'month' is now Tax; dinners moved to the Recap
     document.querySelectorAll('.rit-mode').forEach(b => { const on = b.dataset.mode === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualTax').hidden = tab !== 'tax'; $('ritualRoad').hidden = tab !== 'road'; $('ritualMeals').hidden = tab !== 'meals';
+    $('ritualDay').hidden = tab !== 'day'; $('ritualWeek').hidden = tab !== 'week'; $('ritualTax').hidden = tab !== 'tax'; $('ritualRoad').hidden = tab !== 'road';
     if (!(ui.tab === 'schedule' && ui.sub === 'plan')) { $('ritualEve').innerHTML = ''; return; }   // keeps ids unique while hidden
     // Wrap-up opens itself in the evening, and the check-in opens when you pick Week; otherwise the user's own toggle sticks.
     const ev = $('evePanel'); if (ev.dataset.m !== mode) { ev.dataset.m = mode; ev.open = mode === 'evening'; }
