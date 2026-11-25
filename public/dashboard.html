@@ -1155,6 +1155,78 @@ input, select, textarea { font-size: max(16px, 1rem); }
 .sy-mealrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .sy-mealrow textarea { width: 100%; min-height: 96px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; font-size: 1rem; }
 .rw-read { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 52px; margin: 0 0 16px; border: 0; border-radius: 16px; background: #FFE9A8; color: #2A1F2B; font: inherit; font-size: 1.0625rem; font-weight: 700; cursor: pointer; }
+
+/* Projects as spaces (Nov 2026): each active project is a card with a line doodle, a one-line brief
+   and one pill for its next open step. Tapping a card opens the space: dates, steps, checklist, ideas. */
+.sp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 4px 0 14px; }
+.sp-head h2 { margin: 0; }
+.sp-sum { font-size: 0.875rem; color: var(--muted); }
+.sp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+@media (min-width: 640px) { .sp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sp-card { position: relative; background: var(--card); border: 1px solid var(--hair); border-radius: 20px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; transition: transform .15s ease; }
+.sp-card:active { transform: scale(.98); }
+.sp-open { position: absolute; inset: 0; border: 0; background: none; border-radius: 20px; cursor: pointer; padding: 0; }
+.sp-doodle { fill: none; stroke: var(--text); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; display: block; flex: none; }
+.sp-doodle * { vector-effect: non-scaling-stroke; }
+.sp-card .sp-doodle { margin: 0 0 6px -4px; }
+.sp-name { font-family: var(--serif); font-weight: 700; font-size: 1.0625rem; line-height: 1.2; color: var(--text); overflow-wrap: anywhere; }
+.sp-brief { font-size: 0.8125rem; color: var(--muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sp-pill { position: relative; z-index: 1; margin-top: auto; align-self: flex-start; max-width: 100%; display: inline-flex; align-items: center; gap: 6px; background: var(--soft); color: var(--text); border: 0; font-size: 0.8125rem; font-weight: 600; padding: 0 12px 0 8px; min-height: 36px; border-radius: 999px; cursor: pointer; }
+.sp-pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sp-pill .ring { width: 14px; height: 14px; border-radius: 50%; border: 1.6px solid var(--accent); flex: none; }
+.sp-pill:hover .ring { background: var(--accent); }
+.sp-clear { margin-top: auto; font-size: 0.8125rem; color: var(--faint); padding: 8px 0 2px; }
+.sp-new { grid-column: 1 / -1; border: 1.5px dashed var(--border); border-radius: 20px; padding: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sp-new input, .sp-form input, .sp-edit input { flex: 1 1 150px; min-width: 0; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; }
+.sp-top { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+.sp-back { display: inline-flex; align-items: center; gap: 2px; background: none; border: 0; padding: 0 10px 0 0; min-height: 44px; font-size: 0.9375rem; font-weight: 600; color: var(--text); cursor: pointer; }
+.sp-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sp-hero { display: grid; gap: 6px; padding: 4px 0 18px; }
+.sp-hero .sp-doodle { margin-left: -6px; }
+.sp-hero h2 { font-family: var(--serif); font-size: 1.875rem; font-weight: 700; line-height: 1.1; color: var(--text); overflow-wrap: anywhere; }
+.sp-brief-in { width: 100%; border: 0; border-bottom: 1px dashed transparent; background: transparent; color: var(--muted); font-size: 0.9375rem; padding: 4px 0; min-height: 40px; }
+.sp-brief-in:hover, .sp-brief-in:focus { border-bottom-color: var(--border); outline: none; }
+.sp-sec { margin-bottom: 24px; display: grid; gap: 10px; }
+.sp-sec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sp-sec-h h3 { font-size: 0.75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.sp-count { font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp-dates { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.sp-dates::-webkit-scrollbar { display: none; }
+.sp-date { position: relative; flex: none; width: 112px; background: var(--card); border: 1.5px solid var(--hair); border-radius: 16px; padding: 10px 11px; display: grid; gap: 1px; align-content: start; }
+.sp-date.is-today { border-color: var(--accent); }
+.sp-date .m { font-size: 0.6875rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.sp-date .d { font-family: var(--serif); font-size: 1.625rem; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; color: var(--text); }
+.sp-date .t { font-size: 0.8125rem; font-weight: 600; line-height: 1.3; margin-top: 4px; overflow-wrap: anywhere; color: var(--text); }
+.sp-date .w { font-size: 0.75rem; color: var(--muted); }
+.sp-date .x { position: absolute; top: 0; right: 0; width: 36px; height: 36px; border: 0; background: none; color: var(--faint); font-size: 1rem; cursor: pointer; border-radius: 12px; }
+.sp-date-add { flex: none; width: 112px; min-height: 104px; border: 1.5px dashed var(--border); background: none; border-radius: 16px; color: var(--muted); font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
+.sp-form { display: flex; gap: 6px; flex-wrap: wrap; }
+.sp-form input[type="date"], .sp-edit input[type="date"] { flex: 0 1 170px; }
+.sp-cd { background: var(--card); border: 1px solid var(--hair); border-radius: 20px; padding: 16px; display: grid; gap: 10px; margin-bottom: 24px; }
+.sp-cd-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.sp-cd-title { font-family: var(--serif); font-size: 1.25rem; font-weight: 700; color: var(--text); margin-top: 2px; }
+.sp-cd-num { text-align: right; line-height: 1; flex: none; }
+.sp-cd-num b { font-family: var(--serif); font-size: 2.75rem; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 700; }
+.sp-cd-num small { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+.sp-meter { height: 6px; border-radius: 99px; background: var(--soft); overflow: hidden; }
+.sp-meter i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s ease; }
+.sp-list { background: var(--card); border: 1px solid var(--hair); border-radius: 16px; overflow: hidden; }
+.sp-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: none; border: 0; padding: 10px 14px; min-height: 44px; font-size: 0.9375rem; color: var(--text); cursor: pointer; }
+.sp-list > * + * { border-top: 1px solid var(--hair); }
+.sp-box { width: 20px; height: 20px; border-radius: 50%; border: 1.6px solid var(--faint); flex: none; display: grid; place-items: center; transition: background .15s, border-color .15s; }
+.sp-box svg { width: 12px; height: 12px; stroke: var(--on-accent); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.sp-item.done .sp-box { background: var(--accent); border-color: var(--accent); }
+.sp-item.done .sp-box svg { opacity: 1; }
+.sp-item.done .lbl { color: var(--faint); text-decoration: line-through; }
+.sp-edit { border-top: 1px solid var(--border); padding-top: 4px; margin-bottom: 18px; }
+.sp-edit > summary { cursor: pointer; font-weight: 600; font-size: 0.9375rem; min-height: 44px; display: flex; align-items: center; list-style: none; color: var(--text); }
+.sp-edit > summary::-webkit-details-marker { display: none; }
+.sp-edit-body { display: grid; gap: 10px; padding-bottom: 6px; }
+.sp-edit label { display: grid; gap: 4px; font-size: 0.8125rem; color: var(--muted); font-weight: 600; }
+.sp-picker { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.sp-pick { background: var(--card); border: 1.5px solid var(--hair); border-radius: 12px; aspect-ratio: 1; display: grid; place-items: center; cursor: pointer; padding: 0; min-height: 44px; }
+.sp-pick[aria-pressed="true"] { border-color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .sp-card, .sp-meter i { transition: none; } }
 </style>
 </head>
 <body>
@@ -1337,14 +1409,8 @@ input, select, textarea { font-size: max(16px, 1rem); }
 
 <!-- ======== PROJECTS ======== -->
 <section id="projects" class="tab-content">
-  <div class="card">
-    <h2>Projects</h2>
-    <div id="projectsList"></div>
-    <div class="add-row">
-      <input type="text" id="npName" data-enter="add-project" placeholder="New project name">
-      <button class="btn-add" data-act="add-project">Add</button>
-    </div>
-  </div>
+  <div id="spacesView"></div>
+  <div id="projectsHome">
   <div class="card">
     <h2>Completed</h2>
     <div id="doneProjectsList"></div>
@@ -1360,6 +1426,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div class="add-row">
       <input type="text" id="niText" data-enter="add-idea" placeholder="Something to remember, not a task">
     </div>
+  </div>
   </div>
 </section>
 
@@ -2827,30 +2894,293 @@ Rules:
     $('weekList').innerHTML = html;
   }
 
-  // ---------- projects ----------
-  function renderProjects() {
-    const projects = Object.values(S.projects).filter(p => p.status !== 'archived' && p.status !== 'done').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.name).localeCompare(b.name));
-    if (!projects.length) { $('projectsList').innerHTML = '<div class="empty">No projects yet.</div>'; return; }
-    $('projectsList').innerHTML = projects.map(p => {
-      const tasks = Object.values(S.tasks).filter(t => t.projectId === p.id && t.status !== 'dropped');
-      const done = tasks.filter(t => t.status === 'done').length;
-      const open = tasks.filter(isOpen).sort((a, b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : (a.createdAt || 0) - (b.createdAt || 0));
-      const closed = tasks.filter(t => t.status === 'done').sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
-      const notes = Object.values(S.notes).filter(n => n.projectId === p.id);
-      const isOpenAcc = !!ui.open['p-' + p.id];
-      const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
-      return `<button class="accordion-header ${isOpenAcc ? 'active' : ''}" data-act="acc" data-key="p-${esc(p.id)}" aria-expanded="${isOpenAcc}">
-          <span>${esc(p.name)}</span><span class="right">${tasks.length ? `${done}/${tasks.length}<span class="progress"><i style="width:${pct}%"></i></span>` : ''}<span>${isOpenAcc ? '▲' : '▼'}</span></span></button>
-        ${isOpenAcc ? `<div class="accordion-content">
-          ${open.map(t => taskRow(t, { showProject: false, showDate: true, today: t.date !== today(), tomorrow: false })).join('')}
-          ${closed.map(t => taskRow(t, { showProject: false })).join('')}
-          ${!tasks.length ? '<div class="empty">No steps yet.</div>' : ''}
-          ${notes.map(n => `<div class="note-item"><span>💡 ${esc(n.text)}</span><button class="mini ghost" data-act="note-del" data-id="${esc(n.id)}" aria-label="Remove idea">${confirmKey === 'nd-' + n.id ? 'Sure?' : 'Remove'}</button></div>`).join('')}
-          <div class="add-row"><input type="text" id="pa-${esc(p.id)}" data-enter="proj-add" data-id="${esc(p.id)}" placeholder="Add a step…"></div>
-          ${finish && finish.id === p.id ? finishFormHtml(p, open.length) : `<div class="add-row"><button class="btn-secondary" data-act="proj-finish" data-id="${esc(p.id)}">Mark project done</button></div>`}
-        </div>` : ''}`;
-    }).join('');
+  // ---------- projects as spaces ----------
+  // Each active project shows as a card with a line doodle, a one-line brief and one pill for its next step.
+  // Opening a card shows the space: a countdown, Coming up dates, Waiting on you steps, a checklist and ideas.
+  // Extra fields live on the project doc (brief, doodle, eventDate, eventLabel, dates[], items[]), so dates and
+  // checklist items stay off Home. Only steps (ordinary tasks with a projectId) can reach Home, and only when dated.
+  const SP_DOODLES = {
+    cake: '<path d="M12 51h40"/><path d="M18 51V37q0-3 3-3h22q3 0 3 3v14"/><path d="M18 42c3 2.6 6 2.6 9.3 0s6.4-2.6 9.4 0 6.3 2.6 9.3 0"/><path d="M26 34v-7M32 34v-7M38 34v-7"/><path d="M26 23.5c-1.6-1.6-1-3.6 0-5 1 1.4 1.6 3.4 0 5zM32 23.5c-1.6-1.6-1-3.6 0-5 1 1.4 1.6 3.4 0 5zM38 23.5c-1.6-1.6-1-3.6 0-5 1 1.4 1.6 3.4 0 5z"/>',
+    plane: '<path d="M9 31 53 14 39 49 31.5 37.5Z"/><path d="M53 14 31.5 37.5 30.5 47l5-6.5"/><path d="M7 51c5-1 8.5-5 13.5-6" stroke-dasharray="1 4.5"/>',
+    blocks: '<rect x="11" y="35" width="18" height="17" rx="2.5"/><rect x="33" y="35" width="18" height="17" rx="2.5"/><g transform="rotate(-8 31 25)"><rect x="22" y="15" width="18" height="17" rx="2.5"/><path d="M29 20.5l2.6-1.8v9"/></g><path d="M16 48l4-9 4 9M17.5 45h5"/><path d="M42 39.5v8M38 43.5h8"/>',
+    drawer: '<rect x="11" y="17" width="42" height="35" rx="3"/><path d="M11 34.5h42"/><path d="M28 25.5h8M28 43h8"/><path d="M15 52v3M49 52v3"/><path d="M54 6v6M51 9h6"/>',
+    house: '<path d="M10 31 32 13l22 18"/><path d="M16 26.5V51h32V26.5"/><path d="M28 51V39h8v12"/><path d="M41 19.5V13h5v10.5"/><path d="M7 51h50"/><path d="M53 37v6M50 40h6"/>',
+    slide: '<path d="M7 52h50"/><path d="M14 52V21M22 52V21"/><path d="M14 29h8M14 37h8M14 45h8"/><path d="M11 21h14"/><path d="M25 21c9 0 11 24 25 31"/><path d="M22 25.5c8 1.5 10.5 20 21 26.5"/><circle cx="48" cy="15" r="4"/>',
+    moon: '<g transform="translate(10 8) scale(2)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></g><path d="M51 9l1.3 2.6 2.9.4-2.1 2 .5 2.9-2.6-1.4-2.6 1.4.5-2.9-2.1-2 2.9-.4z"/>',
+    plant: '<path d="M22 40h20l-3 12H25z"/><path d="M32 40V25"/><path d="M32 31c-8 0-11-5-11-10 6 0 11 4 11 10z"/><path d="M32 27c0-6 4-10 11-10 0 5-4 10-11 10z"/>',
+    book: '<g transform="translate(8 8) scale(2)"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></g>',
+    heart: '<g transform="translate(8 8) scale(2)"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></g>',
+    pot: '<path d="M10 33h44"/><path d="M14 33v9a10 10 0 0 0 10 10h16a10 10 0 0 0 10-10v-9"/><path d="M18 33c2-5.5 7.5-8 14-8s12 2.5 14 8"/><path d="M30 25v-2.5h4V25"/><path d="M26 18c-2-2 2-4 0-7M32 18c-2-2 2-4 0-7M38 18c-2-2 2-4 0-7"/>',
+    sun: '<rect x="12" y="22" width="34" height="30" rx="3"/><path d="M18 31l2.5 2.5L25 29M29 31h11M18 42l2.5 2.5L25 40M29 42h11"/><circle cx="51" cy="14" r="4"/><path d="M51 5.5v2M51 20.5v2M42.5 14h2M57.5 14h2M45 8l1.4 1.4M55.6 18.6 57 20M57 8l-1.4 1.4"/>',
+    apple: '<path d="M32 22c-6-5-18-3-18 10 0 12 8 20 13 20 2 0 3-1 5-1s3 1 5 1c5 0 13-8 13-20 0-13-12-15-18-10z"/><path d="M32 22c0-5 2-8 5-10"/><path d="M33 16c4-4 9-4 11-2-3 4-8 4-11 2z"/>',
+  };
+  const SP_GUESS = [
+    [/cookbook|picture book|\bbook\b|story/i, 'book'],
+    [/cook|teta|kitchen|maqluba|mama|recipe|meal/i, 'pot'],
+    [/islam|ramadan|iftar|eid|quran/i, 'moon'],
+    [/birthday|party|cake/i, 'cake'],
+    [/trip|travel|flight|vacation|kyoto|kuwait|amman/i, 'plane'],
+    [/declutter|drawer|organi[sz]|closet/i, 'drawer'],
+    [/game|explorer|mastery|learning|lovable|lego/i, 'blocks'],
+    [/dashboard|myday|brain dump|routine/i, 'sun'],
+    [/apple|picking|orchard|outing|park/i, 'apple'],
+    [/quilt|clothes|sew|baby|gift/i, 'heart'],
+    [/house|home|clean/i, 'house'],
+  ];
+  const SP_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const spName = p => String(p.name || '').replace(/^[\p{Extended_Pictographic}️‍\s]+/u, '').trim() || String(p.name || 'Untitled');
+  const spDoodleKey = p => (p.doodle && SP_DOODLES[p.doodle]) ? p.doodle : ((SP_GUESS.find(([re]) => re.test(p.name || '')) || [null, 'plant'])[1]);
+  const spSvg = (k, size) => `<svg class="sp-doodle" viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">${SP_DOODLES[k] || SP_DOODLES.plant}</svg>`;
+  const spSteps = p => Object.values(S.tasks).filter(t => t.projectId === p.id && t.status !== 'dropped');
+  const spByNext = (a, b) => (a.date || '9999') < (b.date || '9999') ? -1 : (a.date || '9999') > (b.date || '9999') ? 1 : (a.createdAt || 0) - (b.createdAt || 0);
+  const spActive = () => Object.values(S.projects).filter(p => p.status !== 'archived' && p.status !== 'done').sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.name).localeCompare(b.name));
+  const spDays = d => Math.round((parseYmd(d).getTime() - parseYmd(today()).getTime()) / 86400000);
+  const spMD = d => { const x = parseYmd(d); return `${SP_MON[x.getMonth()]} ${x.getDate()}`; };
+  const spRel = d => { const n = spDays(d); return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n < 0 ? 'Started' : `In ${n} days`; };
+  const spTick = '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg>';
+  const spCountdown = p => (p.eventDate && p.eventDate >= today()) ? spDays(p.eventDate) : null;
+
+  function spBriefOf(p, done, total) {
+    if (p.brief) return p.brief;
+    const n = spCountdown(p);
+    if (n !== null) return n === 0 ? `${p.eventLabel || 'The day'} is today` : `${n} day${n === 1 ? '' : 's'} to ${p.eventLabel || 'the day'}`;
+    if (total) return `${done} of ${total} steps done`;
+    return 'Tap to plan the first step';
   }
+
+  function renderProjects() {
+    const view = $('spacesView'); if (!view) return;
+    let p = ui.space && S.projects[ui.space];
+    if (ui.space && (!p || p.status === 'done' || p.status === 'archived')) { ui.space = null; p = null; saveUi(); }
+    const home = $('projectsHome'); if (home) home.classList.toggle('hidden', !!p);
+    view.innerHTML = p ? spDetailHtml(p) : spGridHtml();
+  }
+
+  function spGridHtml() {
+    const projects = spActive();
+    let openSteps = 0;
+    const cards = projects.map(p => {
+      const steps = spSteps(p);
+      const open = steps.filter(isOpen).sort(spByNext);
+      const done = steps.filter(t => t.status === 'done').length;
+      openSteps += open.length;
+      const item = !open.length && (p.items || []).find(i => !i.done);
+      const name = spName(p);
+      const action = open.length
+        ? `<button class="sp-pill" data-act="sp-next" data-id="${esc(open[0].id)}" aria-label="Mark done: ${esc(open[0].title)}"><span class="ring"></span><span>${esc(open[0].title)}</span></button>`
+        : item ? `<button class="sp-pill" data-act="sp-item" data-id="${esc(p.id)}" data-i="${esc(item.id)}" aria-label="Tick off: ${esc(item.text)}"><span class="ring"></span><span>${esc(item.text)}</span></button>`
+        : `<div class="sp-clear">Nothing waiting</div>`;
+      return `<div class="sp-card">
+        <button class="sp-open" data-act="sp-open" data-id="${esc(p.id)}" aria-label="Open ${esc(name)}"></button>
+        ${spSvg(spDoodleKey(p), 44)}
+        <div class="sp-name">${esc(name)}</div>
+        <div class="sp-brief">${esc(spBriefOf(p, done, steps.length))}</div>
+        ${action}
+      </div>`;
+    }).join('');
+    return `<div class="sp-head"><h2>Projects</h2><span class="sp-sum">${projects.length} space${projects.length === 1 ? '' : 's'} · ${openSteps} open step${openSteps === 1 ? '' : 's'}</span></div>
+      <div class="sp-grid">${cards}
+        <div class="sp-new"><input type="text" id="spNew" data-enter="sp-new" placeholder="New space, e.g. Eid gifts" aria-label="New space name"><button class="btn-add" data-act="sp-new">Add space</button></div>
+      </div>`;
+  }
+
+  function spDetailHtml(p) {
+    const name = spName(p);
+    const steps = spSteps(p);
+    const open = steps.filter(isOpen).sort(spByNext);
+    const closed = steps.filter(t => t.status === 'done').sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+    const items = p.items || [];
+    const notes = Object.values(S.notes).filter(n => n.projectId === p.id).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const pid = esc(p.id);
+
+    const n = spCountdown(p);
+    const pct = steps.length ? Math.round(closed.length / steps.length * 100) : 0;
+    const countdown = n === null ? '' : `<div class="sp-cd">
+        <div class="sp-cd-top">
+          <div><div class="sp-sec-h"><h3>Countdown</h3></div><div class="sp-cd-title">${esc(p.eventLabel || name)}</div><div class="sp-sum">${esc(spMD(p.eventDate))}</div></div>
+          <div class="sp-cd-num"><b>${n}</b><small>${n === 0 ? 'It’s today' : n === 1 ? 'day to go' : 'days to go'}</small></div>
+        </div>
+        ${steps.length ? `<div class="sp-meter"><i style="width:${pct}%"></i></div><div class="sp-sum">${closed.length} of ${steps.length} steps done</div>` : ''}
+      </div>`;
+
+    const t0 = today();
+    const coming = [
+      ...(p.dates || []).filter(d => d.date && (d.end || d.date) >= t0).map(d => ({ kind: 'date', id: d.id, title: d.title, date: d.date, end: d.end })),
+      ...open.filter(t => t.date && t.date >= t0).map(t => ({ kind: 'step', id: t.id, title: t.title, date: t.date })),
+    ].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    const dateCard = c => { const x = parseYmd(c.date); return `<div class="sp-date ${c.date === t0 || (c.end && c.date <= t0) ? 'is-today' : ''}">
+        <span class="m">${SP_MON[x.getMonth()]}</span><span class="d">${x.getDate()}</span>
+        <span class="t">${esc(c.title)}</span><span class="w">${c.end ? `to ${esc(spMD(c.end))}` : esc(spRel(c.date))}</span>
+        ${c.kind === 'date' ? `<button class="x" data-act="sp-date-del" data-id="${pid}" data-i="${esc(c.id)}" aria-label="Remove ${esc(c.title)}">×</button>` : ''}
+      </div>`; };
+    const dateForm = ui.spAddDate ? `<div class="sp-form">
+        <input type="text" id="spDateT" data-enter="sp-date-save" data-id="${pid}" placeholder="What’s happening" aria-label="What’s happening">
+        <input type="date" id="spDateD" aria-label="Date">
+        <button class="btn-add" data-act="sp-date-save" data-id="${pid}">Add</button>
+        <button class="mini ghost" data-act="sp-date-cancel">Cancel</button>
+      </div>` : '';
+    const comingUp = `<div class="sp-sec"><div class="sp-sec-h"><h3>Coming up</h3></div>
+        <div class="sp-dates">${coming.map(dateCard).join('')}${ui.spAddDate ? '' : '<button class="sp-date-add" data-act="sp-date-add">+ Add date</button>'}</div>
+        ${dateForm}</div>`;
+
+    const waiting = `<div class="sp-sec"><div class="sp-sec-h"><h3>Waiting on you</h3>${steps.length ? `<span class="sp-count">${closed.length}/${steps.length}</span>` : ''}</div>
+        <div>${open.length ? open.map(t => taskRow(t, { showProject: false, showDate: true, today: t.date !== today(), tomorrow: false })).join('') : '<div class="empty">Nothing waiting. Add the next step below.</div>'}
+        ${closed.length ? `<button class="mini ghost" data-act="sp-done-toggle">${ui.spDone ? 'Hide done' : `Show done (${closed.length})`}</button>` : ''}
+        ${ui.spDone ? closed.map(t => taskRow(t, { showProject: false })).join('') : ''}</div>
+        <div class="sp-form"><input type="text" id="pa-${pid}" data-enter="sp-step" data-id="${pid}" placeholder="Add a step…" aria-label="New step"><input type="date" id="pd-${pid}" aria-label="Step date (optional)"><button class="btn-add" data-act="sp-step" data-id="${pid}">Add</button></div>
+      </div>`;
+
+    const itemAdd = `<div class="sp-form"><input type="text" id="spItem" data-enter="sp-item-add" data-id="${pid}" placeholder="Add to the checklist" aria-label="New checklist item"><button class="btn-add" data-act="sp-item-add" data-id="${pid}">Add</button></div>`;
+    const checklist = items.length ? `<div class="sp-sec"><div class="sp-sec-h"><h3>Checklist</h3><span class="sp-count">${items.filter(i => i.done).length}/${items.length}</span></div>
+        <div class="sp-list">${items.map(i => `<button class="sp-item ${i.done ? 'done' : ''}" data-act="sp-item" data-id="${pid}" data-i="${esc(i.id)}" aria-pressed="${!!i.done}"><span class="sp-box">${spTick}</span><span class="lbl">${esc(i.text)}</span></button>`).join('')}</div>
+        ${itemAdd}</div>` : '';
+
+    const ideas = `<div class="sp-sec"><div class="sp-sec-h"><h3>Ideas</h3></div>
+        ${notes.map(nt => `<div class="note-item"><span>${esc(nt.text)}</span><button class="mini ghost" data-act="note-del" data-id="${esc(nt.id)}" aria-label="Remove idea">${confirmKey === 'nd-' + nt.id ? 'Sure?' : 'Remove'}</button></div>`).join('')}
+        <div class="sp-form"><input type="text" id="spIdea" data-enter="sp-idea" data-id="${pid}" placeholder="An idea, not a task" aria-label="New idea"></div>
+      </div>`;
+
+    const cur = spDoodleKey(p);
+    const edit = `<details class="sp-edit" id="spEdit" ${ui.spEdit ? 'open' : ''}><summary>Edit this space</summary><div class="sp-edit-body">
+        <label>Name<input type="text" id="spEName" value="${esc(p.name || '')}"></label>
+        <label>Count down to<input type="date" id="spEDate" value="${esc(p.eventDate || '')}"></label>
+        <label>What the day is called<input type="text" id="spELabel" value="${esc(p.eventLabel || '')}" placeholder="e.g. Hamad’s party"></label>
+        <div><div class="sp-sum" style="margin-bottom:6px">Doodle</div><div class="sp-picker">${Object.keys(SP_DOODLES).map(k => `<button class="sp-pick" data-act="sp-pick" data-id="${pid}" data-k="${k}" aria-pressed="${k === cur}" aria-label="${k} doodle">${spSvg(k, 30)}</button>`).join('')}</div></div>
+        ${items.length ? '' : `<div class="sp-sum">Start a checklist</div>${itemAdd}`}
+        <div class="sp-form"><button class="btn-add" data-act="sp-save" data-id="${pid}">Save</button></div>
+      </div></details>`;
+
+    const fin = finish && finish.id === p.id ? finishFormHtml(p, open.length) : `<div class="add-row"><button class="btn-secondary" data-act="proj-finish" data-id="${pid}">Mark project done</button></div>`;
+
+    return `<div class="sp-top"><button class="sp-back" data-act="sp-back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Projects</button></div>
+      <div class="sp-hero">${spSvg(cur, 64)}<h2>${esc(name)}</h2>
+        <input type="text" class="sp-brief-in" id="spBrief" data-id="${pid}" value="${esc(p.brief || '')}" placeholder="Add a one-line brief" aria-label="Brief for ${esc(name)}"></div>
+      ${countdown}${comingUp}${waiting}${checklist}${ideas}${edit}${fin}`;
+  }
+
+  // ---------- spaces: actions ----------
+  const spPatch = (pid, patch) => { const p = S.projects[pid]; if (p) put('projects', Object.assign({}, p, patch)); };
+  function spToggleItem(pid, iid, fromCard) {
+    const p = S.projects[pid]; if (!p) return;
+    const it = (p.items || []).find(i => i.id === iid); if (!it) return;
+    const flip = v => spPatch(pid, { items: (S.projects[pid].items || []).map(i => i.id === iid ? Object.assign({}, i, { done: v }) : i) });
+    flip(!it.done);
+    if (fromCard && !it.done) toast(`Ticked off: ${it.text}`, () => flip(false));
+  }
+  function spAdd() {
+    const el = $('spNew'); const name = el ? el.value.trim() : ''; if (!name) return;
+    const dupe = Object.values(S.projects).find(p => p.status !== 'done' && norm(p.name) === norm(name));
+    el.value = '';
+    if (dupe) { ui.space = dupe.id; saveUi(); render(); return; }
+    const p = { id: newId('p'), name, category: 'self', status: 'active', notes: '', brief: '', createdAt: Date.now() };
+    ui.space = p.id; ui.spEdit = true; ui.spAddDate = false; ui.spDone = false; saveUi(); put('projects', p);
+    window.scrollTo({ top: 0 });
+  }
+  function spAddStep(pid) {
+    const el = $('pa-' + pid), dl = $('pd-' + pid); const v = el ? el.value.trim() : ''; if (!v) return;
+    const p = S.projects[pid];
+    el.value = '';
+    put('tasks', makeTask({ title: v, category: (p && p.category) || 'self', projectId: pid, date: (dl && dl.value) || null }));
+  }
+  function spAddDate(pid) {
+    const t = $('spDateT'), d = $('spDateD'); const title = t ? t.value.trim() : '', date = d ? d.value : '';
+    if (!title || !date) { toast(!title ? 'Add what’s happening first.' : 'Pick a date first.'); return; }
+    const p = S.projects[pid]; if (!p) return;
+    ui.spAddDate = false; saveUi();
+    spPatch(pid, { dates: [...(p.dates || []), { id: newId('d'), title, date, end: null }] });
+  }
+  function spDelDate(pid, did) {
+    const p = S.projects[pid]; if (!p) return;
+    const before = p.dates || [];
+    spPatch(pid, { dates: before.filter(d => d.id !== did) });
+    toast('Date removed', () => spPatch(pid, { dates: before }));
+  }
+  function spAddItem(pid) {
+    const el = $('spItem'); const v = el ? el.value.trim() : ''; if (!v) return;
+    const p = S.projects[pid]; if (!p) return;
+    el.value = '';
+    spPatch(pid, { items: [...(p.items || []), { id: newId('i'), text: v, done: false }] });
+  }
+  function spAddIdea(pid) {
+    const el = $('spIdea'); const v = el ? el.value.trim() : ''; if (!v) return;
+    el.value = '';
+    put('notes', { id: newId('n'), text: v, projectId: pid, createdAt: Date.now() });
+  }
+  function spSaveEdit(pid, doodle) {
+    const p = S.projects[pid]; if (!p) return;
+    const val = id => { const el = $(id); return el ? el.value.trim() : ''; };
+    const patch = { eventDate: val('spEDate') || null, eventLabel: val('spELabel') };
+    const name = val('spEName'); if (name) patch.name = name;
+    if (doodle) patch.doodle = doodle; else { ui.spEdit = false; saveUi(); }
+    spPatch(pid, patch);
+    if (!doodle) toast('Saved');
+  }
+  function wireSpaces() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act]'); if (!el) return;
+      const id = el.dataset.id;
+      switch (el.dataset.act) {
+        case 'sp-open': ui.space = id; ui.spAddDate = false; ui.spDone = false; ui.spEdit = false; finish = null; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'sp-back': ui.space = null; ui.spAddDate = false; finish = null; saveUi(); render(); window.scrollTo({ top: 0 }); break;
+        case 'sp-next': { const t = S.tasks[id]; if (!t) break; setTask(id, { status: 'done' }); toast(`Done: ${t.title}`, () => setTask(id, { status: 'todo' })); break; }
+        case 'sp-item': spToggleItem(id, el.dataset.i, el.classList.contains('sp-pill')); break;
+        case 'sp-new': spAdd(); break;
+        case 'sp-step': spAddStep(id); break;
+        case 'sp-done-toggle': ui.spDone = !ui.spDone; saveUi(); render(); break;
+        case 'sp-date-add': ui.spAddDate = true; saveUi(); render(); { const i = $('spDateT'); if (i) i.focus(); } break;
+        case 'sp-date-cancel': ui.spAddDate = false; saveUi(); render(); break;
+        case 'sp-date-save': spAddDate(id); break;
+        case 'sp-date-del': spDelDate(id, el.dataset.i); break;
+        case 'sp-item-add': spAddItem(id); break;
+        case 'sp-pick': spSaveEdit(id, el.dataset.k); break;
+        case 'sp-save': spSaveEdit(id); break;
+      }
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.shiftKey) return;
+      const el = e.target; const act = el.dataset && el.dataset.enter; if (!act || act.slice(0, 3) !== 'sp-') return;
+      e.preventDefault();
+      const id = el.dataset.id;
+      switch (act) {
+        case 'sp-new': spAdd(); break;
+        case 'sp-step': spAddStep(id); break;
+        case 'sp-date-save': spAddDate(id); break;
+        case 'sp-item-add': spAddItem(id); break;
+        case 'sp-idea': spAddIdea(id); break;
+      }
+    });
+    document.addEventListener('change', e => {
+      const el = e.target;
+      if (el && el.id === 'spBrief') { const p = S.projects[el.dataset.id]; if (p && (p.brief || '') !== el.value.trim()) spPatch(p.id, { brief: el.value.trim() }); }
+    });
+    document.addEventListener('toggle', e => { if (e.target && e.target.id === 'spEdit') { ui.spEdit = e.target.open; saveUi(); } }, true);
+  }
+
+  // Adds the three spaces Farah asked for (Nov 25, 2026) once, on the first load that has her cloud data.
+  // Skips any that already exist by name, so a second phone or a rename never makes duplicates.
+  function seedSpacesOnce() {
+    if (meta().spacesSeed) return;
+    const all = Object.values(S.projects);
+    const has = re => all.some(p => re.test(p.name || ''));
+    const at = Date.now();
+    const mk = (n, f) => Object.assign({ id: newId('p'), status: 'active', notes: '', createdAt: at + n }, f);
+    const list = (prefix, count) => Array.from({ length: count }, (_, i) => `${prefix} ${i + 1}`);
+    if (!has(/birthday/i)) stage('projects', mk(1, { name: 'Kids’ birthdays', category: 'kids', doodle: 'cake',
+      brief: 'Yousef’s Fun to Be One, Hamad’s LEGO 5th, Talal’s cars 4th, and the iftar.',
+      items: ['Pick a date for Yousef’s party', 'Pick a date for Hamad’s party', 'Pick a date for Talal’s party', 'Pick a date for the iftar']
+        .map(text => ({ id: newId('i'), text, done: false })) }));
+    if (!has(/trips? 2027|kyoto|kuwait/i)) stage('projects', mk(2, { name: 'Trips 2027', category: 'activity', doodle: 'plane',
+      brief: 'Kuwait and Egypt, Kyoto, then Amman for Kareem’s wedding.', eventDate: '2027-02-22', eventLabel: 'Kuwait and Egypt',
+      dates: [['Kuwait and Egypt', '2027-02-22', '2027-03-08'], ['Kyoto', '2027-05-09', '2027-05-20'], ['Amman, Kareem’s wedding', '2027-09-21', '2027-10-01']]
+        .map(([title, date, end]) => ({ id: newId('d'), title, date, end })) }));
+    if (!has(/declutter/i)) stage('projects', mk(3, { name: 'Declutter the house', category: 'home', doodle: 'drawer',
+      brief: 'One drawer or shelf a day.',
+      items: [...list('Bathroom drawer', 4), ...list('Bathroom shelf', 4), ...list('Bathroom cabinet', 2), 'Left nightstand', 'Right nightstand',
+        ...list('Closet hanging section', 3), ...list('Closet drawer', 3), ...list('Closet shelf', 4)].map(text => ({ id: newId('i'), text, done: false })) }));
+    setMetaStaged({ spacesSeed: 1 });
+    commit();
+  }
+
   function renderIdeas() {
     const notes = Object.values(S.notes).filter(n => !n.projectId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     $('ideasList').innerHTML = notes.length ? notes.map(n => `<div class="note-item"><span>${esc(n.text)}</span>
@@ -3740,6 +4070,7 @@ Rules:
   function wireEvents() {
     wireDrag();
     wireProjectsDone();
+    wireSpaces();
     wireFeatures();
     wireAssist();
     wireHousehold();
@@ -4019,7 +4350,7 @@ Rules:
     if (materializing) return;
     if (!(mode === 'cloud' || (mode === 'local' && cloudNote))) return;      // wait until this phone has the latest from the cloud
     materializing = true;
-    try { materializeRoutines(); adminMaterialize(); renderHousehold(); } finally { materializing = false; }
+    try { materializeRoutines(); adminMaterialize(); seedSpacesOnce(); renderHousehold(); } finally { materializing = false; }
   }
   // School-day routines (pickup, drop-off) skip days the calendar marks as no school.
   const SCHOOL_ROUTINE = /school|pick ?-?up|drop ?-?off|carpool/i;
@@ -6026,6 +6357,7 @@ Rules:
   }
 
   function addProject() {
+    if (!$('npName')) return;
     const name = $('npName').value.trim(); if (!name) return;
     if (Object.values(S.projects).some(p => p.status !== 'done' && norm(p.name) === norm(name))) { $('npName').value = ''; return; }
     const p = { id: newId('p'), name, category: 'self', status: 'active', notes: '', createdAt: Date.now() };
