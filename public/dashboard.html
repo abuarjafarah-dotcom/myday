@@ -1236,6 +1236,14 @@ input, select, textarea { font-size: max(16px, 1rem); }
 .sp-pick { background: var(--card); border: 1.5px solid var(--hair); border-radius: 12px; aspect-ratio: 1; display: grid; place-items: center; cursor: pointer; padding: 0; min-height: 44px; }
 .sp-pick[aria-pressed="true"] { border-color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .sp-card, .sp-meter i { transition: none; } }
+/* Fitbit card (Today): three quiet numbers, no images */
+.h-fit { order: 7; }
+.fit-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+.fit-stat b { display: block; font-family: var(--serif); font-size: 1.75rem; font-weight: 700; line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+.fit-stat span { font-size: 0.8125rem; color: var(--muted); }
+.fit-stat.dim b { color: var(--faint); }
+.fit-lead { margin: 0 0 10px; }
+.fit-upd { font-size: 0.8125rem; color: var(--muted); text-decoration: none; text-transform: none; letter-spacing: 0; }
 .hh-sub { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 4px 0 6px; display: flex; justify-content: space-between; gap: 12px; }
 </style>
 </head>
@@ -1314,6 +1322,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     <div id="carryBox" class="h-carry"></div>
   </div>
   <div class="home-side">
+    <div id="fitBox" class="h-fit"></div>
     <details class="card fold h-more" data-fold="more">
       <summary><span>More</span><span class="count" id="moreCount"></span></summary>
       <div class="fold-body more-list">
@@ -1655,7 +1664,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
   }
 
   // ---------- live Google + weather data ----------
-  const live = { weather: null, mail: null, cal: null, mailErr: '', calErr: '', authed: true };
+  const live = { weather: null, mail: null, cal: null, mailErr: '', calErr: '', authed: true, fit: null };
   async function getJson(url) {
     const r = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
     if (r.status === 401) { const e = new Error('auth'); e.auth = true; throw e; }
@@ -1665,6 +1674,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
   async function loadLive() {
     const jobs = [
       getJson('/api/weather').then(d => { if (!d.error) live.weather = d; }).catch(() => {}),
+      loadFitbit(false),
       getJson(`/api/gmail?today=${today()}`).then(d => { live.mail = d.emails || []; live.mailErr = ''; })
         .catch(e => { if (e.auth) live.authed = false; else live.mailErr = 'Couldn\'t load Gmail right now.'; }),
       getJson('/api/partner').then(d => { live.omar = d; }).catch(() => { live.omar = null; }),
@@ -1688,6 +1698,49 @@ input, select, textarea { font-size: max(16px, 1rem); }
     return `<div class="state ${kind}" ${kind === 'error' ? 'role="alert"' : ''}><span class="state-i" aria-hidden="true">${icon}</span><span class="state-t">${esc(text)}</span>${act || ''}</div>`;
   }
   const signInHtml = what => stateHtml('error', `Signed out, so ${what} can't load.`, '<a class="mini" href="/">Sign in</a>');
+  // ---------- Fitbit (Google Health): steps, last night's sleep, active minutes ----------
+  function loadFitbit(fresh) {
+    return getJson('/api/fitbit' + (fresh ? '?fresh=1' : ''))
+      .then(d => { live.fit = d && d.state ? d : { state: 'error' }; })
+      .catch(e => { live.fit = { state: e.auth ? 'signin' : 'error' }; });
+  }
+  const fitNum = n => (n == null ? '—' : Math.round(n).toLocaleString('en-US'));
+  const fitSleep = m => (m == null ? '—' : `${Math.floor(m / 60)}h ${String(Math.round(m % 60)).padStart(2, '0')}m`);
+  function renderFitbit() {
+    const el = $('fitBox'); if (!el) return;
+    const f = live.fit;
+    const connect = label => `<a class="btn-add" href="/api/fitbit?action=connect">${label}</a>`;
+    let head = '<span>Fitbit</span>', body;
+    if (!f) body = stateHtml('loading', 'Loading Fitbit');
+    else if (f.state === 'ok') {
+      const at = f.fetchedAt ? new Date(f.fetchedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+      head += `<button type="button" class="link-btn fit-upd" data-act="fit-refresh" title="Refresh now">${at ? `Updated ${esc(at)}` : 'Refresh'}</button>`;
+      const stat = (v, label, raw) => `<div class="fit-stat${raw == null ? ' dim' : ''}"><b>${v}</b><span>${label}</span></div>`;
+      body = `<div class="fit-stats">${stat(fitNum(f.steps), 'steps', f.steps)}${stat(fitSleep(f.sleepMinutes), 'sleep last night', f.sleepMinutes)}${stat(fitNum(f.activeMinutes), 'active min', f.activeMinutes)}</div>`;
+    }
+    else if (f.state === 'disconnected') body = `<p class="muted fit-lead">Your steps, sleep and active minutes, right here. Updates on its own.</p>${connect('Connect Fitbit')}`;
+    else if (f.state === 'reconnect') body = stateHtml('error', 'Fitbit needs a quick reconnect.', connect('Reconnect'));
+    else if (f.state === 'not_linked') body = stateHtml('error', 'Open the Google Health app once so your Fitbit is linked, then refresh.', '<button class="mini" data-act="fit-refresh">Refresh</button>');
+    else if (f.state === 'setup') body = stateHtml('error', "Fitbit isn't switched on for your dashboard yet.");
+    else if (f.state === 'signin') body = signInHtml('Fitbit');
+    else body = stateHtml('error', "Couldn't load Fitbit right now.", '<button class="mini" data-act="fit-refresh">Retry</button>');
+    el.innerHTML = `<div class="card fit-card" aria-label="Fitbit today"><h2>${head}</h2>${body}</div>`;
+  }
+  function wireFitbit() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-act="fit-refresh"]'); if (!el) return;
+      el.disabled = true;
+      loadFitbit(true).then(renderFitbit);
+    });
+    const r = new URLSearchParams(location.search).get('fitbit');
+    if (r) {
+      const msg = { connected: 'Fitbit connected', partial: 'Fitbit connected. Some boxes were left unticked, so a number may stay blank', declined: "Fitbit wasn't connected", expired: 'That took too long. Tap Connect Fitbit again', setup: "Fitbit isn't switched on for your dashboard yet", signin: 'Sign in first, then connect Fitbit', error: "Couldn't connect Fitbit. Try again" }[r];
+      if (msg) toast(msg);
+      if (r === 'connected' || r === 'partial') { ui.tab = 'home'; saveUi(); loadFitbit(true).then(renderFitbit); }
+      history.replaceState(null, '', location.pathname);
+    }
+  }
+
   // Omar at a glance: one label per day (shift, travel, admin, off, meetings). Shared from his page.
   function renderOmar() {
     const el = $('omarCard'); if (!el) return;
@@ -2177,7 +2230,7 @@ input, select, textarea { font-size: max(16px, 1rem); }
     const keep = rememberFocus();
     renderHeader(); renderTabs(); renderHint(); renderSync();
     renderReview(); renderWaiting(); renderCarry(); renderToday(); renderAnytime(); renderSuggest();
-    renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderRewards(); renderLive();
+    renderSchedule(); renderWeek(); renderProjects(); renderDoneProjects(); renderIdeas(); renderGrocery(); renderRewards(); renderLive(); renderFitbit();
     renderTracker(); renderSmart(); renderFamily(); renderSchoolAdmin(); renderNow(); renderPlan(); renderAssist(); renderResetBanner(); renderReset();
     renderRoutines(); renderSettings(); renderRecapBanner(); renderFoldCounts();
     renderTimeline(); renderRitual(); publishWidgetSoon();
@@ -4122,6 +4175,7 @@ Rules:
     wireDrag();
     wireProjectsDone();
     wireSpaces();
+    wireFitbit();
     wireFeatures();
     wireAssist();
     wireHousehold();
