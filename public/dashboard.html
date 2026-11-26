@@ -2746,15 +2746,21 @@ Rules:
     const t = S.tasks[id]; if (!t) return;
     const undo = snapTasks([id]);
     switch (to) {
-      case 'todo': setTask(id, { status: 'todo', who: null }); toast(`Reopened: ${t.title}`, undo); break;
+      case 'todo': setTask(id, t.who === 'omar' && t.status !== 'done' ? { who: null, category: t.prevCategory || t.category } : { status: 'todo' }); toast(`Reopened: ${t.title}`, undo); break;
       case 'done': setTask(id, { status: 'done', who: null }); toast(`Done: ${t.title}`, undo); break;
       case 'tomorrow': moveTo(id, addDays(today(), 1)); toast(`Tomorrow: ${t.title}`, undo); break;
       case 'letgo': setTask(id, { status: 'dropped', droppedAt: Date.now() }); toast(`Let go: ${t.title}`, undo); break;
-      case 'omar':
-        if (canHandOmar(t)) handToOmar(id);                // moves it to Omar's list, with its own Undo
-        else { setTask(id, { who: 'omar' }); toast(`On Omar: ${t.title}`, undo); }
-        break;
+      case 'omar': capToOmar(id, undo); break;
     }
+  }
+  // Omar: moves the task onto Omar's own dashboard list (his household list), with Undo. If his list can't be
+  // reached, it moves under Omar here instead (Omar category) so it still leaves your plate, also with Undo.
+  async function capToOmar(id, undo) {
+    if (!hh.me && !hh.off) await loadHousehold();
+    const t = S.tasks[id]; if (!t) return;
+    if (canHandOmar(t)) { handToOmar(id); return; }
+    setTask(id, { category: 'omar', who: 'omar', prevCategory: t.category });
+    toast(`Moved under Omar: ${t.title}`, undo);
   }
   function wktRow(t, withActs) {
     const done = t.status === 'done', single = withActs && (done || t.who === 'omar');
