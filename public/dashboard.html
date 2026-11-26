@@ -593,6 +593,12 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 .wkt-item .t { font-size: 0.875rem; font-weight: 600; color: var(--body); overflow-wrap: anywhere; }
 .wkt-item.done .t { text-decoration: line-through; color: var(--muted); font-weight: 500; }
 .wkt-item .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.wkt-item > .sy-pill, .wkt-item > .cap-pill { align-self: center; }
+.cap-pill { position: relative; overflow: hidden; min-height: 44px; min-width: 84px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 0.8125rem; font-weight: 500; cursor: pointer; flex: 0 0 auto; white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
+.cap-pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.cap-pill.pending::after { content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: currentColor; opacity: .45; transform-origin: left; animation: capFill 1.5s linear forwards; }
+@keyframes capFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .cap-pill, .cap-pill.pending::after { transition: none; animation: none; } }
 .wkt-anytime { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
 .wkt-anytime .eyebrow { margin: 0 0 4px; font-size: 0.6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 
@@ -2719,21 +2725,62 @@ Rules:
       .map(([k, l]) => `<button type="button" class="seg-btn" data-act="energy" data-scope="${k}" aria-pressed="${scope === k ? 'true' : 'false'}">${l}</button>`).join('');
   }
 
-  // One task row in the week: checkbox, time and category, title, and the Board's actions.
+  // One task row in the week: dot, time and category, title, and one capsule on the right.
+  // Tapping the capsule steps through To do, Done, Tomorrow, Let go and Omar. The choice applies after a short
+  // pause (so you can keep tapping past it), then a toast offers Undo. A done task's capsule goes straight back to To do.
+  const CAP_LABEL = { todo: 'To do', done: 'Done', tomorrow: 'Tomorrow', letgo: 'Let go', omar: 'Omar' };
+  const CAP_CYCLE = ['todo', 'done', 'tomorrow', 'letgo', 'omar'];
+  const CAP_WAIT = 1500;
+  const capPending = {};                                   // task id -> { state, timer }
+  const capCommitted = t => t.status === 'done' ? 'done' : t.who === 'omar' ? 'omar' : 'todo';
+  const canHandOmar = t => !t.sharedId && hh.me === 'farah' && !fam.off;
+  function capBtn(t) {
+    const p = capPending[t.id], st = p ? p.state : capCommitted(t);
+    return `<button type="button" class="cap-pill ${st !== 'todo' ? 'on' : ''} ${p ? 'pending' : ''}" data-act="cap" data-id="${esc(t.id)}" aria-label="${esc(t.title)}: ${CAP_LABEL[st]}${p ? ', applying' : ''}. Tap to change.">${CAP_LABEL[st]}</button>`;
+  }
+  function capTap(id) {
+    const t = S.tasks[id]; if (!t) return;
+    const committed = capCommitted(t), p = capPending[id], cur = p ? p.state : committed;
+    const nxt = !p && (committed === 'done' || committed === 'omar') ? 'todo' : CAP_CYCLE[(CAP_CYCLE.indexOf(cur) + 1) % CAP_CYCLE.length];
+    if (p) clearTimeout(p.timer);
+    if (nxt === committed) delete capPending[id];
+    else capPending[id] = { state: nxt, timer: setTimeout(() => capApply(id), CAP_WAIT) };
+    const active = document.activeElement;
+    document.querySelectorAll('.cap-pill').forEach(b => {
+      if (b.dataset.id !== id) return;
+      const had = b === active; b.outerHTML = capBtn(t);
+      if (had) { const nb = [...document.querySelectorAll('.cap-pill')].find(x => x.dataset.id === id); if (nb) nb.focus(); }
+    });
+  }
+  function capApply(id) {
+    const p = capPending[id]; delete capPending[id];
+    const t = S.tasks[id]; if (!p || !t) { render(); return; }
+    const undo = snapTasks([id]);
+    switch (p.state) {
+      case 'todo': setTask(id, { status: 'todo', who: null }); toast(`Back to do: ${t.title}`, undo); break;
+      case 'done': setTask(id, { status: 'done', who: null }); toast(`Done: ${t.title}`, undo); break;
+      case 'tomorrow': moveTo(id, addDays(today(), 1)); toast(`Tomorrow: ${t.title}`, undo); break;
+      case 'letgo': setTask(id, { status: 'dropped', droppedAt: Date.now() }); toast(`Let go: ${t.title}`, undo); break;
+      case 'omar':
+        if (canHandOmar(t)) handToOmar(id);                // moves it to Omar's list, with its own Undo
+        else { setTask(id, { who: 'omar' }); toast(`On Omar: ${t.title}`, undo); }
+        break;
+    }
+  }
   function wktRow(t, withActs) {
-    const id = esc(t.id), done = t.status === 'done';
+    const done = t.status === 'done';
     const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
     const doing = t.status === 'doing' ? `<span class="badge">In progress</span>` : '';
-    let acts = '';
-    if (done) acts = `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Undo</button>`;
-    else acts = (t.status === 'doing'
-      ? `<button class="mini" data-act="status" data-to="todo" data-id="${id}">Back</button>`
-      : `<button class="mini" data-act="status" data-to="doing" data-id="${id}">Start</button>`)
-      + `<button class="mini primary" data-act="status" data-to="done" data-id="${id}">Done</button>`
-      + `<button class="mini" data-act="to-tomorrow" data-id="${id}" aria-label="Move ${esc(t.title)} to tomorrow">Tomorrow</button>`;
     return `<div class="wkt-item ${done ? 'done' : ''}"><span class="wkt-box ${done ? 'on' : ''}" aria-hidden="true"></span>
       <div class="wkt-body"><div class="wkt-meta">${t.time ? `<span>${esc(t.time)}</span>` : ''}${catTag(t.category)}</div>
-      <div class="t">${from}${doing}${esc(t.title)}</div>${withActs ? `<div class="acts">${acts}</div>` : ''}</div></div>`;
+      <div class="t">${from}${doing}${esc(t.title)}</div></div>${withActs ? capBtn(t) : ''}</div>`;
+  }
+  // A calendar event in the week, with the Farah / Omar / Other capsule from the weekly check-in.
+  function wkCalRow(i, mon) {
+    return `<div class="wkt-item wkt-cal"><span class="wkt-box cal" aria-hidden="true"></span>
+      <div class="wkt-body"><div class="wkt-meta"><span>${esc(clockLabel(i.start))}</span></div>
+      <div class="t">${i.src === 'icloud' ? '☁️' : '📅'} ${esc(i.title)}</div></div>
+      <button type="button" class="sy-pill ${i.who !== 'me' ? 'on' : ''}" data-act="sy-who" data-k="${esc(i.key)}" data-dflt="${i.dflt}" data-mon="${mon}" aria-label="Who covers ${esc(i.title)}: ${WHO_LABEL[i.who]}. Tap to change.">${WHO_LABEL[i.who]}</button></div>`;
   }
 
   // Yousef's daycare menu (Tierra Encantada, Oct to Dec 2026), from the monthly menus. Edit a week here.
@@ -2878,15 +2925,23 @@ Rules:
         const menuLine = (icon, txt) => `<div class="week-line"><span class="dot" style="background:${catColor('kids')}"></span><span>${icon} ${esc(txt)}</span></div>`;
         const lunchHtml = !ym ? '' : ym.closed ? menuLine('🚫', `Center closed · ${ym.closed}`)
           : menuLine('🥣', `Yousef breakfast: ${ym.breakfast}`) + menuLine('🍱', `Yousef lunch: ${ym.lunch}`) + menuLine('🍎', `Yousef snack: ${ym.snack} · late: ${ym.late}`);
-        const evHtml = schHtml + evs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${ev.allDay ? '' : esc(evTime(ev)) + ' '}${esc(ev.title || '(No title)')}</span></div>`).join('') + lunchHtml;
-        const dinner = (syncWeekOf(mondayOf(d)).meals || {})[d] || '';
+        const allDayEvs = evs.filter(ev => ev.allDay);
+        const evHtml = schHtml + allDayEvs.map(ev => `<div class="week-line"><span class="dot cal"></span><span>${srcIcon(ev)} ${esc(ev.title || '(No title)')}</span></div>`).join('') + lunchHtml;
+        const mon = mondayOf(d), wk = syncWeekOf(mon), dinner = (wk.meals || {})[d] || '';
+        // One timeline: calendar events (with who covers them) and timed tasks (with the status capsule), by time.
+        const calItems = syncItems(d, wk, allDayEvs.map(ev => ev.title || 'All day')).filter(x => x.kind === 'cal');
+        const rowsHtml = [
+          ...calItems.map(x => ({ m: x.start, html: wkCalRow(x, mon) })),
+          ...items.filter(timed).map(t => ({ m: timeMin(t.time), html: wktRow(t, true) }))
+        ].sort((a, b) => a.m - b.m).map(r => r.html).join('');
         const open = items.filter(isOpen).length;
         const anyItems = items.filter(t => !timed(t));
         const anyHtml = anyItems.length ? `<div class="wkt-anytime"><p class="eyebrow">Anytime</p>${anyItems.map(t => wktRow(t, true)).join('')}</div>` : '';
         return `<div class="week-day ${i === 0 ? 'is-today' : ''}"><div class="week-day-title"><span class="wkt-dname">${esc(dayLabelOf(d, i))}</span>
           <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${(() => { const o = !sh && omarDay(d); return o ? `<span class="od-auto" title="Omar, from his calendar">${o.emoji} ${esc(o.kind === 'recovery' ? 'Recovery' : o.label)}</span>` : ''; })()}${shiftBtn(d, sh, shortD(d))}<span class="muted">${open || ''}</span></span></div>
-          ${evHtml}${items.filter(timed).map(t => wktRow(t, true)).join('')}${anyHtml}${!items.length && !evs.length ? '<div class="muted">Nothing planned</div>' : ''}
+          ${evHtml}${rowsHtml}${anyHtml}${!items.length && !evs.length ? '<div class="muted">Nothing planned</div>' : ''}
           <label class="sy-meal"><span>Dinner</span><input type="text" id="wm-${d}" data-sy="meal" data-d="${d}" value="${esc(dinner)}" placeholder="What's for dinner?"></label>
+          ${mealRow(d, wk)}
         </div>`;
       });
       html += `<div class="wkt-cards">${cards.join('')}</div>`;
@@ -3612,7 +3667,7 @@ Rules:
       if (ev.allDay) return;
       const st = evMin(ev);
       const en = ev.end ? (d => d.getHours() * 60 + d.getMinutes())(new Date(ev.end)) : st;
-      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: 'var(--cal)' });
+      items.push({ kind: 'cal', start: st, end: Math.max(st, en), title: ev.title || 'Calendar event', color: 'var(--cal)', src: ev.source || '' });
     });
     Object.values(S.tasks).forEach(t => {
       if (t.date !== td || !t.time || !(isOpen(t) || t.status === 'done')) return;
@@ -4101,6 +4156,7 @@ Rules:
         case 'status': setTask(id, { status: el.dataset.to }); break;
         case 'to-today': moveTo(id, today()); break;
         case 'to-tomorrow': moveTo(id, addDays(today(), 1)); break;
+        case 'cap': capTap(id); break;
         case 'drop': setTask(id, { status: 'dropped', droppedAt: Date.now() }); break;
         // Delete: hides the task everywhere, removes its calendar block, and keeps a tombstone (status dropped)
         // so email, school and life-admin scanners never re-add it. Undo restores it exactly.
@@ -6193,7 +6249,7 @@ Rules:
       const assignable = i.kind !== 'task' || !!(t && (t.category === 'kids' || t.category === 'omar'));
       const key = `${d}|${i.kind}|${i.id || i.start}|${norm(i.title).slice(0, 40)}`;
       const dflt = t && t.category === 'omar' ? 'omar' : 'me';
-      return Object.assign({}, i, { key, dflt, assignable, who: wk.assign[key] || dflt });
+      return Object.assign({}, i, { key, dflt, assignable, who: wk.assign[key] || (t && t.who) || dflt });
     });
   }
   function syncFlags(days) {
@@ -6241,20 +6297,9 @@ Rules:
     const flags = syncFlags(days), dueAll = days.flatMap(x => x.due.map(t => ({ t, d: x.d })));
     const habit = routinesList().some(r => /weekly sync/i.test(r.title));
     const through = live.calInfo && live.calInfo.to ? ymd(new Date(live.calInfo.to)) : addDays(td, 8);
-    const dayHtml = days.map(({ d, items, allDay }) => {
-      const sh = shiftsMap()[d] || '';
-      return `<div class="card sy-day ${d === td ? 'is-today' : ''}">
-        <div class="sy-head"><span class="sy-dow">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'long' }))} <span class="muted sy-date">${esc(short(d))}</span></span>
-          <span class="week-tools">${wxDay(d) ? `<span class="wx-chip">${esc(wxShort(wxDay(d)))}</span>` : ''}${shiftBtn(d, sh, short(d))}</span></div>
-        ${allDay.length ? `<div class="sy-allday">${allDay.map(a => `<span class="sy-chip">${esc(a)}</span>`).join('')}</div>` : ''}
-        ${items.map(i => `<div class="sy-item ${i.done ? 'done' : ''}"><span class="sy-time">${esc(clockLabel(i.start))}</span><span class="sy-title">${esc(i.title)}</span>${i.assignable ? `<button class="sy-pill ${i.who !== 'me' ? 'on' : ''}" data-act="sy-who" data-k="${esc(i.key)}" data-dflt="${i.dflt}" aria-label="Who covers ${esc(i.title)}: ${WHO_LABEL[i.who]}. Tap to change.">${WHO_LABEL[i.who]}</button>` : ''}</div>`).join('') || (allDay.length ? '' : `<div class="sy-empty muted">${d > through ? 'Calendar not loaded yet for this day.' : d < addDays(td, -1) ? "Calendar history isn't kept here." : 'Nothing scheduled.'}</div>`)}
-        <label class="sy-meal"><span>Dinner</span><input type="text" data-sy="meal" data-d="${d}" value="${esc(wk.meals[d] || '')}" placeholder="What's for dinner?"></label>
-        ${mealRow(d, wk)}
-      </div>`;
-    }).join('');
     el.innerHTML = `<div class="card">
         <div class="rc-nav"><button class="mini" data-act="sy-prev" aria-label="Previous week">‹</button><span class="rc-month">${esc(label)} · ${esc(short(mon))} – ${esc(short(sun))}</span><button class="mini" data-act="sy-next" aria-label="Next week">›</button></div>
-        <p class="muted">A 10-minute check-in: where everyone is, what's for dinner, and what needs a plan.</p>
+        <p class="muted">A 10-minute check-in: what needs a plan, your focus, and a summary for Omar. Each day, its dinner and who covers what are in the week above.</p>
         ${sun > through ? `<p class="muted">Your calendar is loaded through ${esc(short(through))}. Later days fill in as the week gets closer.</p>` : ''}
         ${wk.doneAt ? `<p class="muted">Synced ${esc(new Date(wk.doneAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }))}.</p>` : ''}
       </div>
@@ -6266,7 +6311,6 @@ Rules:
         ${flags.length ? flags.map(x => `<div class="sy-flag">${esc(x)}</div>`).join('') : '<div class="sy-empty muted">Nothing needs a plan. Nice.</div>'}
         ${dueAll.length ? `<div class="sy-sub">Due this week</div>${dueAll.map(({ t, d }) => `<div class="sy-flag">${esc(parseYmd(d).toLocaleDateString('en-US', { weekday: 'short' }))}: ${esc(t.title)}</div>`).join('')}` : ''}
       </div>
-      ${dayHtml}
       ${focusHtml(mon, wk)}
       <div class="card sy-actions">
         <button class="btn-add" data-act="sy-share">Send summary to Omar</button>
@@ -6284,9 +6328,10 @@ Rules:
         case 'sy-prev': case 'sy-next': ui.syncWeek = addDays(mon, act === 'sy-next' ? 7 : -7); ui.syncAt = today(); saveUi(); render(); break;
         case 'sy-shift': { const d = el.dataset.d, sh = Object.assign({}, shiftsMap()), nxt = SHIFT_NEXT[sh[d] || '']; if (nxt) sh[d] = nxt; else delete sh[d]; setMeta({ shifts: sh }); break; }
         case 'sy-who': {
-          const k = el.dataset.k, dflt = el.dataset.dflt, nxt = WHO_NEXT[wk.assign[k] || dflt], assign = Object.assign({}, wk.assign);
+          const wmon = el.dataset.mon || mon, wwk = el.dataset.mon ? syncWeekOf(wmon) : wk;
+          const k = el.dataset.k, dflt = el.dataset.dflt, nxt = WHO_NEXT[wwk.assign[k] || dflt], assign = Object.assign({}, wwk.assign);
           if (nxt === dflt) delete assign[k]; else assign[k] = nxt;
-          saveSync(mon, { assign }); break;
+          saveSync(wmon, { assign }); break;
         }
         case 'sy-done': saveSync(mon, { doneAt: wk.doneAt ? null : Date.now() }); break;
         case 'sy-to-reset': { const r = $('resetView'); if (r && r.scrollIntoView) r.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
