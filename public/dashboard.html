@@ -596,9 +596,12 @@ details.fold > summary .count { font-size: 0.8125rem; letter-spacing: 0; text-tr
 .wkt-item > .sy-pill, .wkt-item > .cap-pill { align-self: center; }
 .cap-pill { position: relative; overflow: hidden; min-height: 44px; min-width: 84px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font-size: 0.8125rem; font-weight: 500; cursor: pointer; flex: 0 0 auto; white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
 .cap-pill.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-.cap-pill.pending::after { content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: currentColor; opacity: .45; transform-origin: left; animation: capFill 1.5s linear forwards; }
-@keyframes capFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@media (prefers-reduced-motion: reduce) { .cap-pill, .cap-pill.pending::after { transition: none; animation: none; } }
+.cap-seg { display: flex; margin-top: 6px; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; max-width: 340px; }
+.cap-seg button { flex: 1 1 auto; min-height: 44px; min-width: 0; padding: 0 6px; border: 0; border-left: 1px solid var(--border); background: none; color: var(--text); font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background .15s, color .15s; }
+.cap-seg button:first-child { border-left: 0; }
+.cap-seg button:hover, .cap-seg button:focus-visible { background: var(--chip); }
+.cap-seg button:active { background: var(--accent); color: var(--on-accent); }
+@media (prefers-reduced-motion: reduce) { .cap-pill, .cap-seg button { transition: none; } }
 .wkt-anytime { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
 .wkt-anytime .eyebrow { margin: 0 0 4px; font-size: 0.6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 
@@ -2725,39 +2728,25 @@ Rules:
       .map(([k, l]) => `<button type="button" class="seg-btn" data-act="energy" data-scope="${k}" aria-pressed="${scope === k ? 'true' : 'false'}">${l}</button>`).join('');
   }
 
-  // One task row in the week: dot, time and category, title, and one capsule on the right.
-  // Tapping the capsule steps through To do, Done, Tomorrow, Let go and Omar. The choice applies after a short
-  // pause (so you can keep tapping past it), then a toast offers Undo. A done task's capsule goes straight back to To do.
-  const CAP_LABEL = { todo: 'To do', done: 'Done', tomorrow: 'Tomorrow', letgo: 'Let go', omar: 'Omar' };
-  const CAP_CYCLE = ['todo', 'done', 'tomorrow', 'letgo', 'omar'];
-  const CAP_WAIT = 1500;
-  const capPending = {};                                   // task id -> { state, timer }
-  const capCommitted = t => t.status === 'done' ? 'done' : t.who === 'omar' ? 'omar' : 'todo';
+  // One task row in the week: dot, time and category, title, and one capsule with four choices under it:
+  // Done, Tomorrow, Let go and Omar. One tap applies the choice and a toast offers Undo.
+  // A task that is done (or put on Omar) shows a single filled capsule on the right; tapping it reopens the task.
+  const CAP_OPTS = [['done', 'Done'], ['tomorrow', 'Tomorrow'], ['letgo', 'Let go'], ['omar', 'Omar']];
   const canHandOmar = t => !t.sharedId && hh.me === 'farah' && !fam.off;
-  function capBtn(t) {
-    const p = capPending[t.id], st = p ? p.state : capCommitted(t);
-    return `<button type="button" class="cap-pill ${st !== 'todo' ? 'on' : ''} ${p ? 'pending' : ''}" data-act="cap" data-id="${esc(t.id)}" aria-label="${esc(t.title)}: ${CAP_LABEL[st]}${p ? ', applying' : ''}. Tap to change.">${CAP_LABEL[st]}</button>`;
+  function capHtml(t) {
+    const id = esc(t.id), name = esc(t.title);
+    if (t.status === 'done' || t.who === 'omar') {
+      const lbl = t.status === 'done' ? 'Done' : 'Omar';
+      return `<button type="button" class="cap-pill on" data-act="cap" data-to="todo" data-id="${id}" aria-label="${name}: ${lbl}. Tap to reopen.">${lbl}</button>`;
+    }
+    return `<div class="cap-seg" role="group" aria-label="What to do with ${name}">${CAP_OPTS.map(([k, l]) =>
+      `<button type="button" data-act="cap" data-to="${k}" data-id="${id}" aria-label="${l}: ${name}">${l}</button>`).join('')}</div>`;
   }
-  function capTap(id) {
+  function capApply(id, to) {
     const t = S.tasks[id]; if (!t) return;
-    const committed = capCommitted(t), p = capPending[id], cur = p ? p.state : committed;
-    const nxt = !p && (committed === 'done' || committed === 'omar') ? 'todo' : CAP_CYCLE[(CAP_CYCLE.indexOf(cur) + 1) % CAP_CYCLE.length];
-    if (p) clearTimeout(p.timer);
-    if (nxt === committed) delete capPending[id];
-    else capPending[id] = { state: nxt, timer: setTimeout(() => capApply(id), CAP_WAIT) };
-    const active = document.activeElement;
-    document.querySelectorAll('.cap-pill').forEach(b => {
-      if (b.dataset.id !== id) return;
-      const had = b === active; b.outerHTML = capBtn(t);
-      if (had) { const nb = [...document.querySelectorAll('.cap-pill')].find(x => x.dataset.id === id); if (nb) nb.focus(); }
-    });
-  }
-  function capApply(id) {
-    const p = capPending[id]; delete capPending[id];
-    const t = S.tasks[id]; if (!p || !t) { render(); return; }
     const undo = snapTasks([id]);
-    switch (p.state) {
-      case 'todo': setTask(id, { status: 'todo', who: null }); toast(`Back to do: ${t.title}`, undo); break;
+    switch (to) {
+      case 'todo': setTask(id, { status: 'todo', who: null }); toast(`Reopened: ${t.title}`, undo); break;
       case 'done': setTask(id, { status: 'done', who: null }); toast(`Done: ${t.title}`, undo); break;
       case 'tomorrow': moveTo(id, addDays(today(), 1)); toast(`Tomorrow: ${t.title}`, undo); break;
       case 'letgo': setTask(id, { status: 'dropped', droppedAt: Date.now() }); toast(`Let go: ${t.title}`, undo); break;
@@ -2768,12 +2757,12 @@ Rules:
     }
   }
   function wktRow(t, withActs) {
-    const done = t.status === 'done';
+    const done = t.status === 'done', single = withActs && (done || t.who === 'omar');
     const from = t.date && t.date < today() ? `<span class="badge">from ${esc(dayLabel(t.date))}</span>` : '';
     const doing = t.status === 'doing' ? `<span class="badge">In progress</span>` : '';
     return `<div class="wkt-item ${done ? 'done' : ''}"><span class="wkt-box ${done ? 'on' : ''}" aria-hidden="true"></span>
       <div class="wkt-body"><div class="wkt-meta">${t.time ? `<span>${esc(t.time)}</span>` : ''}${catTag(t.category)}</div>
-      <div class="t">${from}${doing}${esc(t.title)}</div></div>${withActs ? capBtn(t) : ''}</div>`;
+      <div class="t">${from}${doing}${esc(t.title)}</div>${withActs && !single ? capHtml(t) : ''}</div>${single ? capHtml(t) : ''}</div>`;
   }
   // A calendar event in the week, with the Farah / Omar / Other capsule from the weekly check-in.
   function wkCalRow(i, mon) {
@@ -4156,7 +4145,7 @@ Rules:
         case 'status': setTask(id, { status: el.dataset.to }); break;
         case 'to-today': moveTo(id, today()); break;
         case 'to-tomorrow': moveTo(id, addDays(today(), 1)); break;
-        case 'cap': capTap(id); break;
+        case 'cap': capApply(id, el.dataset.to); break;
         case 'drop': setTask(id, { status: 'dropped', droppedAt: Date.now() }); break;
         // Delete: hides the task everywhere, removes its calendar block, and keeps a tombstone (status dropped)
         // so email, school and life-admin scanners never re-add it. Undo restores it exactly.
