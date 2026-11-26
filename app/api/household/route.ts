@@ -46,7 +46,8 @@ export async function POST(request: Request) {
   if ("error" in c) return c.error;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return Response.json({ error: "bad_json" }, { status: 400 });
-  const id = typeof body.id === "string" && /^[hcg]-[a-z0-9]{4,40}$/.test(body.id) ? body.id : null;
+  // Ids are "h-…", "c-…" or "g-…". Some grocery ids have a hyphen inside (e.g. "g-tg25-04"), so allow it.
+  const id = typeof body.id === "string" && /^[hcg]-[a-z0-9][a-z0-9-]{2,59}$/.test(body.id) ? body.id : null;
   try {
     if (body.op === "week-send") {
       if (c.me !== "farah") return Response.json({ error: "Not available" }, { status: 403 });
