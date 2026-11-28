@@ -2963,11 +2963,13 @@ Rules:
     heart: '<g transform="translate(8 8) scale(2)"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></g>',
     pot: '<path d="M10 33h44"/><path d="M14 33v9a10 10 0 0 0 10 10h16a10 10 0 0 0 10-10v-9"/><path d="M18 33c2-5.5 7.5-8 14-8s12 2.5 14 8"/><path d="M30 25v-2.5h4V25"/><path d="M26 18c-2-2 2-4 0-7M32 18c-2-2 2-4 0-7M38 18c-2-2 2-4 0-7"/>',
     sun: '<rect x="12" y="22" width="34" height="30" rx="3"/><path d="M18 31l2.5 2.5L25 29M29 31h11M18 42l2.5 2.5L25 40M29 42h11"/><circle cx="51" cy="14" r="4"/><path d="M51 5.5v2M51 20.5v2M42.5 14h2M57.5 14h2M45 8l1.4 1.4M55.6 18.6 57 20M57 8l-1.4 1.4"/>',
+    snow: '<path d="M32 10v44M13 21l38 22M13 43l38-22"/><path d="M27 14l5 5 5-5M27 50l5-5 5 5M14 27.3l6.8-1.8L19 18.7M45 45.3l-1.8-6.8 6.8-1.8M19 45.3l1.8-6.8L14 36.7M50 27.3l-6.8-1.8L45 18.7"/>',
     apple: '<path d="M32 22c-6-5-18-3-18 10 0 12 8 20 13 20 2 0 3-1 5-1s3 1 5 1c5 0 13-8 13-20 0-13-12-15-18-10z"/><path d="M32 22c0-5 2-8 5-10"/><path d="M33 16c4-4 9-4 11-2-3 4-8 4-11 2z"/>',
   };
   const SP_GUESS = [
     [/cookbook|picture book|\bbook\b|story/i, 'book'],
     [/cook|teta|kitchen|maqluba|mama|recipe|meal/i, 'pot'],
+    [/winter|snow/i, 'snow'],
     [/islam|ramadan|iftar|eid|quran/i, 'moon'],
     [/birthday|party|cake/i, 'cake'],
     [/trip|travel|flight|vacation|kyoto|kuwait|amman/i, 'plane'],
@@ -3209,6 +3211,18 @@ Rules:
 
   // Adds the three spaces Farah asked for (Nov 25, 2026) once, on the first load that has her cloud data.
   // Skips any that already exist by name, so a second phone or a rename never makes duplicates.
+  // Adds the Kids winter plan space Farah asked for (Nov 28, 2026) once, with her activities as checklist items.
+  function seedKidsWinterOnce() {
+    if (meta().kidsWinterSeed) return;
+    if (!Object.values(S.projects).some(p => /winter plan/i.test(p.name || ''))) stage('projects', {
+      id: newId('p'), name: 'Kids winter plan', category: 'kids', doodle: 'snow', status: 'active', notes: '', createdAt: Date.now(),
+      brief: 'Classes to try and places to go this winter.',
+      items: ['Find a piano trial class', 'Find a drums trial class', 'Kumon assessment', 'Check next RAC inflatables date', 'ROGA gymnastics',
+        'ROCA climbing', 'Jiu-jitsu', 'Sky Zone', 'Crayola Experience at Mall of America', 'Bowling', 'Minnesota Children’s Museum']
+        .map(text => ({ id: newId('i'), text, done: false })) });
+    setMetaStaged({ kidsWinterSeed: 1 });
+    commit();
+  }
   function seedSpacesOnce() {
     if (meta().spacesSeed) return;
     const all = Object.values(S.projects);
@@ -4402,7 +4416,7 @@ Rules:
     if (materializing) return;
     if (!(mode === 'cloud' || (mode === 'local' && cloudNote))) return;      // wait until this phone has the latest from the cloud
     materializing = true;
-    try { materializeRoutines(); adminMaterialize(); seedSpacesOnce(); renderHousehold(); } finally { materializing = false; }
+    try { materializeRoutines(); adminMaterialize(); seedSpacesOnce(); seedKidsWinterOnce(); renderHousehold(); } finally { materializing = false; }
   }
   // School-day routines (pickup, drop-off) skip days the calendar marks as no school.
   const SCHOOL_ROUTINE = /school|pick ?-?up|drop ?-?off|carpool/i;
